@@ -38,8 +38,8 @@ public class CorpusWriter {
         writer = new IndexWriter(dir, iwc);
     }
 
-    public void write() throws IOException, InterruptedException {
-        ExecutorService exec = Executors.newFixedThreadPool(8);
+    public void write(int numThreads) throws IOException, InterruptedException {
+        ExecutorService exec = Executors.newFixedThreadPool(numThreads);
 
         try {
             for (final String path : inputDir.list()) {
@@ -79,13 +79,13 @@ public class CorpusWriter {
     }
 
     public static void main(String args[]) throws IOException, InterruptedException {
-        if (args.length != 3) {
-            System.err.println("usage: java " + CorpusWriter.class.getCanonicalName() + " path-in path-out memory-cache-in-MB");
+        if (args.length != 4) {
+            System.err.println("usage: java " + CorpusWriter.class.getCanonicalName() + " path-in path-out num-threads memory-cache-in-MB");
         }
         File inputPath = new File(args[0]);
         File outputPath = new File(args[1]);
         CorpusWriter writer = new CorpusWriter(inputPath, outputPath);
-        writer.openIndex(Integer.valueOf(args[2]));
-        writer.write();
+        writer.openIndex(Integer.valueOf(args[3]));
+        writer.write(Integer.valueOf(args[2]));
     }
 }
