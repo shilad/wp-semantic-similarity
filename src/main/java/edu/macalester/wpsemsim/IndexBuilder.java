@@ -97,6 +97,9 @@ public class IndexBuilder {
             if (numDocs.incrementAndGet() % 1000 == 0) {
                 LOG.info("read doc " + numDocs + " from " + path + ": " + p.getTitle());
             }
+            if (numDocs.get() > 200000) {
+                break;
+            }
         }
     }
 
