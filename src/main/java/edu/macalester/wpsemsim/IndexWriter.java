@@ -2,7 +2,6 @@ package edu.macalester.wpsemsim;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -17,14 +16,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class CorpusWriter {
-    private static final Logger LOG = Logger.getLogger(CorpusWriter.class.getName());
+public class IndexWriter {
+    private static final Logger LOG = Logger.getLogger(IndexWriter.class.getName());
     private AtomicInteger numDocs = new AtomicInteger();
-    private IndexWriter writer = null;
+    private org.apache.lucene.index.IndexWriter writer = null;
     private File outputDir;
     private File inputDir;
 
-    public CorpusWriter(File inputDir, File outputDir) {
+    public IndexWriter(File inputDir, File outputDir) {
         this.inputDir = inputDir;
         this.outputDir = outputDir;
     }
@@ -35,7 +34,7 @@ public class CorpusWriter {
         IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
         iwc.setRAMBufferSizeMB(bufferMB);
-        writer = new IndexWriter(dir, iwc);
+        writer = new org.apache.lucene.index.IndexWriter(dir, iwc);
     }
 
     public void write(int numThreads) throws IOException, InterruptedException {
@@ -79,13 +78,17 @@ public class CorpusWriter {
     }
 
     public static void main(String args[]) throws IOException, InterruptedException {
-        if (args.length != 4) {
-            System.err.println("usage: java " + CorpusWriter.class.getCanonicalName() + " path-in path-out num-threads memory-cache-in-MB");
+        if (args.length != 3 && args.length != 4) {
+            System.err.println("usage: java " + IndexWriter.class.getCanonicalName() + " path-in path-out memory-cache-in-MB [num-threads]");
         }
+        int cores = (args.length == 4)
+                ? Integer.valueOf(args[3])
+                : Runtime.getRuntime().availableProcessors();
+        LOG.info("using " + cores + " threads");
         File inputPath = new File(args[0]);
         File outputPath = new File(args[1]);
-        CorpusWriter writer = new CorpusWriter(inputPath, outputPath);
-        writer.openIndex(Integer.valueOf(args[3]));
-        writer.write(Integer.valueOf(args[2]));
+        IndexWriter writer = new IndexWriter(inputPath, outputPath);
+        writer.openIndex(Integer.valueOf(args[2]));
+        writer.write(cores);
     }
 }
