@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,6 +30,7 @@ public class IndexWriter {
     }
 
     public void openIndex(int bufferMB) throws IOException {
+        FileUtils.deleteDirectory(outputDir);
         Directory dir = FSDirectory.open(outputDir);
         Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
         IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);
