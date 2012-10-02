@@ -105,7 +105,7 @@ public class DocSimScorer {
                         File f = new File(inputDir, path);
                         try {
                             LOG.info("reading input file " + f);
-                            for (Doc d : new DocReader(f)) {
+                            for (Page d : new PageReader(f)) {
                                 if (d.isRedirect()) {
                                     continue;
                                 }

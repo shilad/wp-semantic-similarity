@@ -13,17 +13,17 @@ import java.util.logging.Logger;
 
 import static javax.xml.stream.XMLStreamConstants.END_DOCUMENT;
 
-public class DocReader implements Iterable<Doc> {
-    private static final Logger LOG = Logger.getLogger(DocReader.class.getName());
+public class PageReader implements Iterable<Page> {
+    private static final Logger LOG = Logger.getLogger(PageReader.class.getName());
     private File path;
 
 
-    public DocReader(File path) {
+    public PageReader(File path) {
         this.path = path;
     }
 
     @Override
-    public Iterator<Doc> iterator() {
+    public Iterator<Page> iterator() {
         try {
             return new DocIterator(path);
         } catch (Exception e) {
@@ -33,10 +33,10 @@ public class DocReader implements Iterable<Doc> {
     }
 
 
-    public class DocIterator implements Iterator<Doc> {
+    public class DocIterator implements Iterator<Page> {
 
         private XMLStreamReader reader;
-        private Doc buffer = null;
+        private Page buffer = null;
 
         public DocIterator(File path) throws IOException, ArchiveException, XMLStreamException {
             BZip2CompressorInputStream input = new BZip2CompressorInputStream(new BufferedInputStream(new FileInputStream(path)));
@@ -65,7 +65,7 @@ public class DocReader implements Iterable<Doc> {
                 String id = matchTextElement("id", true);
                 String redirect = matchTextElement("redirect", false);
                 String text = searchTextElement("text", true);
-                buffer =new Doc(Integer.valueOf(ns), Integer.valueOf(id), redirect != null, title, text);
+                buffer =new Page(Integer.valueOf(ns), Integer.valueOf(id), redirect != null, title, text);
             } catch (XMLStreamException e) {
                 LOG.severe("parsing page failed");
                 e.printStackTrace();
@@ -78,9 +78,9 @@ public class DocReader implements Iterable<Doc> {
             return (buffer != null);
         }
 
-        public Doc next() {
+        public Page next() {
             fillBuffer();
-            Doc tmp = buffer;
+            Page tmp = buffer;
             buffer = null;
             return tmp;
         }
@@ -257,7 +257,7 @@ public class DocReader implements Iterable<Doc> {
     public static void main(String args[]) throws XMLStreamException, FileNotFoundException, ArchiveException {
         String path = "/Users/shilad/Documents/IntelliJ/NbrViz/Macademia/dat/wikipedia/enwiki-20120802-pages-articles1.xml-p000000010p000010000.bz2";
         int i = 0;
-        for (Doc d : new DocReader(new File(path))) {
+        for (Page d : new PageReader(new File(path))) {
             if (i++ % 1000 == 0) {
                 System.err.println("read " + i + ": " + d.getTitle());
             }

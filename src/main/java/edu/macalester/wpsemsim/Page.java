@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public final class Doc {
+public final class Page {
     private int id;
     private String title;
     private String text;
@@ -17,7 +17,7 @@ public final class Doc {
     private boolean redirect = false;
     private String strippedText;
 
-    public Doc(int ns, int id, boolean redirect, String title, String text) {
+    public Page(int ns, int id, boolean redirect, String title, String text) {
         this.ns = ns;
         this.id = id;
         this.title = title;
@@ -46,10 +46,11 @@ public final class Doc {
         return redirect;
     }
 
-    public Iterable<? extends IndexableField> toLuceneDoc() {
+    public Document toLuceneDoc() {
         Document d = new Document();
         d.add(new StringField("title", title, Field.Store.YES));
         d.add(new IntField("id", id, Field.Store.YES));
+        d.add(new IntField("ns", ns, Field.Store.YES));
         d.add(new TextField("text", strippedText, Field.Store.YES));
         for (String l : getAnchorLinksWithoutFragments()) {
             d.add(new StringField("links", l, Field.Store.YES));
