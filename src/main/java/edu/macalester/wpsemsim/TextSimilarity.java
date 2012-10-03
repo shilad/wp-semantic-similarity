@@ -50,7 +50,7 @@ public class TextSimilarity {
 
     }
 
-    public void calculatePairwiseSims(final int threads) throws IOException, InterruptedException {
+    public void calculatePairwiseSims(final int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
         ExecutorService exec = Executors.newFixedThreadPool(threads);
         try {
             for (int i = 0; i < threads; i++) {
@@ -58,7 +58,7 @@ public class TextSimilarity {
                 exec.submit(new Runnable() {
                     public void run() {
                     try {
-                        calculatePairwiseSims(threads, i2);
+                        calculatePairwiseSims(threads, i2, maxSimsPerDoc);
                     } catch (IOException e) {
                         LOG.log(Level.SEVERE, "error processing split " + i2, e);
                     }
@@ -71,7 +71,7 @@ public class TextSimilarity {
         }
     }
 
-    private void calculatePairwiseSims(int mod, int offset) throws IOException {
+    private void calculatePairwiseSims(int mod, int offset, int maxSimsPerDoc) throws IOException {
         // do something with docId here...
         MoreLikeThis mlt = new MoreLikeThis(reader); // Pass the reader reader
         mlt.setMaxDocFreqPct(10);
@@ -79,16 +79,13 @@ public class TextSimilarity {
         mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_40));
         mlt.setFieldNames(new String[] {"text"}); // specify the fields for similiarity
 
-        int simDocIds[] = new int[2000];
-        float simDocScores[] = new float[simDocIds.length];
+        int simDocIds[] = new int[maxSimsPerDoc];
+        float simDocScores[] = new float[maxSimsPerDoc];
         for (int docId=offset; docId< reader.maxDoc(); docId += mod) {
-            Query query = mlt.like(docId); // Pass the doc id
-            TopDocs similarDocs = searcher.search(query, simDocIds.length); // Use the searcher
+            Query query = mlt.like(docId);
+            TopDocs similarDocs = searcher.search(query, maxSimsPerDoc);
             if (counter.incrementAndGet() % 100 == 0) {
                 System.err.println("" + new Date() + ": finding matches for doc " + counter.get());
-            }
-            if (counter.get() > 5000) {
-                break;
             }
             Arrays.fill(simDocIds, -1);
             Arrays.fill(simDocScores, -1.0f);
@@ -126,12 +123,18 @@ public class TextSimilarity {
     }
 
     public static void main(String args[]) throws IOException, InterruptedException, CompressorException {
+        if (args.length != 3 && args.length != 4) {
+            System.err.println("usage: java " +
+                    TextSimilarity.class.getName() +
+                    " lucene-text-index-dir output-file num-results [num-threads]");
+
+        }
         TextSimilarity dss = new TextSimilarity();
-        dss.openIndex(new File("wp-semantic-similarity/dat/lucene/text"), false);
+        dss.openIndex(new File(args[0]), false);
         int cores = (args.length == 4)
                 ? Integer.valueOf(args[3])
                 : Runtime.getRuntime().availableProcessors();
-        dss.openOutput(new File("wp-semantic-similarity/dat/lucene/text.sims.gz"));
-        dss.calculatePairwiseSims(cores);
+        dss.openOutput(new File(args[1]));
+        dss.calculatePairwiseSims(cores, Integer.valueOf(args[2]));
     }
 }
