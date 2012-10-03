@@ -130,7 +130,7 @@ public class TextSimilarity {
 
         }
         TextSimilarity dss = new TextSimilarity();
-        dss.openIndex(new File(args[0]), false);
+        dss.openIndex(new File(args[0]), true);
         int cores = (args.length == 4)
                 ? Integer.valueOf(args[3])
                 : Runtime.getRuntime().availableProcessors();
