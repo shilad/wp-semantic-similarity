@@ -56,5 +56,10 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.1</version>
         </dependency>
+        <dependency>
+            <groupId>trove</groupId>
+            <artifactId>trove</artifactId>
+            <version>1.1-beta-5</version>
+        </dependency>
     </dependencies>
 </project>
