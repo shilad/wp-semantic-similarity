@@ -55,6 +55,7 @@ public class CatSimilarity extends SimilarityMetric {
         this.catParents = new int[catIndexes.size()][];
         this.catChildren = new int[catIndexes.size()][];
         this.catPageRanks = new double[catIndexes.size()];
+
         Arrays.fill(catPages, new int[0]);
         Arrays.fill(catParents, new int[0]);
         Arrays.fill(catChildren, new int[0]);
@@ -70,7 +71,7 @@ public class CatSimilarity extends SimilarityMetric {
             }
             for (IndexableField f : d.getFields("cats")) {
                 int catId2 = catIndexes.get(f.stringValue());
-                if (catId1 > 0) {
+                if (catId1 >= 0) {
                     numCatChildren[catId2]++;
                 } else {
                     numCatPages[catId2]++;
@@ -89,17 +90,15 @@ public class CatSimilarity extends SimilarityMetric {
         Arrays.fill(numCatPages, 0);
         for (int i = 0; i < reader.maxDoc(); i++) {
             Document d = reader.document(i);
+            IndexableField[] catFields = d.getFields("cats");
             int catId1 = -1;
             if (isCat(d)) {
                 catId1 = catIndexes.get(d.get("title"));
-            }
-            IndexableField[] catFields = d.getFields("cats");
-            if (catId1 > 0) {
                 catParents[catId1] = new int[catFields.length];
             }
             for (int j = 0; j < catFields.length; j++) {
                 int catId2 = catIndexes.get(catFields[j].stringValue());
-                if (catId1 > 0) {
+                if (catId1 >= 0) {
                     catChildren[catId2][numCatChildren[catId2]++] = catId1;
                     catParents[catId1][j] = catId2;
                 } else {
@@ -111,7 +110,16 @@ public class CatSimilarity extends SimilarityMetric {
 
     public void computePageRanks() {
         LOG.info("computing category page ranks...");
-        Arrays.fill(catPageRanks, 1.0 / catPageRanks.length);
+
+        // initialize page rank
+        long sumCredits = catPages.length;    // each category gets 1 credit to start
+        for (int i = 0; i < catPages.length; i++) {
+            sumCredits += catPages[i].length; // one more credit per page that references it.
+        }
+        for (int i = 0; i < catPages.length; i++) {
+            catPageRanks[i] = (1.0 + catPages[i].length) / sumCredits;
+        }
+
         for (int i = 0; i < 20; i++) {
             LOG.log(Level.INFO, "performing page ranks iteration {0}.", i);
             double error = onePageRankIteration();
