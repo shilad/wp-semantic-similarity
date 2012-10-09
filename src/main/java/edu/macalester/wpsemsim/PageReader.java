@@ -2,6 +2,8 @@ package edu.macalester.wpsemsim;
 
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -10,6 +12,7 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.GZIPInputStream;
 
 import static javax.xml.stream.XMLStreamConstants.END_DOCUMENT;
 
@@ -39,7 +42,12 @@ public class PageReader implements Iterable<Page> {
         private Page buffer = null;
 
         public DocIterator(File path) throws IOException, ArchiveException, XMLStreamException {
-            BZip2CompressorInputStream input = new BZip2CompressorInputStream(new BufferedInputStream(new FileInputStream(path)));
+            InputStream input = new BufferedInputStream(new FileInputStream(path));
+            if (FilenameUtils.getExtension(path.toString()).toLowerCase().startsWith("bz")) {
+                input = new BZip2CompressorInputStream(input);
+            } else if (FilenameUtils.getExtension(path.toString()).equalsIgnoreCase("gz")) {
+                input = new GZIPInputStream(input);
+            }
 
             // get the default factory instance
             XMLInputFactory factory = XMLInputFactory.newInstance();

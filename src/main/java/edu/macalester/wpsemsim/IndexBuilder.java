@@ -1,6 +1,8 @@
 package edu.macalester.wpsemsim;
 
+import org.apache.commons.compress.compressors.FileNameUtil;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -13,6 +15,8 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class IndexBuilder {
-    private static final String INDEX_INFO[][] = new String[][] {
+    public static final String INDEX_INFO[][] = new String[][] {
             // { index name, namespaces, field1, field2, ... }
             { "text",  "0",    "id", "title", "text"},
             { "cats",  "0,14", "id", "ns", "title", "cats"},
@@ -32,10 +36,10 @@ public class IndexBuilder {
     private AtomicInteger numDocs = new AtomicInteger();
     private IndexWriter writers[] = new IndexWriter[INDEX_INFO.length];
     private File outputDir;
-    private File inputDir;
+    private File inputPath;
 
-    public IndexBuilder(File inputDir, File outputDir) {
-        this.inputDir = inputDir;
+    public IndexBuilder(File inputPath, File outputDir) {
+        this.inputPath = inputPath;
         this.outputDir = outputDir;
     }
 
@@ -54,19 +58,34 @@ public class IndexBuilder {
         }
     }
 
+    public List<File> getInputFiles() {
+        List<File> inputs = new ArrayList<File>();
+        if (inputPath.isFile()) {
+            inputs.add(inputPath);
+        } else if (inputPath.isDirectory()) {
+            for (final String path : inputPath.list()) {
+                inputs.add(new File(inputPath, path));
+            }
+        } else {
+            throw new IllegalArgumentException(inputPath + " is not a file or directory");
+        }
+        return inputs;
+    }
+
     public void write(int numThreads) throws IOException, InterruptedException {
         ExecutorService exec = Executors.newFixedThreadPool(numThreads);
 
         try {
-            for (final String path : inputDir.list()) {
-                if (!path.endsWith(".bz2")) {
-                    LOG.info("skipping non-bz2 file " + path);
+            for (final File path : getInputFiles()) {
+                String ext = FilenameUtils.getExtension(path.toString());
+                if (!ext.equals("bz2") && !ext.equals("xml")) {
+                    LOG.info("skipping non-dump file " + path);
                     continue;
                 }
                 exec.submit(new Runnable() {
                     public void run() {
                         try {
-                            processOneFile(new File(inputDir, path));
+                            processOneFile(path);
                         } catch (IOException e) {
                             LOG.log(Level.SEVERE, "error processing " + path, e);
                         }
