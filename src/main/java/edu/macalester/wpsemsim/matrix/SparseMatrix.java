@@ -1,6 +1,5 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.matrix;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntLongHashMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -21,7 +20,6 @@ public class SparseMatrix {
     public static int MAX_PAGE_SIZE = Integer.MAX_VALUE;
 
     public static final int FILE_HEADER = 0xabcdef;
-    public static final byte ROW_PADDING = Byte.MIN_VALUE;
 
     private TIntLongHashMap rowOffsets = new TIntLongHashMap();
     private int rowIds[];
@@ -104,59 +102,6 @@ public class SparseMatrix {
         return rowIds.length;
     }
 
-    public static void write(File file, Iterator<SparseMatrixRow> rows) throws IOException {
-        LOG.info("writing rows to " + file);
-        TIntLongHashMap rowOffsets = new TIntLongHashMap();
-        TIntArrayList rowIndexes = new TIntArrayList();
-
-        // write tmp matrix file
-        File tmp = File.createTempFile("matrix", null);
-//        tmp.deleteOnExit();
-        BufferedOutputStream w = new BufferedOutputStream(new FileOutputStream(tmp));
-
-        long offset = 0;
-        while (rows.hasNext()) {
-            SparseMatrixRow row = rows.next();
-            rowOffsets.put(row.getRowIndex(), offset);
-            rowIndexes.add(row.getRowIndex());
-
-            row.getBuffer().rewind();
-            byte[] bytes = new byte[row.getBuffer().remaining()];
-            row.getBuffer().get(bytes, 0, bytes.length);
-            w.write(bytes);
-            offset += bytes.length;
-
-            // pad rows to 8 byte offsets to speed things up.
-            while (offset % 8 != 0) {
-                offset++;
-                w.write(ROW_PADDING);
-            }
-        }
-        w.close();
-
-        // write offset file
-        int sizeHeader = 8 + rowOffsets.size() * 12;
-        w = new BufferedOutputStream(new FileOutputStream(file));
-        w.write(intToBytes(FILE_HEADER));
-        w.write(intToBytes(rowOffsets.size()));
-        for (int i = 0; i < rowIndexes.size(); i++) {
-            int rowIndex = rowIndexes.get(i);
-            long rowOffset = rowOffsets.get(rowIndex);
-            w.write(intToBytes(rowIndex));
-            w.write(longToBytes(rowOffset + sizeHeader));
-        }
-
-        InputStream r = new FileInputStream(tmp);
-
-        // append other file
-        IOUtils.copyLarge(r, w);
-        r.close();
-        w.flush();
-        w.close();
-
-        LOG.info("wrote " + FileUtils.sizeOf(file) + " bytes to " + file);
-    }
-
     public void dump() {
         for (int id : rowIds) {
             System.out.print("" + id + ": ");
@@ -179,11 +124,4 @@ public class SparseMatrix {
         LOG.log(Level.FINEST, "sparse matrix " + path + ": " + message);
     }
 
-    private static byte[] intToBytes(int i) {
-        return ByteBuffer.allocate(4).putInt(i).array();
-    }
-
-    private static byte[] longToBytes(long i) {
-        return ByteBuffer.allocate(8).putLong(i).array();
-    }
 }

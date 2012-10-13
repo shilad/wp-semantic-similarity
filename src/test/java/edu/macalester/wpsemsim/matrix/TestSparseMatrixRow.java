@@ -1,5 +1,6 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.matrix;
 
+import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

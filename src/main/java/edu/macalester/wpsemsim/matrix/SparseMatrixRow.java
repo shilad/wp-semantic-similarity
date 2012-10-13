@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.matrix;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;

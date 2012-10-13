@@ -1,5 +1,8 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.matrix;
 
+import edu.macalester.wpsemsim.matrix.SparseMatrix;
+import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
+import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
 import gnu.trove.set.hash.TIntHashSet;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,9 +18,9 @@ import java.util.Random;
 public class TestSparseMatrix {
     private List<SparseMatrixRow> srcRows;
 
-    private int NUM_ROWS = 500;
+    private int NUM_ROWS = 1000;
     private int MAX_COLS = NUM_ROWS * 2;
-    private int MAX_KEY = NUM_ROWS * 10;
+    private int MAX_KEY = Math.max(NUM_ROWS, MAX_COLS) * 10;
     private Random rand = new Random();
 
     @Before
@@ -52,14 +55,14 @@ public class TestSparseMatrix {
     @Test
     public void testWrite() throws IOException {
         File tmp = File.createTempFile("matrix", null);
-        SparseMatrix.write(tmp, srcRows.iterator());
+        SparseMatrixWriter.write(tmp, srcRows.iterator());
     }
 
     @Test
     public void testReadWrite() throws IOException {
         SparseMatrix.MAX_PAGE_SIZE = NUM_ROWS * 20;
         File tmp = File.createTempFile("matrix", null);
-        SparseMatrix.write(tmp, srcRows.iterator());
+        SparseMatrixWriter.write(tmp, srcRows.iterator());
         SparseMatrix m = new SparseMatrix(tmp);
     }
 
@@ -70,12 +73,12 @@ public class TestSparseMatrix {
         File tmp1 = File.createTempFile("matrix", null);
         File tmp2 = File.createTempFile("matrix", null);
         File tmp3 = File.createTempFile("matrix", null);
-        SparseMatrix.write(tmp1, srcRows.iterator());
+        SparseMatrixWriter.write(tmp1, srcRows.iterator());
         SparseMatrix m = new SparseMatrix(tmp1);
         verifyIsSourceMatrix(m);
-        SparseMatrixTransposer.transpose(m, tmp2, 1);
+        new SparseMatrixTransposer(m, tmp2, 1).transpose();
         SparseMatrix m2 = new SparseMatrix(tmp2);
-        SparseMatrixTransposer.transpose(m2, tmp3, 1);
+        new SparseMatrixTransposer(m2, tmp3, 1).transpose();
         SparseMatrix m3 = new SparseMatrix(tmp3);
         verifyIsSourceMatrixUnordered(m3, .02);
     }
@@ -85,7 +88,7 @@ public class TestSparseMatrix {
     public void testRows() throws IOException {
         SparseMatrix.MAX_PAGE_SIZE = NUM_ROWS * 20;
         File tmp = File.createTempFile("matrix", null);
-        SparseMatrix.write(tmp, srcRows.iterator());
+        SparseMatrixWriter.write(tmp, srcRows.iterator());
         SparseMatrix m = new SparseMatrix(tmp);
         verifyIsSourceMatrix(m);
     }
