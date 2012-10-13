@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class SparseMatrix {
+public class SparseMatrix implements Iterable<SparseMatrixRow> {
     public static final Logger LOG = Logger.getLogger(SparseMatrix.class.getName());
 
     public static int MAX_PAGE_SIZE = Integer.MAX_VALUE;
@@ -112,6 +112,27 @@ public class SparseMatrix {
                 System.out.print(" " + id2 + "=" + val);
             }
             System.out.println();
+        }
+    }
+
+    @Override
+    public Iterator<SparseMatrixRow> iterator() {
+        return new SparseMatrixIterator();
+    }
+
+    public class SparseMatrixIterator implements Iterator<SparseMatrixRow> {
+        private int i = 0;
+        @Override
+        public boolean hasNext() {
+            return i < rowIds.length;
+        }
+        @Override
+        public SparseMatrixRow next() {
+            return getRow(rowIds[i++]);
+        }
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
 

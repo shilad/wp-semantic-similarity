@@ -69,8 +69,8 @@ public class SparseMatrixTransposer {
         numColsTransposed += colIdsInBatch.size();
         LOG.info("processing " + colIdsInBatch.size() + " columns in batch (total=" + numColsTransposed + " of " + colCounts.size() + ")");
 
-        for (int rowId : matrix.getRowIds()) {
-            SparseMatrixRow row = matrix.getRow(rowId);
+        for (SparseMatrixRow row : matrix) {
+            int rowId = row.getRowIndex();
             for (int i = 0; i < row.getNumCols(); i++) {
                 int colId = row.getColIndex(i);
                 if (!colIdsInBatch.contains(colId)) {

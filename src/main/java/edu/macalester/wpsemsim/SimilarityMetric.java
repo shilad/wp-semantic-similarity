@@ -1,5 +1,7 @@
 package edu.macalester.wpsemsim;
 
+import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
+import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.index.DirectoryReader;
@@ -20,7 +22,7 @@ public abstract class SimilarityMetric {
 
     protected DirectoryReader reader;
     protected IndexHelper helper;
-    private BufferedOutputStream output;
+    private SparseMatrixWriter writer;
     protected IndexSearcher searcher;
 
     public void openIndex(File indexDir, boolean mmap) throws IOException {
@@ -32,12 +34,8 @@ public abstract class SimilarityMetric {
         this.helper = new IndexHelper(reader);
     }
 
-    public void openOutput(File outputFile) throws FileNotFoundException, CompressorException {
-        this.output = new BufferedOutputStream(
-                new CompressorStreamFactory()
-                .createCompressorOutputStream(CompressorStreamFactory.GZIP,
-                        new BufferedOutputStream(new FileOutputStream(outputFile))));
-
+    public void openOutput(File outputFile) throws IOException, CompressorException {
+        this.writer = new SparseMatrixWriter(outputFile);
     }
 
     public void calculatePairwiseSims(final int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
@@ -64,19 +62,6 @@ public abstract class SimilarityMetric {
     abstract protected void calculatePairwiseSims(int mod, int offset, int maxSimsPerDoc) throws IOException;
 
     public void writeOutput(int targetDocId, int simDocIds[], float simDocScores[]) throws IOException {
-        StringBuilder buff = new StringBuilder();
-        buff.append(targetDocId);
-        DecimalFormat df = new DecimalFormat("#.####");
-        for (int i = 0; i < simDocIds.length; i++) {
-            if (simDocIds[i] < 0) {
-                break;
-            }
-            buff.append('\t');
-            buff.append(simDocIds[i]);
-            buff.append('=');
-            buff.append(df.format(simDocScores[i]));
-        }
-        buff.append('\n');
-        output.write(buff.toString().getBytes("UTF-8"));
+        writer.writeRow(new SparseMatrixRow(targetDocId, simDocIds, simDocScores));
     }
 }
