@@ -125,8 +125,7 @@ public class IndexBuilder {
     private void storePageInIndex(Document src, int index) throws IOException {
         String info[] = INDEX_INFO[index];
         String nss[] = info[1].split(",");
-        Number ns = src.getField("ns").numericValue();
-        if (!contains(nss, ""+ns)) {
+        if (!contains(nss, src.getField("ns").stringValue())) {
             return;
         }
         Document pruned = new Document();

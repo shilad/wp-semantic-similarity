@@ -2,22 +2,13 @@ package edu.macalester.wpsemsim;
 
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.util.Version;
 
 import java.io.*;
 import java.text.DecimalFormat;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -28,8 +19,9 @@ public abstract class SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(SimilarityMetric.class.getName());
 
     protected DirectoryReader reader;
-    protected IndexSearcher searcher;
+    protected IndexHelper helper;
     private BufferedOutputStream output;
+    protected IndexSearcher searcher;
 
     public void openIndex(File indexDir, boolean mmap) throws IOException {
         this.reader = DirectoryReader.open(
@@ -37,6 +29,7 @@ public abstract class SimilarityMetric {
                         : FSDirectory.open(indexDir)
         );
         this.searcher = new IndexSearcher(this.reader);
+        this.helper = new IndexHelper(reader);
     }
 
     public void openOutput(File outputFile) throws FileNotFoundException, CompressorException {
@@ -68,35 +61,7 @@ public abstract class SimilarityMetric {
         }
     }
 
-
-    public String getTitleForWpId(int wpId) {
-        QueryParser qp = new QueryParser(Version.LUCENE_40, "id", new StandardAnalyzer(Version.LUCENE_40));
-        Query query = null;
-        try {
-            query = qp.parse("" + wpId);
-            ScoreDoc[] hits = searcher.search(query, null, 1).scoreDocs;
-            if (hits.length == 0) {
-                return null;
-            } else {
-                return searcher.doc(hits[0].doc).get("title");
-            }
-
-        } catch (ParseException e) {
-            LOG.log(Level.SEVERE, "fetching title for wp id " + wpId + " failed:", e);
-        } catch (IOException e) {
-            LOG.log(Level.SEVERE, "fetching title for wp id " + wpId + " failed:", e);
-        }
-        return "unknown";
-    }
-
     abstract protected void calculatePairwiseSims(int mod, int offset, int maxSimsPerDoc) throws IOException;
-
-    public int getWikipediaId(int luceneId) throws IOException {
-        Set<String> fields = new HashSet<String>();
-        fields.add("id");
-        Document d = reader.document(luceneId, fields);
-        return d.getField("id").numericValue().intValue();
-    }
 
     public void writeOutput(int targetDocId, int simDocIds[], float simDocScores[]) throws IOException {
         StringBuilder buff = new StringBuilder();

@@ -3,12 +3,10 @@ package edu.macalester.wpsemsim;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
@@ -32,7 +30,7 @@ public class IndexHelper {
         Set<String> fields = new HashSet<String>();
         fields.add("id");
         Document d = reader.document(luceneId, fields);
-        return d.getField("id").numericValue().intValue();
+        return Integer.valueOf(d.getField("id").stringValue());
     }
 
     public String luceneIdToTitle(int luceneId) throws IOException {
@@ -44,7 +42,7 @@ public class IndexHelper {
 
 
     public String wpIdToTitle(int wpId) {
-        Query query = NumericRangeQuery.newIntRange("id", wpId, wpId, true, true);
+        Query query = new TermQuery(new Term("id", "" + wpId));
         try {
             ScoreDoc[] hits = searcher.search(query, null, 1).scoreDocs;
             if (hits.length == 0) {

@@ -38,10 +38,10 @@ public class TextSimilarity extends SimilarityMetric {
             Arrays.fill(simDocScores, -1.0f);
             for (int j = 0; j < similarDocs.scoreDocs.length; j++) {
                 ScoreDoc sd = similarDocs.scoreDocs[j];
-                simDocIds[j] = getWikipediaId(sd.doc);
+                simDocIds[j] = helper.luceneIdToWpId(sd.doc);
                 simDocScores[j] = similarDocs.scoreDocs[j].score;
             }
-            writeOutput(getWikipediaId(docId), simDocIds, simDocScores);
+            writeOutput(helper.luceneIdToWpId(docId), simDocIds, simDocScores);
         }
     }
 

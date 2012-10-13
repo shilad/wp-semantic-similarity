@@ -216,7 +216,7 @@ public class CatSimilarity extends SimilarityMetric {
                 simPageScores[j] = sims.get(id).floatValue();
                 j++;
             }
-            writeOutput(getWikipediaId(i), simPageIds, simPageScores);
+            writeOutput(helper.luceneIdToWpId(i), simPageIds, simPageScores);
             if (counter.incrementAndGet() % 100 == 0) {
                 System.err.println("" + new Date() + ": finding matches for doc " + counter.get());
             }
@@ -255,9 +255,10 @@ public class CatSimilarity extends SimilarityMetric {
             // add directly linked pages
             LOG.info("considering pages...");
             for (int i : catPages[cs.getCatIndex()]) {
-                LOG.info("considering page " + i + ": " + getTitleForWpId(i));
+                String title = helper.wpIdToTitle(i);
+                LOG.info("considering page " + i + ": " + title);
                 if (!pageDistances.containsKey(i) || pageDistances.get(i) > cs.getDistance()) {
-                    LOG.info("adding page " + getTitleForWpId(i) + " with distance " + cs.getDistance());
+                    LOG.info("adding page " + title + " with distance " + cs.getDistance());
                     pageDistances.put(i, cs.getDistance());
                 }
                 if (pageDistances.size() >= maxSimsPerDoc) {

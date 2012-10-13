@@ -49,8 +49,8 @@ public final class Page {
     public Document toLuceneDoc() {
         Document d = new Document();
         d.add(new StringField("title", title, Field.Store.YES));
-        d.add(new IntField("id", id, Field.Store.YES));
-        d.add(new IntField("ns", ns, Field.Store.YES));
+        d.add(new StringField("id", ""+id, Field.Store.YES));
+        d.add(new StringField("ns", ""+ns, Field.Store.YES));
         d.add(new TextField("text", strippedText, Field.Store.YES));
         for (String l : getAnchorLinksWithoutFragments()) {
             d.add(new StringField("links", l, Field.Store.YES));
