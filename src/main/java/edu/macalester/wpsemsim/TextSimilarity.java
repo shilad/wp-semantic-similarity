@@ -59,5 +59,6 @@ public class TextSimilarity extends SimilarityMetric {
                 : Runtime.getRuntime().availableProcessors();
         dss.openOutput(new File(args[1]));
         dss.calculatePairwiseSims(cores, Integer.valueOf(args[2]));
+        dss.closeOutput();
     }
 }

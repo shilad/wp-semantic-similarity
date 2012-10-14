@@ -64,4 +64,8 @@ public abstract class SimilarityMetric {
     public void writeOutput(int targetDocId, int simDocIds[], float simDocScores[]) throws IOException {
         writer.writeRow(new SparseMatrixRow(targetDocId, simDocIds, simDocScores));
     }
+
+    public void closeOutput() throws IOException {
+        writer.finish();
+    }
 }
