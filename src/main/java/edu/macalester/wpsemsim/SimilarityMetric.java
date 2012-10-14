@@ -47,7 +47,7 @@ public abstract class SimilarityMetric {
                     public void run() {
                     try {
                         calculatePairwiseSims(threads, i2, maxSimsPerDoc);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         LOG.log(Level.SEVERE, "error processing split " + i2, e);
                     }
                     }
