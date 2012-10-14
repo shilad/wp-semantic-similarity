@@ -1,6 +1,5 @@
 package edu.macalester.wpsemsim;
 
-import org.apache.commons.compress.compressors.FileNameUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.analysis.Analyzer;

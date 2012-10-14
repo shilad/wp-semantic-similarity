@@ -2,6 +2,7 @@ package edu.macalester.wpsemsim.matrix;
 
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.list.array.TShortArrayList;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.set.hash.TIntHashSet;
 
@@ -76,7 +77,7 @@ public class SparseMatrixTransposer {
                 if (!colIdsInBatch.contains(colId)) {
                     continue;
                 }
-                byte colValue = row.getColValueAsByte(i);
+                short colValue = row.getPackedColValue(i);
                 if (!transposedBatch.containsKey(colId)) {
                     transposedBatch.put(colId, new RowAccumulator(colId));
                 }
@@ -108,21 +109,21 @@ public class SparseMatrixTransposer {
             // row accumulator object itself
             BYTES_PER_OBJECT + 4 + 2 * BYTES_PER_REF +
             // ids and values in accumulator
-            numEntries * (1 + 4)
+            numEntries * (4 + 2)
         ) / (1024.0 * 1024.0);
     }
 
     private static class RowAccumulator {
         int id;
         TIntArrayList colIds = new TIntArrayList();
-        TByteArrayList colVals = new TByteArrayList();
+        TShortArrayList colVals = new TShortArrayList();
         RowAccumulator(int id) {
             this.id = id;
         }
         SparseMatrixRow toRow() {
             return new SparseMatrixRow(id, colIds.toArray(), colVals.toArray());
         }
-        void addCol(int id, byte val) {
+        void addCol(int id, short val) {
             this.colIds.add(id);
             this.colVals.add(val);
         }

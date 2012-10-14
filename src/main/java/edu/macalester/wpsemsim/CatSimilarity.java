@@ -1,7 +1,7 @@
 package edu.macalester.wpsemsim;
 
-import gnu.trove.TIntDoubleHashMap;
-import gnu.trove.TIntHashSet;
+import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -67,7 +67,7 @@ public class CatSimilarity extends SimilarityMetric {
         for (int i = 0; i < reader.maxDoc(); i++) {
             Document d = reader.document(i);
             int catId1 = -1;
-            if (d.getField("ns").numericValue().intValue() == 14) {
+            if (isCat(d)) {
                 catId1 = catIndexes.get(d.get("title"));
             }
             for (IndexableField f : d.getFields("cats")) {
@@ -92,7 +92,7 @@ public class CatSimilarity extends SimilarityMetric {
         for (int i = 0; i < reader.maxDoc(); i++) {
             Document d = reader.document(i);
             IndexableField[] catFields = d.getFields("cats");
-            int pageId = d.getField("id").numericValue().intValue();
+            int pageId = Integer.valueOf(d.getField("id").stringValue());
             int catId1 = -1;
             if (isCat(d)) {
                 catId1 = catIndexes.get(d.get("title"));
@@ -298,7 +298,7 @@ public class CatSimilarity extends SimilarityMetric {
     }
 
     private boolean isCat(Document d) {
-        return (d.getField("ns").numericValue().intValue() == 14);
+        return d.getField("ns").equals("14");
     }
 
     private String getTitleForLuceneIndex(int i) throws IOException {

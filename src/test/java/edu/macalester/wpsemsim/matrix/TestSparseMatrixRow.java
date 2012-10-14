@@ -26,7 +26,7 @@ public class TestSparseMatrixRow {
             expected = Math.max(expected, SparseMatrixRow.MIN_SCORE);
 
             assertEquals(k, keys[i]);
-            assertEquals(v, expected, 0.01);
+            assertEquals(v, expected, 0.0001);
         }
     }
 

@@ -4,8 +4,8 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 public final class SparseMatrixRow {
@@ -14,35 +14,35 @@ public final class SparseMatrixRow {
     public static final Float MAX_SCORE = 1.1f;
 
     public static final Float SCORE_RANGE = (MAX_SCORE - MIN_SCORE);
-    public static final int BYTE_RANGE = (Byte.MAX_VALUE - Byte.MIN_VALUE);
+    public static final int PACKED_RANGE = (Short.MAX_VALUE - Short.MIN_VALUE);
 
     public static final int HEADER = 0xfefefefe;
 
     ByteBuffer buffer;
     IntBuffer headerBuffer;
     IntBuffer idBuffer;
-    ByteBuffer valBuffer;
+    ShortBuffer valBuffer;
 
     public SparseMatrixRow(int rowIndex, LinkedHashMap<Integer, Float> row) {
         this(rowIndex,
             ArrayUtils.toPrimitive(row.keySet().toArray(new Integer[] {})),
-            ArrayUtils.toPrimitive(row.values().toArray(new Float[] {}))
+            ArrayUtils.toPrimitive(row.values().toArray(new Float[]{}))
         );
     }
 
     public SparseMatrixRow(int rowIndex, int colIds[], float colVals[]) {
-        byte byteVals[] = new byte[colVals.length];
+        short packed[] = new short[colVals.length];
         for (int i = 0; i < colVals.length; i++) {
-            byteVals[i] = scoreToByte(colVals[i]);
+            packed[i] = packScore(colVals[i]);
         }
-        createBuffer(rowIndex, colIds, byteVals);
+        createBuffer(rowIndex, colIds, packed);
     }
 
-    public SparseMatrixRow(int rowIndex, int colIds[], byte colVals[]) {
+    public SparseMatrixRow(int rowIndex, int colIds[], short colVals[]) {
         createBuffer(rowIndex, colIds, colVals);
     }
 
-    public void createBuffer(int rowIndex, int colIds[], byte colVals[]) {
+    public void createBuffer(int rowIndex, int colIds[], short colVals[]) {
         assert(colIds.length == colVals.length);
 
         buffer = ByteBuffer.allocateDirect(
@@ -50,7 +50,7 @@ public final class SparseMatrixRow {
                 4 +                 // row index
                 4 +                 // num cols
                 4 * colVals.length +    // col indexes
-                1 * colVals.length      // col values
+                2 * colVals.length      // col values
         );
         createViewBuffers(colVals.length);
 
@@ -67,7 +67,7 @@ public final class SparseMatrixRow {
         buffer.position(3 * 4);
         idBuffer = buffer.asIntBuffer();
         buffer.position(3 * 4 + numColumns * 4);
-        valBuffer = buffer.slice();
+        valBuffer = buffer.asShortBuffer();
     }
 
     public SparseMatrixRow(ByteBuffer buffer) {
@@ -83,10 +83,10 @@ public final class SparseMatrixRow {
     }
 
     public final float getColValue(int i) {
-        return byteToScore(valBuffer.get(i));
+        return unpackScore(valBuffer.get(i));
     }
 
-    public final byte getColValueAsByte(int i) {
+    public final short getPackedColValue(int i) {
         return valBuffer.get(i);
     }
 
@@ -110,14 +110,21 @@ public final class SparseMatrixRow {
         return result;
     }
 
-    public static final float byteToScore(byte b) {
-        float f = (1.0f * (b - Byte.MIN_VALUE) / BYTE_RANGE) * SCORE_RANGE + MIN_SCORE;
+    public static final float unpackScore(short s) {
+        float f = (1.0f * (s - Short.MIN_VALUE) / PACKED_RANGE) * SCORE_RANGE + MIN_SCORE;
         assert(MIN_SCORE <= f && f <= MAX_SCORE);
         return f;
     }
 
-    public static final byte scoreToByte(float s) {
-        float normalized = (s - MIN_SCORE) / SCORE_RANGE;
-        return (byte)(normalized * BYTE_RANGE + Byte.MIN_VALUE);
+    public static final short packScore(float s) {
+        float normalized = (pinchScore(s) - MIN_SCORE) / SCORE_RANGE;
+        short r = (short)(normalized * PACKED_RANGE + Short.MIN_VALUE);
+        return r;
+    }
+
+    public static final float pinchScore(float s) {
+        if (s > MAX_SCORE) return MAX_SCORE;
+        else if (s < MIN_SCORE) return MIN_SCORE;
+        else return s;
     }
 }
