@@ -36,13 +36,14 @@ public class SparseMatrixWriter {
         info("writing body to tmp file at " + bodyPath);
     }
 
-    public void writeRow(SparseMatrixRow row) throws IOException {
-        rowOffsets.put(row.getRowIndex(), bodyOffset);
-        rowIndexes.add(row.getRowIndex());
-
+    public synchronized void writeRow(SparseMatrixRow row) throws IOException {
         row.getBuffer().rewind();
         byte[] bytes = new byte[row.getBuffer().remaining()];
         row.getBuffer().get(bytes, 0, bytes.length);
+
+        rowOffsets.put(row.getRowIndex(), bodyOffset);
+        rowIndexes.add(row.getRowIndex());
+
         body.write(bytes);
         bodyOffset += bytes.length;
 

@@ -2,8 +2,8 @@ package edu.macalester.wpsemsim;
 
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.hash.TIntHashSet;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.compress.compressors.CompressorException;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 
@@ -27,6 +27,7 @@ public class CatSimilarity extends SimilarityMetric {
     private int[][] catPages;
     private int[][] catChildren;
     private String[] cats;
+    private double minCost = -1;
 
     private void loadCategories() throws IOException {
         LOG.info("loading categories...");
@@ -170,18 +171,15 @@ public class CatSimilarity extends SimilarityMetric {
             }
         });
 
-        for (int i = 0; i < sortedIndexes.length; i++) {
-            int j = sortedIndexes[i];
-            System.out.println("" + i + ". " + cats[j] + "=" + catCosts[j]);
-        }
-
         StringBuffer b = new StringBuffer();
         for (int i = 0; i < 20; i++) {
             int j = sortedIndexes[i];
             b.append("" + i + ". " + cats[j] + "=" + catCosts[j]);
             b.append(", ");
         }
+        LOG.info("Min cat cost: " + minCost);
         LOG.info("Top cat costs: " + b.toString());
+        minCost = catCosts[sortedIndexes[sortedIndexes.length - 1]];
 
 //        double maxLog = Math.log(sortedIndexes.length+1);
 //        for (int i = 0; i < sortedIndexes.length; i++) {
@@ -248,58 +246,56 @@ public class CatSimilarity extends SimilarityMetric {
             if (isCat(d)) {
                 continue;
             }
-            LinkedHashMap<Integer, Double> sims = getDocumentSimilarities(d, maxSimsPerDoc);
-            int simPageIds[] = new int[sims.size()];
-            float simPageScores[] = new float[sims.size()];
+            LinkedHashMap<Integer, Double> neighbors = getClosestDocs(d, maxSimsPerDoc);
+            int simPageIds[] = new int[neighbors.size()];
+            float simPageScores[] = new float[neighbors.size()];
             int j = 0;
-            for (int id : sims.keySet()) {
+            for (int id : neighbors.keySet()) {
                 simPageIds[j] = id;
-                simPageScores[j] = sims.get(id).floatValue();
+                double dist = neighbors.get(id).floatValue();
+                simPageScores[j] = (float) (Math.log(dist) / Math.log(minCost));
                 j++;
             }
             writeOutput(helper.luceneIdToWpId(i), simPageIds, simPageScores);
-            if (counter.incrementAndGet() % 100 == 0) {
+            if (counter.incrementAndGet() % 1000 == 0) {
                 System.err.println("" + new Date() + ": finding matches for doc " + counter.get());
-            }
-            if (counter.get() > 1) {
-                break;
             }
         }
     }
 
-    private LinkedHashMap<Integer, Double> getDocumentSimilarities(Document doc, int maxSimsPerDoc) {
+    private LinkedHashMap<Integer, Double> getClosestDocs(Document doc, int maxSimsPerDoc) {
         int pageId = Integer.valueOf(doc.getField("id").stringValue());
         TIntDoubleHashMap catDistances = new TIntDoubleHashMap();
         LinkedHashMap<Integer, Double> pageDistances = new LinkedHashMap<Integer, Double>();
         pageDistances.put(pageId, 0.000000);
 
-        LOG.info("getting sims for " + doc.get("title"));
+//        LOG.info("getting sims for " + doc.get("title"));
         TIntHashSet closedCats = new TIntHashSet();
         PriorityQueue<CategoryDistance> openCats = new PriorityQueue<CategoryDistance>();
         for (IndexableField f : doc.getFields("cats")) {
             int ci = getCategoryIndex(f.stringValue());
             openCats.add(new CategoryDistance(ci, cats[ci], catCosts[ci], (byte)+1));
-            LOG.info("adding category " + f.stringValue());
+//            LOG.info("adding category " + f.stringValue());
         }
 
         while (openCats.size() > 0 && pageDistances.size() < maxSimsPerDoc) {
             CategoryDistance cs = openCats.poll();
-            LOG.info("next cat is " + cs.toString());
+//            LOG.info("next cat is " + cs.toString());
 
             // already processed better match
             if (closedCats.contains(cs.getCatIndex())) {
-                LOG.info("cat is closed");
+//                LOG.info("cat is closed");
                 continue;
             }
             closedCats.add(cs.getCatIndex());
 
             // add directly linked pages
-            LOG.info("considering pages...");
+//            LOG.info("considering pages...");
             for (int i : catPages[cs.getCatIndex()]) {
                 String title = helper.wpIdToTitle(i);
-                LOG.info("considering page " + i + ": " + title);
+//                LOG.info("considering page " + i + ": " + title);
                 if (!pageDistances.containsKey(i) || pageDistances.get(i) > cs.getDistance()) {
-                    LOG.info("adding page " + title + " with distance " + cs.getDistance());
+//                    LOG.info("adding page " + title + " with distance " + cs.getDistance());
                     pageDistances.put(i, cs.getDistance());
                 }
                 if (pageDistances.size() >= maxSimsPerDoc) {
@@ -308,27 +304,27 @@ public class CatSimilarity extends SimilarityMetric {
             }
 
             // next steps downwards
-            LOG.info("considering downward cats...");
+//            LOG.info("considering downward cats...");
             for (int i : catChildren[cs.getCatIndex()]) {
-                LOG.info("considering cat " + cats[i]);
+//                LOG.info("considering cat " + cats[i]);
                 if (!closedCats.contains(i) && !catDistances.containsKey(i)) {
                     double d = cs.getDistance() + catCosts[cs.getCatIndex()];
                     catDistances.put(i, d);
                     openCats.add(new CategoryDistance(i, cats[i], d, (byte)-1));
-                    LOG.info("stepping down to " + new CategoryDistance(i, cats[i], d, (byte)-1));
+//                    LOG.info("stepping down to " + new CategoryDistance(i, cats[i], d, (byte)-1));
                 }
             }
 
             // next steps upwards (if still possible)
-            LOG.info("considering downward cats...");
+//            LOG.info("considering downward cats...");
             if (cs.getDirection() == +1) {
                 for (int i : catParents[cs.getCatIndex()]) {
-                    LOG.info("considering cat " + cats[i]);
+//                    LOG.info("considering cat " + cats[i]);
                     double d = cs.getDistance() + catCosts[cs.getCatIndex()];
                     if (!closedCats.contains(i) && (!catDistances.containsKey(i) || catDistances.get(i) > d)) {
                         catDistances.put(i, d);
                         openCats.add(new CategoryDistance(i, cats[i], d, (byte)-1));
-                        LOG.info("stepping up to " + new CategoryDistance(i, cats[i], d, (byte)-1));
+//                        LOG.info("stepping up to " + new CategoryDistance(i, cats[i], d, (byte)-1));
                     }
                 }
             }
@@ -415,7 +411,6 @@ public class CatSimilarity extends SimilarityMetric {
         int cores = (args.length == 4)
                 ? Integer.valueOf(args[3])
                 : Runtime.getRuntime().availableProcessors();
-        cores = 1;
         cs.openOutput(new File(args[1]));
         cs.calculatePairwiseSims(cores, Integer.valueOf(args[2]));
         cs.closeOutput();
