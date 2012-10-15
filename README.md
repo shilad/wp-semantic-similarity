@@ -15,10 +15,11 @@ Software and hardware recommendations
 
 Instructions for building the semantic similarity network:
 -----------
-* Checkout the project
+* Clone this project
 * Download the wikipedia dumps from http://dumps.wikimedia.org/enwiki/ . You want the *-pages-articles*.bz2 files, but the version broken down into many (25 or so) different bz2 files.
 * Create the lucene index: `./bin/index.sh`
 * Generate the similarity files:
+
   `./bin/cat-sim.sh ./dat/lucene/cats/ ./dat/cat.sims.matrix 500 cache-size-in-MB`
   `./bin/text-sim.sh ./dat/lucene/text/ ./dat/text.sims.matrix 500 cache-size-in-MB`
   `./bin/link-sim.sh ./dat/lucene/links/ ./dat/links.sims.matrix 500 cache-size-in-MB`
