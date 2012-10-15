@@ -3,9 +3,9 @@ package edu.macalester.wpsemsim;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.queryparser.classic.ParseException;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,26 +22,27 @@ public class CatSimilarity extends SimilarityMetric {
     private Map<String,Integer> catIndexes;
     private Set<Integer> topLevelCategories;
 
-    private double[] catPageRanks;
+    private double[] catCosts;  // the cost of travelling through each category
     private int[][] catParents;
     private int[][] catPages;
     private int[][] catChildren;
     private String[] cats;
 
     private void loadCategories() throws IOException {
+        LOG.info("loading categories...");
         this.catIndexes = new HashMap<String, Integer>();
         List<String> catList = new ArrayList<String>();
         for (int i=0; i < reader.maxDoc(); i++) {
             Document d = reader.document(i);
             if (isCat(d)) {
-                String cat = d.get("title");
+                String cat = cleanTitle(d);
                 if (!catIndexes.containsKey(cat)) {
                     catIndexes.put(cat, catIndexes.size());
                     catList.add(cat);
                 }
             }
             for (IndexableField f : d.getFields("cats")) {
-                String cat = f.stringValue();
+                String cat = cleanTitle(f.stringValue());
                 if (!catIndexes.containsKey(cat)) {
                     catIndexes.put(cat, catIndexes.size());
                     catList.add(cat);
@@ -49,34 +50,50 @@ public class CatSimilarity extends SimilarityMetric {
             }
         }
         cats = catList.toArray(new String[0]);
+        LOG.info("finished loading " + cats.length + " categories");
+    }
+
+    private static final String cleanTitle(Document d) {
+        return cleanTitle(d.get("title"));
+    }
+
+    private static final String cleanTitle(String title) {
+        String s = title.replaceAll("_", " ").toLowerCase();
+        if (s.startsWith("category:")) {
+            s = s.substring("category:".length());
+        }
+        return s;
     }
 
     private void buildGraph() throws IOException {
+        LOG.info("building category graph");
         this.catPages = new int[catIndexes.size()][];
         this.catParents = new int[catIndexes.size()][];
         this.catChildren = new int[catIndexes.size()][];
-        this.catPageRanks = new double[catIndexes.size()];
+        this.catCosts = new double[catIndexes.size()];
 
         Arrays.fill(catPages, new int[0]);
         Arrays.fill(catParents, new int[0]);
         Arrays.fill(catChildren, new int[0]);
 
         // count reverse edges
+        int totalEdges = 0;
         int numCatChildren[] = new int[catIndexes.size()];
         int numCatPages[] = new int[catIndexes.size()];
         for (int i = 0; i < reader.maxDoc(); i++) {
             Document d = reader.document(i);
             int catId1 = -1;
             if (isCat(d)) {
-                catId1 = catIndexes.get(d.get("title"));
+                catId1 = getCategoryIndex(d);
             }
             for (IndexableField f : d.getFields("cats")) {
-                int catId2 = catIndexes.get(f.stringValue());
+                int catId2 = getCategoryIndex(f.stringValue());
                 if (catId1 >= 0) {
                     numCatChildren[catId2]++;
                 } else {
                     numCatPages[catId2]++;
                 }
+                totalEdges++;
             }
         }
 
@@ -87,27 +104,35 @@ public class CatSimilarity extends SimilarityMetric {
         }
 
         // fill it
-        Arrays.fill(numCatChildren, 0);
-        Arrays.fill(numCatPages, 0);
+
         for (int i = 0; i < reader.maxDoc(); i++) {
             Document d = reader.document(i);
             IndexableField[] catFields = d.getFields("cats");
             int pageId = Integer.valueOf(d.getField("id").stringValue());
             int catId1 = -1;
             if (isCat(d)) {
-                catId1 = catIndexes.get(d.get("title"));
+                catId1 = getCategoryIndex(d);
                 catParents[catId1] = new int[catFields.length];
             }
             for (int j = 0; j < catFields.length; j++) {
-                int catId2 = catIndexes.get(catFields[j].stringValue());
+                int catId2 = getCategoryIndex(catFields[j].stringValue());
                 if (catId1 >= 0) {
-                    catChildren[catId2][numCatChildren[catId2]++] = catId1;
+                    catChildren[catId2][--numCatChildren[catId2]] = catId1;
                     catParents[catId1][j] = catId2;
                 } else {
-                    catPages[catId2][numCatPages[catId2]++] = pageId;
+                    catPages[catId2][--numCatPages[catId2]] = pageId;
                 }
             }
         }
+        for (int n : numCatChildren) { assert(n == 0); }
+        for (int n : numCatPages) { assert(n == 0); }
+        LOG.info("loaded " + totalEdges + " edges in category graph");
+//        for (int i = 0; i < catChildren.length; i+= 10000) {
+//            System.err.println("info for cat " + i + " " + cats[i]);
+//            System.err.println("\tparents:" + Arrays.toString(catParents[i]));
+//            System.err.println("\tchildren:" + Arrays.toString(catChildren[i]));
+//            System.err.println("\tpages:" + Arrays.toString(catPages[i]));
+//        }
     }
 
     public void computePageRanks() {
@@ -119,7 +144,7 @@ public class CatSimilarity extends SimilarityMetric {
             sumCredits += catPages[i].length; // one more credit per page that references it.
         }
         for (int i = 0; i < catPages.length; i++) {
-            catPageRanks[i] = (1.0 + catPages[i].length) / sumCredits;
+            catCosts[i] = (1.0 + catPages[i].length) / sumCredits;
         }
 
         for (int i = 0; i < 20; i++) {
@@ -130,51 +155,67 @@ public class CatSimilarity extends SimilarityMetric {
                 break;
             }
         }
-        Integer sortedIndexes[] = new Integer[catPageRanks.length];
+        Integer sortedIndexes[] = new Integer[catCosts.length];
         for (int i = 0; i < catParents.length; i++) {
-            catPageRanks[i] = 1.0/-Math.log(catPageRanks[i]);
+            catCosts[i] = 1.0/-Math.log(catCosts[i]);
             sortedIndexes[i] = i;
         }
         LOG.info("finished computing page ranks...");
         Arrays.sort(sortedIndexes, new Comparator<Integer>() {
             @Override
             public int compare(Integer i1, Integer i2) {
-                Double pr1 = catPageRanks[i1];
-                Double pr2 = catPageRanks[i2];
+                Double pr1 = catCosts[i1];
+                Double pr2 = catCosts[i2];
                 return -1 * pr1.compareTo(pr2);
             }
         });
 
-        StringBuffer b = new StringBuffer("Top page ranks:");
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < sortedIndexes.length; i++) {
             int j = sortedIndexes[i];
-            b.append("" + i + ". " + cats[j] + "=" + catPageRanks[j]);
+            System.out.println("" + i + ". " + cats[j] + "=" + catCosts[j]);
+        }
+
+        StringBuffer b = new StringBuffer();
+        for (int i = 0; i < 20; i++) {
+            int j = sortedIndexes[i];
+            b.append("" + i + ". " + cats[j] + "=" + catCosts[j]);
             b.append(", ");
         }
-        LOG.info("Top page ranks: " + b.toString());
+        LOG.info("Top cat costs: " + b.toString());
+
+//        double maxLog = Math.log(sortedIndexes.length+1);
+//        for (int i = 0; i < sortedIndexes.length; i++) {
+//            int j = sortedIndexes[i];
+//            catCosts[j] = 1 - (1 + Math.log(i + 1)) / (1 + maxLog);
+//            System.out.println("" + i + ". " + cats[j] + "=" + catCosts[j]);
+//        }
     }
 
     private static final double DAMPING_FACTOR = 0.85;
     protected double onePageRankIteration() {
-        double nextRanks [] = new double[catPageRanks.length];
-        Arrays.fill(nextRanks, (1.0 - DAMPING_FACTOR) / catPageRanks.length);
+        double nextRanks [] = new double[catCosts.length];
+        Arrays.fill(nextRanks, (1.0 - DAMPING_FACTOR) / catCosts.length);
         for (int i = 0; i < catParents.length; i++) {
             int d = catParents[i].length;   // degree
-            double pr = catPageRanks[i];    // current page-rank
+            double pr = catCosts[i];    // current page-rank
             for (int j : catParents[i]) {
                 nextRanks[j] += DAMPING_FACTOR * pr / d;
             }
         }
         double diff = 0.0;
         for (int i = 0; i < catParents.length; i++) {
-            diff += Math.abs(catPageRanks[i] - nextRanks[i]);
+            diff += Math.abs(catCosts[i] - nextRanks[i]);
         }
-        catPageRanks = nextRanks;
+        catCosts = nextRanks;
         return diff;
     }
 
+    public int getCategoryIndex(Document d) {
+        return getCategoryIndex(d.get("title"));
+    }
 
     public int getCategoryIndex(String cat) {
+        cat = cleanTitle(cat);
         if (catIndexes.containsKey(cat)) {
             return catIndexes.get(cat);
         } else {
@@ -191,7 +232,7 @@ public class CatSimilarity extends SimilarityMetric {
             if (index >= 0) {
                 topLevelCategories.add(index);
                 for (int ci : catChildren[index]) {
-                    topLevelCategories.add(ci);
+//                    topLevelCategories.add(ci);
                     numSecondLevel++;
                 }
             }
@@ -227,7 +268,7 @@ public class CatSimilarity extends SimilarityMetric {
     }
 
     private LinkedHashMap<Integer, Double> getDocumentSimilarities(Document doc, int maxSimsPerDoc) {
-        int pageId = doc.getField("id").numericValue().intValue();
+        int pageId = Integer.valueOf(doc.getField("id").stringValue());
         TIntDoubleHashMap catDistances = new TIntDoubleHashMap();
         LinkedHashMap<Integer, Double> pageDistances = new LinkedHashMap<Integer, Double>();
         pageDistances.put(pageId, 0.000000);
@@ -237,7 +278,7 @@ public class CatSimilarity extends SimilarityMetric {
         PriorityQueue<CategoryDistance> openCats = new PriorityQueue<CategoryDistance>();
         for (IndexableField f : doc.getFields("cats")) {
             int ci = getCategoryIndex(f.stringValue());
-            openCats.add(new CategoryDistance(ci, cats[ci],catPageRanks[ci], (byte)+1));
+            openCats.add(new CategoryDistance(ci, cats[ci], catCosts[ci], (byte)+1));
             LOG.info("adding category " + f.stringValue());
         }
 
@@ -271,7 +312,7 @@ public class CatSimilarity extends SimilarityMetric {
             for (int i : catChildren[cs.getCatIndex()]) {
                 LOG.info("considering cat " + cats[i]);
                 if (!closedCats.contains(i) && !catDistances.containsKey(i)) {
-                    double d = cs.getDistance() + catPageRanks[cs.getCatIndex()];
+                    double d = cs.getDistance() + catCosts[cs.getCatIndex()];
                     catDistances.put(i, d);
                     openCats.add(new CategoryDistance(i, cats[i], d, (byte)-1));
                     LOG.info("stepping down to " + new CategoryDistance(i, cats[i], d, (byte)-1));
@@ -283,7 +324,7 @@ public class CatSimilarity extends SimilarityMetric {
             if (cs.getDirection() == +1) {
                 for (int i : catParents[cs.getCatIndex()]) {
                     LOG.info("considering cat " + cats[i]);
-                    double d = cs.getDistance() + catPageRanks[cs.getCatIndex()];
+                    double d = cs.getDistance() + catCosts[cs.getCatIndex()];
                     if (!closedCats.contains(i) && (!catDistances.containsKey(i) || catDistances.get(i) > d)) {
                         catDistances.put(i, d);
                         openCats.add(new CategoryDistance(i, cats[i], d, (byte)-1));
@@ -298,11 +339,7 @@ public class CatSimilarity extends SimilarityMetric {
     }
 
     private boolean isCat(Document d) {
-        return d.getField("ns").equals("14");
-    }
-
-    private String getTitleForLuceneIndex(int i) throws IOException {
-        return reader.document(i).get("title");
+        return d.getField("ns").stringValue().equals("14");
     }
 
     public static String [] TOP_LEVEL_CATS = {
@@ -373,13 +410,14 @@ public class CatSimilarity extends SimilarityMetric {
         cs.openIndex(new File(args[0]), true);
         cs.loadCategories();
         cs.buildGraph();
-        cs.computePageRanks();
         cs.calculateTopLevelCategories();
+        cs.computePageRanks();
         int cores = (args.length == 4)
                 ? Integer.valueOf(args[3])
                 : Runtime.getRuntime().availableProcessors();
         cores = 1;
         cs.openOutput(new File(args[1]));
         cs.calculatePairwiseSims(cores, Integer.valueOf(args[2]));
+        cs.closeOutput();
     }
 }

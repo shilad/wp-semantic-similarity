@@ -10,6 +10,6 @@ out=$2
 mb=$3
 cache_mb=$(($mb * 3 / 4))
 
-export MAVEN_OPTS=-Xmx${mb}M
+export MAVEN_OPTS="-Xmx${mb}M -ea"
 mvn compile
 mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.IndexBuilder" -D exec.classpathScope=runtime  -D exec.args="$in $out $cache_mb"

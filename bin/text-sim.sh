@@ -10,6 +10,6 @@ out=$2
 maxsims=$3
 mb=$4
 
-export MAVEN_OPTS=-Xmx${mb}M
+export MAVEN_OPTS="-Xmx${mb}M -ea"
 mvn compile
 mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.TextSimilarity" -D exec.classpathScope=runtime  -D exec.args="$in $out $maxsims"
