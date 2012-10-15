@@ -241,7 +241,7 @@ public class CatSimilarity extends SimilarityMetric {
 
     @Override
     protected void calculatePairwiseSims(int mod, int offset, int maxSimsPerDoc) throws IOException {
-        for (int i = 0; i < reader.maxDoc(); i++) {
+        for (int i = offset; i < reader.maxDoc(); i += mod) {
             Document d = reader.document(i);
             if (isCat(d)) {
                 continue;
