@@ -45,7 +45,7 @@ public final class SparseMatrixRow {
     public void createBuffer(int rowIndex, int colIds[], short colVals[]) {
         assert(colIds.length == colVals.length);
 
-        buffer = ByteBuffer.allocateDirect(
+        buffer = ByteBuffer.allocate(
                 4 +                 // header
                 4 +                 // row index
                 4 +                 // num cols
