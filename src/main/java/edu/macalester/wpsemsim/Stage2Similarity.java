@@ -113,7 +113,21 @@ public class Stage2Similarity {
         writer.writeRow(new SparseMatrixRow(targetDocId, simDocIds, simDocScores));
     }
 
-    public static void main(String args[]) {
-
+    public static int PAGE_SIZE = 1024*1024*500;    // 500MB
+    public static void main(String args[]) throws IOException, InterruptedException {
+        if (args.length != 4 && args.length != 5) {
+            System.err.println("usage: " + Stage2Similarity.class.getName()
+                    + " path_matrix path_matrix_transpose path_output maxResultsPerDoc [num-cores]");
+            System.exit(1);
+        }
+        SparseMatrix matrix = new SparseMatrix(new File(args[0]), false, PAGE_SIZE);
+        SparseMatrix transpose = new SparseMatrix(new File(args[1]));
+        Stage2Similarity sim = new Stage2Similarity(matrix, transpose, new File(args[2]));
+        int cores = (args.length == 5)
+                ? Integer.valueOf(args[4])
+                : Runtime.getRuntime().availableProcessors();
+        sim.calculateRowLengths();
+        sim.calculatePairwiseSims(cores, Integer.valueOf(args[3]));
+        sim.finish();
     }
 }
