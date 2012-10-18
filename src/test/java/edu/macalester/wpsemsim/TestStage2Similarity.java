@@ -35,7 +35,7 @@ public class TestStage2Similarity {
     public void testSimilarity() throws IOException {
         File simPath = File.createTempFile("matrix", null);
         simPath.deleteOnExit();
-        Stage2Similarity stage2 = new Stage2Similarity(matrix, transpose, simPath);
+        PairwiseCosineSimilarity stage2 = new PairwiseCosineSimilarity(matrix, transpose, simPath);
         stage2.calculateRowLengths();
         stage2.calculatePairwiseSims(1, 0, NUM_ROWS);
         stage2.finish();

@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Stage2Similarity {
-    private static final Logger LOG = Logger.getLogger(Stage2Similarity.class.getName());
+public class PairwiseCosineSimilarity {
+    private static final Logger LOG = Logger.getLogger(PairwiseCosineSimilarity.class.getName());
 
     private SparseMatrixWriter writer;
     private SparseMatrix matrix;
@@ -25,7 +25,7 @@ public class Stage2Similarity {
     private SparseMatrix transpose;
     private TIntFloatHashMap lengths;   // lengths of each row
 
-    public Stage2Similarity(SparseMatrix matrix, SparseMatrix transpose, File output) throws IOException {
+    public PairwiseCosineSimilarity(SparseMatrix matrix, SparseMatrix transpose, File output) throws IOException {
         this.matrix = matrix;
         this.transpose = transpose;
         this.rowIds = matrix.getRowIds();
@@ -116,13 +116,13 @@ public class Stage2Similarity {
     public static int PAGE_SIZE = 1024*1024*500;    // 500MB
     public static void main(String args[]) throws IOException, InterruptedException {
         if (args.length != 4 && args.length != 5) {
-            System.err.println("usage: " + Stage2Similarity.class.getName()
+            System.err.println("usage: " + PairwiseCosineSimilarity.class.getName()
                     + " path_matrix path_matrix_transpose path_output maxResultsPerDoc [num-cores]");
             System.exit(1);
         }
         SparseMatrix matrix = new SparseMatrix(new File(args[0]), false, PAGE_SIZE);
         SparseMatrix transpose = new SparseMatrix(new File(args[1]));
-        Stage2Similarity sim = new Stage2Similarity(matrix, transpose, new File(args[2]));
+        PairwiseCosineSimilarity sim = new PairwiseCosineSimilarity(matrix, transpose, new File(args[2]));
         int cores = (args.length == 5)
                 ? Integer.valueOf(args[4])
                 : Runtime.getRuntime().availableProcessors();
