@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class TestStage2Similarity {
+public class TestPairwiseSimilarity {
     int NUM_ROWS = 500;
 
     private SparseMatrix matrix;
