@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,6 +25,7 @@ public class PairwiseCosineSimilarity {
     private int[] rowIds;
     private SparseMatrix transpose;
     private TIntFloatHashMap lengths;   // lengths of each row
+    private AtomicInteger counter = new AtomicInteger();
 
     public PairwiseCosineSimilarity(SparseMatrix matrix, SparseMatrix transpose, File output) throws IOException {
         this.matrix = matrix;
@@ -73,6 +75,9 @@ public class PairwiseCosineSimilarity {
         for (int i = offset; i < rowIds.length; i += mod) {
             SparseMatrixRow row = matrix.getRow(rowIds[i]);
             findSimilarities(row, maxSimsPerDoc);
+            if (counter.addAndGet(1) % 1000 == 0) {
+                LOG.info("getting similarities for " + counter.get() + " of " + lengths.size());
+            }
         }
     }
 
