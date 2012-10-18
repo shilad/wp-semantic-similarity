@@ -10,16 +10,29 @@ Software and hardware recommendations
 * Java 6 or higher (required)
 * Maven (required)
 * 16GB memory or more.
-* About 50GB of free disk space.
+* About 200GB of free disk space.
 * A reasonably fast machine (dual or quad core)
 
 Instructions for building the semantic similarity network:
 -----------
 * Clone this project
 * Download the wikipedia dumps from http://dumps.wikimedia.org/enwiki/ . You want the *-pages-articles*.bz2 files, but the version broken down into many (25 or so) different bz2 files.
-* Create the lucene index: `./bin/index.sh`
+* Create the lucene index. This should take an hour or two:
+
+  `./bin/index.sh`
+
 * Generate the similarity files:
 
   `./bin/cat-sim.sh ./dat/lucene/cats/ ./dat/cat.sims.matrix 500 cache-size-in-MB`
   `./bin/text-sim.sh ./dat/lucene/text/ ./dat/text.sims.matrix 500 cache-size-in-MB`
   `./bin/link-sim.sh ./dat/lucene/links/ ./dat/links.sims.matrix 500 cache-size-in-MB`
+
+  Th cat and link jobs are fast (about an hour). The text job takes about 5 to 10 hours.
+
+* Generate the pairwise similarity files:
+
+  `./bin/pairwise-sim.sh ./dat/cat-sims.matrix ./dat/cat-sims.transpose.matrix ./dat/cat-sims-stage2.matrix 500 jvm_MBs`
+  `./bin/pairwise-sim.sh ./dat/text-sims.matrix ./dat/text-sims.transpose.matrix ./dat/text-sims-stage2.matrix 500 jvm_MBs`
+  `./bin/pairwise-sim.sh ./dat/links-sims.matrix ./dat/links-sims.transpose.matrix ./dat/links-sims-stage2.matrix 500 jvm_MBs`
+
+  These are SLOW. About a day and a half each.
