@@ -292,7 +292,7 @@ public class CatSimilarity extends SimilarityMetric {
             // add directly linked pages
 //            LOG.info("considering pages...");
             for (int i : catPages[cs.getCatIndex()]) {
-                String title = helper.wpIdToTitle(i);
+//                String title = helper.wpIdToTitle(i);
 //                LOG.info("considering page " + i + ": " + title);
                 if (!pageDistances.containsKey(i) || pageDistances.get(i) > cs.getDistance()) {
 //                    LOG.info("adding page " + title + " with distance " + cs.getDistance());

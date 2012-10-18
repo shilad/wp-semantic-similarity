@@ -129,4 +129,17 @@ public class SparseMatrixTransposer {
         }
         int size() { return this.colIds.size(); }
     }
+
+    public static void main(String args[]) throws IOException {
+        if (args.length != 3) {
+            System.err.println("usage: java " + SparseMatrixTransposer.class.getName() + " input_path output_path buffer_in_MBs");
+            System.exit(1);
+        }
+        SparseMatrix matrix = new SparseMatrix(new File(args[0]));
+        SparseMatrixTransposer transposer = new SparseMatrixTransposer(
+                        matrix,
+                        new File(args[1]),
+                        Integer.valueOf(args[2]));
+        transposer.transpose();
+    }
 }
