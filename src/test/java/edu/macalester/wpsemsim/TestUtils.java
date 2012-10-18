@@ -75,12 +75,15 @@ public class TestUtils {
      * @return
      */
     public static SparseMatrix createTestMatrix(int nRows, int maxRowLen, boolean sameIds) throws IOException {
+        return createTestMatrix(nRows, maxRowLen, SparseMatrix.DEFAULT_LOAD_ALL_PAGES, SparseMatrix.DEFAULT_MAX_PAGE_SIZE, sameIds);
+    }
+    public static SparseMatrix createTestMatrix(int nRows, int maxRowLen, boolean readAllRows, int pageSize, boolean sameIds) throws IOException {
         File tmpFile = File.createTempFile("matrix", null);
         tmpFile.deleteOnExit();
         SparseMatrixWriter writer = new SparseMatrixWriter(tmpFile);
         createTestMatrixRowsInternal(nRows, maxRowLen, sameIds, writer);
         writer.finish();
-        return new SparseMatrix(tmpFile);
+        return new SparseMatrix(tmpFile, readAllRows, pageSize);
     }
 
 

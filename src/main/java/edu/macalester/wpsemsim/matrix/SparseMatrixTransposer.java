@@ -38,7 +38,7 @@ public class SparseMatrixTransposer {
         this.writer.finish();
     }
 
-    private void countCellsPerColumn() {
+    private void countCellsPerColumn() throws IOException {
         for (int id : matrix.getRowIds()) {
             SparseMatrixRow row = matrix.getRow(id);
             for (int i = 0; i < row.getNumCols(); i++) {

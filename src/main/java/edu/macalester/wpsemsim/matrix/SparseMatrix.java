@@ -1,8 +1,6 @@
 package edu.macalester.wpsemsim.matrix;
-import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntLongHashMap;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -17,20 +15,28 @@ import java.util.logging.Logger;
 public class SparseMatrix implements Iterable<SparseMatrixRow> {
     public static final Logger LOG = Logger.getLogger(SparseMatrix.class.getName());
 
-    public static int MAX_PAGE_SIZE = Integer.MAX_VALUE;
+    public static int DEFAULT_MAX_PAGE_SIZE = Integer.MAX_VALUE;
+    public static boolean DEFAULT_LOAD_ALL_PAGES = true;
 
     public static final int FILE_HEADER = 0xabcdef;
 
+    public int maxPageSize = DEFAULT_MAX_PAGE_SIZE;
+    private boolean loadAllPages = true;
     private TIntLongHashMap rowOffsets = new TIntLongHashMap();
     private int rowIds[];
     private FileChannel channel;
     private File path;
 
-    private List<MappedByteBuffer> buffers = new ArrayList<MappedByteBuffer>();
-    private List<Long> bufferOffsets = new ArrayList<Long>();
+    protected List<MappedBufferWrapper> buffers = new ArrayList<MappedBufferWrapper>();
 
     public SparseMatrix(File path) throws IOException {
+        this(path, DEFAULT_LOAD_ALL_PAGES, DEFAULT_MAX_PAGE_SIZE);
+    }
+
+    public SparseMatrix(File path, boolean loadAllPages, int maxPageSize) throws IOException {
         this.path = path;
+        this.loadAllPages = loadAllPages;
+        this.maxPageSize = maxPageSize;
         info("initializing sparse matrix with file length " + FileUtils.sizeOf(path));
         this.channel = (new FileInputStream(path)).getChannel();
         readOffsets();
@@ -38,7 +44,7 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
     }
 
     private void readOffsets() throws IOException {
-        long size = Math.min(channel.size(), MAX_PAGE_SIZE);
+        long size = Math.min(channel.size(), maxPageSize);
         MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, size);
         if (buffer.getInt(0) != FILE_HEADER) {
             throw new IOException("invalid file header: " + buffer.getInt(0));
@@ -64,7 +70,7 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
 
         for (int i = 1; i < getNumRows(); i++) {
             long pos = rowOffsets.get(rowIds[i]);
-            if (pos - startPos > MAX_PAGE_SIZE) {
+            if (pos - startPos > maxPageSize) {
                 assert(lastPos != startPos);
                 addBuffer(startPos, lastPos);
                 startPos = lastPos;
@@ -77,21 +83,25 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
     private void addBuffer(long startPos, long endPos) throws IOException {
         long length = endPos - startPos;
         info("adding page at " + startPos + " of length " + length);
-        buffers.add(channel.map(FileChannel.MapMode.READ_ONLY, startPos, length));
-        bufferOffsets.add(startPos);
+        buffers.add(new MappedBufferWrapper(channel, startPos, endPos));
     }
 
-    public SparseMatrixRow getRow(int rowId) {
+    public SparseMatrixRow getRow(int rowId) throws IOException {
+        SparseMatrixRow row = null;
         long targetOffset = rowOffsets.get(rowId);
         for (int i = 0; i < buffers.size(); i++) {
-            MappedByteBuffer buffer = buffers.get(i);
-            long bufferOffset = bufferOffsets.get(i);
-            if (targetOffset < bufferOffset + buffer.limit()) {
-                buffer.position((int) (targetOffset - bufferOffset));
-                return new SparseMatrixRow(buffer.slice());
+            MappedBufferWrapper wrapper = buffers.get(i);
+            if (wrapper.start <= targetOffset && targetOffset < wrapper.end) {
+                row = new SparseMatrixRow(wrapper.get(targetOffset));
+            } else if (!loadAllPages) {
+                wrapper.close();
             }
         }
-        throw new AssertionError("did not find row " + rowId + " with offset " + targetOffset);
+        if (row == null) {
+            throw new AssertionError("did not find row " + rowId + " with offset " + targetOffset);
+        } else {
+            return row;
+        }
     }
 
     public int[] getRowIds() {
@@ -102,7 +112,7 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
         return rowIds.length;
     }
 
-    public void dump() {
+    public void dump() throws IOException {
         for (int id : rowIds) {
             System.out.print("" + id + ": ");
             SparseMatrixRow row = getRow(id);
@@ -128,11 +138,39 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
         }
         @Override
         public SparseMatrixRow next() {
-            return getRow(rowIds[i++]);
+            try {
+                return getRow(rowIds[i++]);
+            } catch (IOException e) {
+                LOG.log(Level.SEVERE, "getRow failed", e);
+                return null;
+            }
         }
         @Override
         public void remove() {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    class MappedBufferWrapper {
+        FileChannel channel;
+        MappedByteBuffer buffer;
+        long start;
+        long end;
+
+        public MappedBufferWrapper(FileChannel channel, long start, long end) {
+            this.channel = channel;
+            this.start = start;
+            this.end = end;
+        }
+        public synchronized ByteBuffer get(long position) throws IOException {
+            if (buffer == null) {
+                buffer = channel.map(FileChannel.MapMode.READ_ONLY, start, end - start);
+            }
+            buffer.position((int) (position - start));
+            return buffer.slice();
+        }
+        public synchronized void close() {
+            buffer = null;
         }
     }
 

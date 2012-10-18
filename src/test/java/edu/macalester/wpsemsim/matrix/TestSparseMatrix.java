@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Random;
 
 public class TestSparseMatrix {
     private List<SparseMatrixRow> srcRows;
@@ -31,39 +30,42 @@ public class TestSparseMatrix {
 
     @Test
     public void testReadWrite() throws IOException {
-        SparseMatrix.MAX_PAGE_SIZE = NUM_ROWS * 20;
         File tmp = File.createTempFile("matrix", null);
         SparseMatrixWriter.write(tmp, srcRows.iterator());
-        SparseMatrix m = new SparseMatrix(tmp);
+        SparseMatrix m1 = new SparseMatrix(tmp, true, NUM_ROWS*20);
+        SparseMatrix m2 = new SparseMatrix(tmp, false, NUM_ROWS*20);
     }
 
     @Test
     public void testTranspose() throws IOException {
-        SparseMatrix.MAX_PAGE_SIZE = MAX_KEY * 50;
-        File tmp1 = File.createTempFile("matrix", null);
-        File tmp2 = File.createTempFile("matrix", null);
-        File tmp3 = File.createTempFile("matrix", null);
-        SparseMatrixWriter.write(tmp1, srcRows.iterator());
-        SparseMatrix m = new SparseMatrix(tmp1);
-        verifyIsSourceMatrix(m);
-        new SparseMatrixTransposer(m, tmp2, 1).transpose();
-        SparseMatrix m2 = new SparseMatrix(tmp2);
-        new SparseMatrixTransposer(m2, tmp3, 1).transpose();
-        SparseMatrix m3 = new SparseMatrix(tmp3);
-        verifyIsSourceMatrixUnordered(m3, .001);
+        for (boolean loadAllPages : new boolean[] { true, false}) {
+            File tmp1 = File.createTempFile("matrix", null);
+            File tmp2 = File.createTempFile("matrix", null);
+            File tmp3 = File.createTempFile("matrix", null);
+            SparseMatrixWriter.write(tmp1, srcRows.iterator());
+            SparseMatrix m = new SparseMatrix(tmp1, loadAllPages, MAX_KEY * 50);
+            verifyIsSourceMatrix(m);
+            new SparseMatrixTransposer(m, tmp2, 1).transpose();
+            SparseMatrix m2 = new SparseMatrix(tmp2, loadAllPages, MAX_KEY * 50);
+            new SparseMatrixTransposer(m2, tmp3, 1).transpose();
+            SparseMatrix m3 = new SparseMatrix(tmp3, loadAllPages, MAX_KEY * 50);
+            verifyIsSourceMatrixUnordered(m3, .001);
+        }
     }
 
 
     @Test
     public void testRows() throws IOException {
-        SparseMatrix.MAX_PAGE_SIZE = NUM_ROWS * 20;
-        File tmp = File.createTempFile("matrix", null);
-        SparseMatrixWriter.write(tmp, srcRows.iterator());
-        SparseMatrix m = new SparseMatrix(tmp);
-        verifyIsSourceMatrix(m);
+        for (boolean loadAllPages : new boolean[] { true, false}) {
+            File tmp = File.createTempFile("matrix", null);
+            SparseMatrixWriter.write(tmp, srcRows.iterator());
+            SparseMatrix m = new SparseMatrix(tmp, loadAllPages, NUM_ROWS * 20);
+            verifyIsSourceMatrix(m);
+        }
     }
 
-    private void verifyIsSourceMatrix(SparseMatrix m) {
+
+    private void verifyIsSourceMatrix(SparseMatrix m) throws IOException {
         for (SparseMatrixRow srcRow : srcRows) {
             SparseMatrixRow destRow = m.getRow(srcRow.getRowIndex());
             assertEquals(destRow.getRowIndex(), srcRow.getRowIndex());
@@ -75,7 +77,7 @@ public class TestSparseMatrix {
         }
     }
 
-    private void verifyIsSourceMatrixUnordered(SparseMatrix m, double delta) {
+    private void verifyIsSourceMatrixUnordered(SparseMatrix m, double delta) throws IOException {
         for (SparseMatrixRow srcRow : srcRows) {
             SparseMatrixRow destRow = m.getRow(srcRow.getRowIndex());
             LinkedHashMap<Integer, Float> destRowMap = destRow.asMap();
