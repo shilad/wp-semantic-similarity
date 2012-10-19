@@ -27,7 +27,15 @@ Instructions for building the semantic similarity network:
   `./bin/text-sim.sh ./dat/lucene/text/ ./dat/text.sims.matrix 500 cache-size-in-MB`
   `./bin/link-sim.sh ./dat/lucene/links/ ./dat/links.sims.matrix 500 cache-size-in-MB`
 
-  Th cat and link jobs are fast (about an hour). The text job takes about 5 to 10 hours.
+  The cat and link jobs are fast (about an hour). The text job takes about 5 to 10 hours.
+
+* Generate the tranposes of the similarity files:
+
+  `./bin/transpose.sh ./dat/cat-sims.matrix ./dat/cat-sims.transpose.matrix 24000 5000`
+  `./bin/transpose.sh ./dat/text-sims.matrix ./dat/text-sims.transpose.matrix 24000 5000`
+  `./bin/transpose.sh ./dat/link-sims.matrix ./dat/link-sims.transpose.matrix 24000 5000`
+  
+  These take about 30 min each.
 
 * Generate the pairwise similarity files:
 
