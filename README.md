@@ -44,3 +44,9 @@ Instructions for building the semantic similarity network:
   `./bin/pairwise-sim.sh ./dat/links-sims.matrix ./dat/links-sims.transpose.matrix ./dat/links-sims-stage2.matrix 500 jvm_MBs`
 
   These are SLOW. About a day and a half each.
+
+* Generate the gold standard dataset:
+
+  `./bin/make_gold.sh`
+
+  This should take about a minute, and it writes a combined gold standard dataset from a variety of sources to dat/gold/combined.tab.txt.
