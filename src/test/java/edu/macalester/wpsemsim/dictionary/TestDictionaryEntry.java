@@ -27,5 +27,14 @@ public class TestDictionaryEntry {
         assertEquals(e2.getFractionEnglishQueries(), Fraction.getFraction(1, 71421));
     }
 
+    @Test
+    public void testNormalizer() {
+        DictionaryEntry e1 = new DictionaryEntry("foo bar baz!! BLAH hi\t0 $$ blah ah ");
+        DictionaryEntry e2 = new DictionaryEntry(" fOo bar   baz BLaH hi\t0 $$ blah ah ");
+        DictionaryEntry e3 = new DictionaryEntry("!fOo  bar baz BLaH hi\t0 $$ blah ah ");
+        assertEquals(e1.getNormalizedText(), e2.getNormalizedText());
+        assertEquals(e1.getNormalizedText(), e3.getNormalizedText());
+    }
+
 
 }

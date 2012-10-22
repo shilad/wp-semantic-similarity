@@ -1,9 +1,6 @@
 package edu.macalester.wpsemsim.dictionary;
 
-import com.sleepycat.je.*;
-import org.apache.commons.compress.compressors.FileNameUtil;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
+import com.sleepycat.je.DatabaseException;
 import org.apache.commons.lang3.math.Fraction;
 
 import java.io.*;
@@ -15,30 +12,16 @@ public class DictionaryIndexer {
 
     private int minNumLinks = 5;
     private double minFractionLinks = 0.2;
-    private Database db;
-    private Environment env;
+    private DictionaryDatabase db;
 
-
-    public DictionaryIndexer(File path) throws DatabaseException, IOException {
-        if (path.isDirectory()) {
-            FileUtils.deleteDirectory(path);
-        }
-        path.mkdirs();
-        EnvironmentConfig envConfig = new EnvironmentConfig();
-        envConfig.setTransactional(false);
-        envConfig.setAllowCreate(true);
-        this.env = new Environment(path.getParentFile(), envConfig);
-
-        DatabaseConfig dbConfig = new DatabaseConfig();
-        dbConfig.setAllowCreate(true);
-        this.db = env.openDatabase(null,
-                FilenameUtils.getName(path.toString()),
-                dbConfig);
+    public DictionaryIndexer(File path) throws IOException, DatabaseException {
+        this.db = new DictionaryDatabase(path, true);
     }
 
     public void prune(BufferedReader in) throws IOException, DatabaseException {
         long numLines = 0;
         long numLinesRetained = 0;
+        DictionaryDatabase.Record record = null;
         while (true) {
             String line = in.readLine();
             if (line == null) {
@@ -47,17 +30,24 @@ public class DictionaryIndexer {
             if (++numLines % 1000000 == 0) {
                 double p = 100.0 * numLinesRetained / numLines;
                 LOG.info("processing line: " + numLines +
-                        ", retained " + numLinesRetained
-                        + "(" + new DecimalFormat("#.#").format(p) + "%)");
+                        ", retained " + numLinesRetained +
+                        "(" + new DecimalFormat("#.#").format(p) + "%)");
             }
             DictionaryEntry entry = new DictionaryEntry(line);
             if (retain(entry)) {
                 numLinesRetained++;
-                db.put(null,
-                        new DatabaseEntry(entry.getText().getBytes()),
-                        new DatabaseEntry(line.getBytes()));
+                if (record != null && record.shouldContainEntry(entry)) {
+                    record.add(entry);
+                } else {
+                    if (record != null) {
+                        db.put(record, true);
+                    }
+                    record = new DictionaryDatabase.Record(entry);
+                }
             }
         }
+        db.put(record, true);
+        db.close();
     }
 
     public boolean retain(DictionaryEntry entry) {
@@ -81,9 +71,6 @@ public class DictionaryIndexer {
     public void setMinFractionLinks(double minFractionLinks) {
         this.minFractionLinks = minFractionLinks;
     }
-    public void close() throws DatabaseException {
-        env.close();
-    }
 
     public static void main(String args[]) throws IOException, DatabaseException {
         if (args.length != 4) {
@@ -100,6 +87,5 @@ public class DictionaryIndexer {
         indexer.setMinFractionLinks(minFractionLinks);
         indexer.prune(in);
         in.close();
-        indexer.close();
     }
 }
