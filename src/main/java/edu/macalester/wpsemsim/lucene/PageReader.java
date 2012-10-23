@@ -1,8 +1,7 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.lucene;
 
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.xml.stream.XMLInputFactory;

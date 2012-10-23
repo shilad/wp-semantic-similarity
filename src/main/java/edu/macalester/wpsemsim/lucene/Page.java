@@ -1,8 +1,6 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.lucene;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexableField;
 
 import java.util.ArrayList;
 import java.util.List;

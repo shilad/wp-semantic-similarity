@@ -17,7 +17,7 @@
  *    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.lucene;
 
 import java.util.HashSet;
 import java.util.Vector;

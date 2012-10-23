@@ -1,8 +1,9 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.lucene;
 
+import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.utils.TestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.store.MMapDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

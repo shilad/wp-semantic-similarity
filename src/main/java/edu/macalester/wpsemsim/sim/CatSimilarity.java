@@ -1,8 +1,7 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.sim;
 
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.hash.TIntHashSet;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;

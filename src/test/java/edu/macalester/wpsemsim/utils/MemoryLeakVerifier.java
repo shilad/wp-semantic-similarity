@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.utils;
 
 import java.awt.*;
 import java.lang.ref.WeakReference;

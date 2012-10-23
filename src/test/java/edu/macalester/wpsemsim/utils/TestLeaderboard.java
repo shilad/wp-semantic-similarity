@@ -1,5 +1,6 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.utils;
 
+import edu.macalester.wpsemsim.utils.Leaderboard;
 import gnu.trove.set.hash.TIntHashSet;
 import org.junit.Test;
 

@@ -1,5 +1,6 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.utils;
 
+import edu.macalester.wpsemsim.lucene.IndexBuilder;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;

@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.sim;
 
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;

@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.utils;
 
 import java.util.*;
 

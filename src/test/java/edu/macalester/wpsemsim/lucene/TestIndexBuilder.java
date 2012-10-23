@@ -1,5 +1,7 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.lucene;
 
+import edu.macalester.wpsemsim.lucene.IndexBuilder;
+import edu.macalester.wpsemsim.utils.TestUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.junit.Test;

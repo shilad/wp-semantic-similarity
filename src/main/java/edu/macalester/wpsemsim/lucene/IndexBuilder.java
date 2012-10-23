@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.lucene;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
