@@ -26,14 +26,14 @@ public class TextSimilarity extends SimilarityMetric {
         mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_40));
         mlt.setFieldNames(new String[] {"text"}); // specify the fields for similiarity
 
-        int simDocIds[] = new int[maxSimsPerDoc];
-        float simDocScores[] = new float[maxSimsPerDoc];
         for (int docId=offset; docId< reader.maxDoc(); docId += mod) {
             Query query = mlt.like(docId);
             TopDocs similarDocs = searcher.search(query, maxSimsPerDoc);
             if (counter.incrementAndGet() % 100 == 0) {
                 System.err.println("" + new Date() + ": finding matches for doc " + counter.get());
             }
+            int simDocIds[] = new int[similarDocs.scoreDocs.length];
+            float simDocScores[] = new float[similarDocs.scoreDocs.length];
             Arrays.fill(simDocIds, -1);
             Arrays.fill(simDocScores, -1.0f);
             for (int j = 0; j < similarDocs.scoreDocs.length; j++) {
