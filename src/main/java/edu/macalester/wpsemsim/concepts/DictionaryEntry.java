@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.dictionary;
+package edu.macalester.wpsemsim.concepts;
 
 import org.apache.commons.lang3.math.Fraction;
 
@@ -19,7 +19,7 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
     public DictionaryEntry(String line) {
         Matcher m = MATCH_ENTRY.matcher(line);
         if (!m.matches()) {
-            throw new IllegalArgumentException("invalid dictionary entry: '" + line + "'");
+            throw new IllegalArgumentException("invalid concepts entry: '" + line + "'");
         }
         this.text = m.group(1);
         this.fraction = Float.valueOf(m.group(2));

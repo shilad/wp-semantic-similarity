@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.dictionary;
+package edu.macalester.wpsemsim.concepts;
 
 import java.util.LinkedHashMap;
 

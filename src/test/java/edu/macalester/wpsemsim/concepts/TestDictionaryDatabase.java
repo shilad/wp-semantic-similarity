@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.dictionary;
+package edu.macalester.wpsemsim.concepts;
 
 import com.sleepycat.je.DatabaseException;
 import org.junit.After;
@@ -17,7 +17,7 @@ public class TestDictionaryDatabase {
 
     @Before
     public void setUp() throws IOException, DatabaseException {
-        this.dbPath = File.createTempFile("dictionary-db", null);
+        this.dbPath = File.createTempFile("concepts-db", null);
         dbPath.deleteOnExit();
         db = new DictionaryDatabase(dbPath, true);
         db.put(new DictionaryEntry("foo bar BLAH hi\t0.1 aa blah ah "), true);

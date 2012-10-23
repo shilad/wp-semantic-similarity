@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.dictionary;
+package edu.macalester.wpsemsim.concepts;
 
 import com.sleepycat.je.DatabaseException;
 import org.apache.commons.lang3.math.Fraction;

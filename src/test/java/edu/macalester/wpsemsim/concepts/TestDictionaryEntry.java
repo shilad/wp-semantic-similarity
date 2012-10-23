@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.dictionary;
+package edu.macalester.wpsemsim.concepts;
 
 import org.apache.commons.lang3.math.Fraction;
 import org.junit.Test;
