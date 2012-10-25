@@ -1,7 +1,5 @@
 package edu.macalester.wpsemsim.utils;
 
-import java.util.*;
-
 public class Leaderboard {
     private double[] values;
     private int[] keys;
@@ -101,22 +99,12 @@ public class Leaderboard {
         }
     }
 
-    public LinkedHashMap<Integer, Double> getTop() {
-        Map<Integer, Double> scores = new HashMap<Integer, Double>();
+    public DocScoreList getTop() {
+        DocScoreList scores = new DocScoreList(size);
         for (int i = 1; i <= size; i++) {
-            scores.put(keys[i], values[i]);
+            scores.set(i - 1, keys[i], values[i]);
         }
-        List<Map.Entry<Integer, Double>> entries = new ArrayList(scores.entrySet());
-        Collections.sort(entries, new Comparator<Map.Entry<Integer, Double>>() {
-            @Override
-            public int compare(Map.Entry<Integer, Double> e1, Map.Entry<Integer, Double> e2) {
-                return -e1.getValue().compareTo(e2.getValue());
-            }
-        });
-        LinkedHashMap<Integer, Double> result = new LinkedHashMap<Integer, Double>();
-        for (Map.Entry<Integer, Double> entry : entries) {
-            result.put(entry.getKey(), entry.getValue());
-        }
-        return result;
+        scores.sort();
+        return scores;
     }
 }

@@ -17,8 +17,6 @@ import java.util.Random;
 
 public class TestUtils {
     public static File TEST_INPUT_FILE = new File("dat/test/dump/wp.test.xml");
-    public static File TEST_LUCENE_DIR = new File("dat/test/lucene");
-    public static File TEST_TMP_DIR = new File("dat/test/tmp");
 
     /**
      * Build a lucene index for the test data.

@@ -1,6 +1,8 @@
 package edu.macalester.wpsemsim.concepts;
 
 import com.sleepycat.je.DatabaseException;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.math.Fraction;
 
 import java.io.*;
@@ -79,7 +81,15 @@ public class DictionaryIndexer {
                     "inputFile outputFile minNumLinks minFractionLinks");
             System.exit(1);
         }
-        BufferedReader in = new BufferedReader(new FileReader(args[0]));
+        BufferedReader in;
+        if (FilenameUtils.getExtension(args[0]).toLowerCase().startsWith("bz")) {
+            in = new BufferedReader(
+                    new InputStreamReader(
+                            new BZip2CompressorInputStream(
+                                    new FileInputStream(args[0]))));
+        } else {
+            in = new BufferedReader(new FileReader(args[0]));
+        }
         int minNumLinks = Integer.valueOf(args[2]);
         double minFractionLinks = Double.valueOf(args[3]);
         DictionaryIndexer indexer = new DictionaryIndexer(new File(args[1]));

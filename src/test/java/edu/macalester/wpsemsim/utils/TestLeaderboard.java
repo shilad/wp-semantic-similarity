@@ -1,6 +1,5 @@
 package edu.macalester.wpsemsim.utils;
 
-import edu.macalester.wpsemsim.utils.Leaderboard;
 import gnu.trove.set.hash.TIntHashSet;
 import org.junit.Test;
 
@@ -36,17 +35,11 @@ public class TestLeaderboard {
                 return - e1.getValue().compareTo(e2.getValue());
             }
         });
-        List<Map.Entry<Integer, Double>> topEntries = new ArrayList(top.getTop().entrySet());
-        assertEquals(topEntries.size(), Math.min(k, n));
+        DocScoreList topScores = top.getTop();
+        assertEquals(topScores.numDocs(), Math.min(k, n));
         for (int i = 0; i < Math.min(k, n); i++) {
-            assertEquals(
-                    entries.get(i).getKey().intValue() ,
-                    topEntries.get(i).getKey().intValue()
-            );
-            assertEquals(
-                    entries.get(i).getValue().floatValue(),
-                    topEntries.get(i).getValue().floatValue(),
-                    0.00001);
+            assertEquals(entries.get(i).getKey().intValue() , topScores.getId(i));
+            assertEquals(entries.get(i).getValue().floatValue(), topScores.getScore(i), 0.00001);
         }
     }
 

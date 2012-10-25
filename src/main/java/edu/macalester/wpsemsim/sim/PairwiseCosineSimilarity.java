@@ -1,16 +1,15 @@
 package edu.macalester.wpsemsim.sim;
 
+import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.Leaderboard;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
-import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -104,19 +103,12 @@ public class PairwiseCosineSimilarity {
             double sim = dot / (l1 * l2);
             leaderboard.tallyScore(id, sim);
         }
-
-        LinkedHashMap<Integer, Double> top = leaderboard.getTop();
-        int simDocIds[] = ArrayUtils.toPrimitive(top.keySet().toArray(new Integer[0]));
-        float simDocScores[] = new float[simDocIds.length];
-        for (int i = 0; i < simDocIds.length; i++) {
-            simDocScores[i] = top.get(simDocIds[i]).floatValue();
-        }
-        writeOutput(row.getRowIndex(), simDocIds, simDocScores);
+        writeOutput(row.getRowIndex(), leaderboard.getTop());
 
     }
 
-    public void writeOutput(int targetDocId, int simDocIds[], float simDocScores[]) throws IOException {
-        writer.writeRow(new SparseMatrixRow(targetDocId, simDocIds, simDocScores));
+    public void writeOutput(int targetDocId, DocScoreList scores) throws IOException {
+        writer.writeRow(new SparseMatrixRow(targetDocId, scores.getIds(), scores.getScoresAsFloat()));
     }
 
     public static int PAGE_SIZE = 1024*1024*500;    // 500MB

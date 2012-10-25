@@ -36,6 +36,20 @@ public class IndexHelper {
         return d.getField("title").stringValue();
     }
 
+    public int wpIdToLuceneId(int wpId) {
+        Query query = new TermQuery(new Term("id", "" + wpId));
+        try {
+            ScoreDoc[] hits = searcher.search(query, null, 1).scoreDocs;
+            if (hits.length == 0) {
+                return -1;
+            } else {
+                return hits[0].doc;
+            }
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "fetching lucene doc for wp id " + wpId + " failed:", e);
+            return -1;
+        }
+    }
 
     public String wpIdToTitle(int wpId) {
         Query query = new TermQuery(new Term("id", "" + wpId));
@@ -48,7 +62,8 @@ public class IndexHelper {
             }
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "fetching title for wp id " + wpId + " failed:", e);
+            return "unknown";
         }
-        return "unknown";
     }
+
 }

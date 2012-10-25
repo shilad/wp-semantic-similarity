@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class TestPairwiseSimilarity {
-    int NUM_ROWS = 500;
+    int NUM_ROWS = 100;
 
     private SparseMatrix matrix;
     private SparseMatrix transpose;
