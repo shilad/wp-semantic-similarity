@@ -1,8 +1,8 @@
 package edu.macalester.wpsemsim.matrix;
 
 
-import edu.macalester.wpsemsim.MemoryLeakVerifier;
-import edu.macalester.wpsemsim.TestUtils;
+import edu.macalester.wpsemsim.utils.MemoryLeakVerifier;
+import edu.macalester.wpsemsim.utils.TestUtils;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

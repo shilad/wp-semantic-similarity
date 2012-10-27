@@ -1,6 +1,6 @@
 package edu.macalester.wpsemsim.matrix;
 
-import edu.macalester.wpsemsim.IndexHelper;
+import edu.macalester.wpsemsim.lucene.IndexHelper;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import org.apache.commons.lang3.ArrayUtils;
