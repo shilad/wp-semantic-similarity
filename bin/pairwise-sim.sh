@@ -11,6 +11,6 @@ out=$3
 max_sims=$4
 mb=$5
 
-export MAVEN_OPTS="-Xmx${mb}M -ea"
+export MAVEN_OPTS="-Xmx${mb}M -ea -server"
 mvn compile
 mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.PairwiseCosineSimilarity" -D exec.classpathScope=runtime  -D exec.args="$in $trans $out $max_sims"

@@ -16,7 +16,8 @@ import java.util.logging.Logger;
 public class MatrixSummarizer {
     public static Logger LOG = Logger.getLogger(MatrixSummarizer.class.getName());
 
-    public MatrixSummarizer(SparseMatrix matrix, IndexHelper helper) {
+    public MatrixSummarizer() {}
+    public void summarize(SparseMatrix matrix, IndexHelper helper) {
         final TIntIntHashMap counts = new TIntIntHashMap();
         final TIntDoubleHashMap sums = new TIntDoubleHashMap();
 
@@ -82,7 +83,9 @@ public class MatrixSummarizer {
             System.exit(1);
         }
         SparseMatrix matrix = new SparseMatrix(new File(args[0]), false, 500*1024*1024);
+        //SparseMatrix matrix = new SparseMatrix(new File(args[0]));
         IndexHelper helper = new IndexHelper(
                 DirectoryReader.open(FSDirectory.open(new File(args[1]))));
+        new MatrixSummarizer().summarize(matrix, helper);
     }
 }
