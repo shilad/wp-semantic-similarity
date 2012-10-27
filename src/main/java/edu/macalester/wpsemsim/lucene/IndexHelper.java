@@ -51,6 +51,30 @@ public class IndexHelper {
         }
     }
 
+    public int titleToWpId(String title) {
+        try {
+            Document d = reader.document(titleToLuceneId((title)));
+            return Integer.valueOf(d.getField("id").stringValue());
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "fetching wp id for " + title + " failed:", e);
+            return -1;
+        }
+    }
+    public int titleToLuceneId(String title) {
+        Query query = new TermQuery(new Term("title", title));
+        try {
+            ScoreDoc[] hits = searcher.search(query, null, 1).scoreDocs;
+            if (hits.length == 0) {
+                return -1;
+            } else {
+                return hits[0].doc;
+            }
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "fetching wp id for " + title + " failed:", e);
+            return -1;
+        }
+    }
+
     public String wpIdToTitle(int wpId) {
         Query query = new TermQuery(new Term("id", "" + wpId));
         try {

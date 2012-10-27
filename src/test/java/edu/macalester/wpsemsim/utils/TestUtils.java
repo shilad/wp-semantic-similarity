@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import gnu.trove.set.hash.TIntHashSet;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.MMapDirectory;
 
@@ -25,6 +26,9 @@ public class TestUtils {
      * @throws InterruptedException
      */
     public static File buildIndex() throws IOException, InterruptedException {
+        return buildIndex(new ArrayList<Document>());
+    }
+    public static File buildIndex(List<Document> additional) throws IOException, InterruptedException {
         File outputDir = File.createTempFile("lucene", null);
         if (outputDir.isFile()) { outputDir.delete(); }
         if (!outputDir.mkdir()) {
@@ -32,6 +36,9 @@ public class TestUtils {
         }
         IndexBuilder builder = new IndexBuilder(TEST_INPUT_FILE, outputDir);
         builder.openIndex(10);
+        for (Document d : additional) {
+            builder.storePage(d);
+        }
         builder.write(1);
         return outputDir;
     }

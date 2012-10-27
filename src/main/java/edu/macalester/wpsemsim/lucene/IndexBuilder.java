@@ -118,16 +118,19 @@ public class IndexBuilder {
             if (p.isRedirect()) {
                 continue;
             }
-            Document d = p.toLuceneDoc();
-            for (int i = 0; i < INDEX_INFO.length; i++) {
-                storePageInIndex(d, i);
-            }
+            storePage(p.toLuceneDoc());
             if (numDocs.incrementAndGet() % 1000 == 0) {
                 LOG.info("read doc " + numDocs + " from " + path + ": " + p.getTitle());
             }
 //            if (numDocs.get() > 200000) {
 //                break;
 //            }
+        }
+    }
+
+    public void storePage(Document d) throws IOException {
+        for (int i = 0; i < INDEX_INFO.length; i++) {
+            storePageInIndex(d, i);
         }
     }
 

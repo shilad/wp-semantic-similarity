@@ -14,8 +14,7 @@ public class CategoryBfs {
     private TIntDoubleHashMap catDistances = new TIntDoubleHashMap();
     private TIntDoubleHashMap pageDistances = new TIntDoubleHashMap();
     private PriorityQueue<CategoryDistance> openCats = new PriorityQueue<CategoryDistance>();
-    private TIntHashSet closedCats = new TIntHashSet();
-    private BfsDiscoveries discoveries = new BfsDiscoveries();
+    private BfsFinished finished = new BfsFinished();
 
     public boolean addPages = true;
     public boolean exploreChildren = true;
@@ -43,23 +42,26 @@ public class CategoryBfs {
         return openCats.size() > 0 && pageDistances.size() < maxResults;
     }
 
-    public BfsDiscoveries bfsIteration() {
-        discoveries.clear();
+    public BfsFinished step() {
+        finished.clear();
         if (!hasMoreResults()) {
-            return discoveries;
+            return finished;
         }
         CategoryDistance cs;
         do {
             cs = openCats.poll();
-        } while (hasMoreResults() && closedCats.contains(cs.getCatIndex()));
+        } while (hasMoreResults() && catDistances.contains(cs.getCatIndex()));
 
-        closedCats.add(cs.getCatIndex());
+        finished.cats.put(cs.getCatIndex(), cs.getDistance());
+        catDistances.put(cs.getCatIndex(), cs.getDistance());
+//        System.out.println("visited " + cs.toString());
 
         // add directly linked pages
         if (addPages) {
             for (int i : graph.catPages[cs.getCatIndex()]) {
                 if (!pageDistances.containsKey(i) || pageDistances.get(i) > cs.getDistance()) {
-                    pageDiscovered(i, cs.getDistance());
+                    pageDistances.put(i, cs.getDistance());
+                    finished.pages.put(i, cs.getDistance());
                 }
                 if (pageDistances.size() >= maxResults) {
                     break;  // may be an issue for huge categories
@@ -70,9 +72,9 @@ public class CategoryBfs {
         // next steps downwards
         if (exploreChildren) {
             for (int i : graph.catChildren[cs.getCatIndex()]) {
-                if (!closedCats.contains(i) && !catDistances.containsKey(i)) {
-                    double d = cs.getDistance() + graph.catCosts[cs.getCatIndex()];
-                    categoryDiscovered(i, d, -1);
+                if (!catDistances.containsKey(i)) {
+                    double d = cs.getDistance() + graph.catCosts[i];
+                    openCats.add(new CategoryDistance(i, graph.cats[i], d, (byte)-1));
                 }
             }
         }
@@ -80,32 +82,25 @@ public class CategoryBfs {
         // next steps upwards (if still possible)
         if (cs.getDirection() == +1) {
             for (int i : graph.catParents[cs.getCatIndex()]) {
-                double d = cs.getDistance() + graph.catCosts[cs.getCatIndex()];
-                if (!closedCats.contains(i) && (!catDistances.containsKey(i) || catDistances.get(i) > d)) {
-                    categoryDiscovered(i, d, +1);
+                if (!catDistances.containsKey(i)) {
+                    double d = cs.getDistance() + graph.catCosts[i];
+                    openCats.add(new CategoryDistance(i, graph.cats[i], d, (byte)+1));
                 }
             }
         }
 
-        return discoveries;
-    }
-
-    public void pageDiscovered(int pageId, double distance) {
-        pageDistances.put(pageId, distance);
-        discoveries.pages.put(pageId, distance);
-    }
-
-    public void categoryDiscovered(int catIndex, double distance, int direction) {
-        assert(direction == +1 || direction == -1);
-        discoveries.cats.put(catIndex, distance);
-        catDistances.put(catIndex, distance);
-        openCats.add(new CategoryDistance(catIndex, graph.cats[catIndex], distance, (byte)direction));
+        return finished;
     }
 
     public TIntDoubleHashMap getPageDistances() {
         return pageDistances;
     }
-
+    public boolean hasPageDistance(int pageId) {
+        return pageDistances.containsKey(pageId);
+    }
+    public double getPageDistance(int pageId) {
+        return pageDistances.get(pageId);
+    }
     public boolean hasCategoryDistance(int categoryId) {
         return catDistances.containsKey(categoryId);
     }
@@ -113,7 +108,7 @@ public class CategoryBfs {
         return catDistances.get(categoryId);
     }
 
-    public class BfsDiscoveries {
+    public class BfsFinished {
         TIntDoubleHashMap pages = new TIntDoubleHashMap();
         TIntDoubleHashMap cats = new TIntDoubleHashMap();
         public void clear() { pages.clear(); cats.clear(); }

@@ -1,10 +1,14 @@
 package edu.macalester.wpsemsim.sim;
 
+import edu.macalester.wpsemsim.lucene.IndexHelper;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.store.MMapDirectory;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -26,9 +30,11 @@ public class CategoryGraph {
     protected int[][] catChildren;
     protected String[] cats;
     protected double minCost = -1;
+    protected IndexHelper helper;
 
     public CategoryGraph(File index) throws IOException {
         this.reader = DirectoryReader.open(MMapDirectory.open(index));
+        this.helper = new IndexHelper(reader);
     }
 
     public void init() throws IOException {
@@ -51,8 +57,10 @@ public class CategoryGraph {
                     catList.add(cat);
                 }
             }
+//            StringBuffer buff = new StringBuffer();
             for (IndexableField f : d.getFields("cats")) {
                 String cat = cleanTitle(f.stringValue());
+//                buff.append(", " + cat);
                 if (!catIndexes.containsKey(cat)) {
                     catIndexes.put(cat, catIndexes.size());
                     catList.add(cat);
@@ -190,16 +198,93 @@ public class CategoryGraph {
             b.append("" + i + ". " + cats[j] + "=" + catCosts[j]);
             b.append(", ");
         }
-        LOG.info("Min cat cost: " + minCost);
-        LOG.info("Top cat costs: " + b.toString());
         minCost = catCosts[sortedIndexes[sortedIndexes.length - 1]];
 
-//        double maxLog = Math.log(sortedIndexes.length+1);
-//        for (int i = 0; i < sortedIndexes.length; i++) {
-//            int j = sortedIndexes[i];
-//            catCosts[j] = 1 - (1 + Math.log(i + 1)) / (1 + maxLog);
-//            System.out.println("" + i + ". " + cats[j] + "=" + catCosts[j]);
-//        }
+        LOG.info("Min cat cost: " + minCost);
+        LOG.info("Top cat costs: " + b.toString());
+    }
+
+    public void dump(BufferedWriter writer) throws IOException {
+
+        writer.write("\n\nNon-orphaned category hierarchy:\n");
+        for (int i = 0; i < cats.length; i++) {
+            if (isUsefulCat(i)) {
+                writer.write(
+                        "id=" + i + ", " + cats[i] +
+                        ", parents=" + catIndexesToString(catParents[i]) +
+                        ", children=" + catIndexesToString(catChildren[i]) + "\n");
+            }
+        }
+
+        Integer sortedIndexes[] = new Integer[catCosts.length];
+        double nonUsefulPageRank = Double.MAX_VALUE;
+        for (int i = 0; i < catParents.length; i++) {
+            sortedIndexes[i] = i;
+            if (!isUsefulCat(i)) {
+                if (nonUsefulPageRank == Double.MAX_VALUE) {
+                    nonUsefulPageRank = catCosts[i];
+                } else {
+                    assert(nonUsefulPageRank == catCosts[i]);
+                }
+            }
+        }
+        writer.write("\n\nPage ranks of non-useful cats: " + nonUsefulPageRank + "\n");
+        Arrays.sort(sortedIndexes, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer i1, Integer i2) {
+                Double pr1 = catCosts[i1];
+                Double pr2 = catCosts[i2];
+                return -1 * pr1.compareTo(pr2);
+            }
+        });
+        writer.write("\n\nPage ranks of useful cats:\n");
+        for (int i = 0; i < sortedIndexes.length; i++) {
+            int j = sortedIndexes[i];
+            if (isUsefulCat(j)) {
+                writer.write("" + i + ". " + " i=" + j + ", " +
+                        cats[j] + "=" + catCosts[j] + "\n");
+            }
+        }
+
+        writer.write("\n\nPages to non-orphaned categories\n");
+        TIntObjectHashMap<TIntArrayList> pagesToCats = new TIntObjectHashMap<TIntArrayList>();
+        for (int i = 0; i < catPages.length; i++) {
+            if (isUsefulCat(i)) {
+                for (int j : catPages[i]) {
+                    if (!pagesToCats.containsKey(j)) {
+                        pagesToCats.put(j, new TIntArrayList());
+                    }
+                    pagesToCats.get(j).add(i);
+                }
+            }
+        }
+
+        int pageIds[] = pagesToCats.keys();
+        Arrays.sort(pageIds);
+        for (int wpId : pageIds) {
+            writer.write(helper.wpIdToTitle(wpId) +
+                    " (id=" + wpId + ") " +
+                    ": " + catIndexesToString(pagesToCats.get(wpId).toArray())
+                    + "\n");
+        }
+    }
+
+    private boolean isUsefulCat(int i) {
+        return (catParents[i].length > 0 || catChildren[i].length > 0 || catPages[i].length > 1);
+    }
+
+    private String catIndexesToString(int indexes[]) {
+        StringBuffer sb = new StringBuffer("[");
+        for (int i : indexes) {
+            if (sb.length() > 1) {
+                sb.append(", ");
+            }
+            sb.append(cats[i]);
+            sb.append(" (id=");
+            sb.append(""+i);
+            sb.append(")");
+        }
+        return sb.append("]").toString();
     }
 
     private static final double DAMPING_FACTOR = 0.85;
