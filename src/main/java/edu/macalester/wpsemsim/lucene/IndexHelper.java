@@ -4,7 +4,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.MMapDirectory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,9 +19,14 @@ public class IndexHelper {
 
     private DirectoryReader reader;
     private IndexSearcher searcher;
+    private File indexDir;
 
-    public IndexHelper(DirectoryReader reader) {
-        this.reader = reader;
+    public IndexHelper(File indexDir, boolean mmap) throws IOException {
+        this.indexDir = indexDir;
+        this.reader = DirectoryReader.open(
+                mmap ? MMapDirectory.open(indexDir)
+                        : FSDirectory.open(indexDir)
+        );
         this.searcher = new IndexSearcher(this.reader);
     }
 
@@ -90,4 +98,11 @@ public class IndexHelper {
         }
     }
 
+    public DirectoryReader getReader() {
+        return reader;
+    }
+
+    public IndexSearcher getSearcher() {
+        return searcher;
+    }
 }

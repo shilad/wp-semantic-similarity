@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.sim;
 
+import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.document.Document;
@@ -127,10 +128,11 @@ public class CatSimilarity extends BaseSimilarityMetric implements SimilarityMet
                     " lucene-cat-index-dir output-file num-results [num-threads]");
 
         }
-        CategoryGraph g = new CategoryGraph(new File(args[0]));
+        IndexHelper helper = new IndexHelper(new File(args[0]), true);
+        CategoryGraph g = new CategoryGraph(helper);
         g.init();
         CatSimilarity cs = new CatSimilarity(g);
-        cs.openIndex(new File(args[0]), true);
+        cs.openIndex(helper);
         int cores = (args.length == 4)
                 ? Integer.valueOf(args[3])
                 : Runtime.getRuntime().availableProcessors();

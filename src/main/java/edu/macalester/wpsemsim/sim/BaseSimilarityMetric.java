@@ -24,13 +24,10 @@ public abstract class BaseSimilarityMetric {
     private SparseMatrixWriter writer;
     protected IndexSearcher searcher;
 
-    public void openIndex(File indexDir, boolean mmap) throws IOException {
-        this.reader = DirectoryReader.open(
-                mmap ? MMapDirectory.open(indexDir)
-                        : FSDirectory.open(indexDir)
-        );
-        this.searcher = new IndexSearcher(this.reader);
-        this.helper = new IndexHelper(reader);
+    public void openIndex(IndexHelper helper) throws IOException {
+        this.helper = helper;
+        this.reader = helper.getReader();
+        this.searcher = helper.getSearcher();
     }
 
     public void openOutput(File outputFile) throws IOException, CompressorException {

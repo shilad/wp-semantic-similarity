@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.sim;
 
+import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.analysis.Analyzer;
@@ -98,7 +99,8 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
 
         }
         BaseSimilarityMetric dss = new TextSimilarity(args[0]);
-        dss.openIndex(new File(args[1]), true);
+        IndexHelper helper = new IndexHelper(new File(args[1]), true);
+        dss.openIndex(helper);
         int cores = (args.length == 5)
                 ? Integer.valueOf(args[4])
                 : Runtime.getRuntime().availableProcessors();

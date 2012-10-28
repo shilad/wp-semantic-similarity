@@ -58,12 +58,13 @@ public class TestCatSimilarity {
         }
 
         indexPath = new File(TestUtils.buildIndex(cats), "cats");
-        graph = new CategoryGraph(indexPath);
+        helper = new IndexHelper(indexPath, true);
+        graph = new CategoryGraph(helper);
         graph.init();
         helper = graph.helper;
         reader = graph.reader;
         catSim = new CatSimilarity(graph);
-        catSim.openIndex(indexPath, true);
+        catSim.openIndex(helper);
 
     }
 

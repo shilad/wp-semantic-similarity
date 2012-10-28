@@ -83,9 +83,7 @@ public class MatrixSummarizer {
             System.exit(1);
         }
         SparseMatrix matrix = new SparseMatrix(new File(args[0]), false, 500*1024*1024);
-        //SparseMatrix matrix = new SparseMatrix(new File(args[0]));
-        IndexHelper helper = new IndexHelper(
-                DirectoryReader.open(FSDirectory.open(new File(args[1]))));
+        IndexHelper helper = new IndexHelper(new File(args[1]), false);
         new MatrixSummarizer().summarize(matrix, helper);
     }
 }

@@ -22,8 +22,8 @@ public class TestIndexHelper {
     @Before
     public void createIndex() throws IOException, InterruptedException {
         this.indexPath = TestUtils.buildIndex();
-        this.reader = TestUtils.openReader(indexPath, "cats");
-        this.helper = new IndexHelper(reader);
+        this.helper = new IndexHelper(new File(indexPath, "cats"), true);
+        this.reader = this.helper.getReader();
     }
 
     @Test

@@ -6,10 +6,8 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.store.MMapDirectory;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
@@ -32,9 +30,9 @@ public class CategoryGraph {
     protected double minCost = -1;
     protected IndexHelper helper;
 
-    public CategoryGraph(File index) throws IOException {
-        this.reader = DirectoryReader.open(MMapDirectory.open(index));
-        this.helper = new IndexHelper(reader);
+    public CategoryGraph(IndexHelper helper) throws IOException {
+        this.helper = helper;
+        this.reader = helper.getReader();
     }
 
     public void init() throws IOException {

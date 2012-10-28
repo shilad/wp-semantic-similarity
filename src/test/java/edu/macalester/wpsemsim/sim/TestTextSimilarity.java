@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.sim;
 
+import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.TestUtils;
@@ -17,10 +18,12 @@ import java.util.Map;
 
 public class TestTextSimilarity {
     static File indexPath;
+    static IndexHelper helper;
 
     @BeforeClass
     public static void createIndex() throws IOException, InterruptedException {
         indexPath = new File(TestUtils.buildIndex(), "text");
+        helper = new IndexHelper(indexPath, true);
     }
 
     @Test
@@ -28,7 +31,7 @@ public class TestTextSimilarity {
         Map<Integer, TIntDoubleHashMap> sims = new HashMap<Integer, TIntDoubleHashMap>();
         TextSimilarity sim = new TextSimilarity("text");
         sim.setMaxPercentage(100);
-        sim.openIndex(indexPath, true);
+        sim.openIndex(helper);
 
         for (int i = 0; i < sim.reader.numDocs(); i++) {
             int wpId = Integer.valueOf(sim.reader.document(i).get("id"));
@@ -37,7 +40,7 @@ public class TestTextSimilarity {
                 sims.get(wpId).put(score.getId(), score.getScore());
             }
         }
-        sim.openIndex(indexPath, true);
+        sim.openIndex(helper);
         for (int i = 0; i < sim.reader.numDocs(); i++) {
             for (int j = 0; j < sim.reader.numDocs(); j++) {
                 Document doc1 = sim.reader.document(i);
