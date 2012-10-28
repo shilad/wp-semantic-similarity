@@ -27,7 +27,7 @@ Instructions for building the semantic similarity network:
   `./bin/text-sim.sh ./dat/lucene/text/ ./dat/text.sims.matrix 500 cache-size-in-MB`
   `./bin/link-sim.sh ./dat/lucene/links/ ./dat/links.sims.matrix 500 cache-size-in-MB`
 
-  The cat and link jobs are fast (about an hour). The text job takes about 5 to 10 hours.
+  The cat and link jobs are fast (less than an hour). The text job takes 5 to 10 hours.
 
 * Generate the tranposes of the similarity files:
 
@@ -37,6 +37,19 @@ Instructions for building the semantic similarity network:
   
   These take about 30 min each.
 
+* Generate the gold standard dataset:
+
+  `./bin/make_gold.sh`
+
+  This should take about a minute, and it writes a combined gold standard dataset from a variety of sources to dat/gold/combined.tab.txt.
+
+* Create the concept mapper index, which is used to map phrases to Wikipedia articles. Download dictionary.bz2 from http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/dictionary.bz2, then run:
+
+  `./bin/make-concept-index.sh path/to/dictionary.bz2 path/to/index/output-directory jvm_MBs`
+
+* Fit the combined model:
+  `TODO`
+
 * Generate the pairwise similarity files:
 
   `./bin/pairwise-sim.sh ./dat/cat-sims.matrix ./dat/cat-sims.transpose.matrix ./dat/cat-sims-stage2.matrix 500 jvm_MBs`
@@ -44,12 +57,3 @@ Instructions for building the semantic similarity network:
   `./bin/pairwise-sim.sh ./dat/links-sims.matrix ./dat/links-sims.transpose.matrix ./dat/links-sims-stage2.matrix 500 jvm_MBs`
 
   These are SLOW. About a day and a half each.
-
-* Generate the gold standard dataset:
-
-  `./bin/make_gold.sh`
-
-  This should take about a minute, and it writes a combined gold standard dataset from a variety of sources to dat/gold/combined.tab.txt.
-* Create the concept mapper index, which is used to map phrases to Wikipedia articles. Download dictionary.bz2 from http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/dictionary.bz2, then run:
-
-  `./bin/make-concept-index.sh path/to/dictionary.bz2 path/to/index/output-directory jvm_MBs`
