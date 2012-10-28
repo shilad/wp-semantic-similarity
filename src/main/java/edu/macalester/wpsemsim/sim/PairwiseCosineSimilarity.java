@@ -21,7 +21,6 @@ public class PairwiseCosineSimilarity implements SimilarityMetric {
     public PairwiseCosineSimilarity(SparseMatrix matrix, SparseMatrix transpose) throws IOException {
         this.matrix = matrix;
         this.transpose = transpose;
-        calculateRowLengths();
     }
 
     public void calculateRowLengths() {
@@ -54,17 +53,12 @@ public class PairwiseCosineSimilarity implements SimilarityMetric {
         double yDotY = 0.0;
         double xDotY = 0.0;
 
+        for (float x: map1.values()) { xDotX += x * x; }
+        for (float y: map2.values()) { yDotY += y * y; }
         for (int id : map1.keys()) {
-            float x = map1.get(id);
-            xDotX += x * x;
             if (map2.containsKey(id)) {
-                xDotY = x * map2.get(id);
+                xDotY += map1.get(id) * map2.get(id);
             }
-        }
-
-        for (int id : map2.keys()) {
-            float y = map2.get(id);
-            yDotY += y * y;
         }
 
         return xDotY / Math.sqrt(xDotX * yDotY);

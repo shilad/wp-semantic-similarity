@@ -3,28 +3,32 @@ package edu.macalester.wpsemsim.sim;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
+import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TLongDoubleHashMap;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.lucene.document.Document;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
 public class TestPairwiseSimilarity {
-    int NUM_ROWS = 100;
+    static int NUM_ROWS = 100;
 
-    private SparseMatrix matrix;
-    private SparseMatrix transpose;
+    private static SparseMatrix matrix;
+    private static SparseMatrix transpose;
 
-    @Before
-    public void createTestData() throws IOException {// Create test data and transpose
+    @BeforeClass
+    public static void createTestData() throws IOException {// Create test data and transpose
         matrix = TestUtils.createTestMatrix(NUM_ROWS, NUM_ROWS, false);
         File tmpFile = File.createTempFile("matrix", null);
         tmpFile.deleteOnExit();
@@ -33,13 +37,12 @@ public class TestPairwiseSimilarity {
     }
 
     @Test
-    public void testSimilarity() throws IOException {
+    public void testSimilarity() throws IOException, InterruptedException {
         File simPath = File.createTempFile("matrix", null);
         simPath.deleteOnExit();
-        PairwiseCosineSimilarity stage2 = new PairwiseCosineSimilarity(matrix, transpose, simPath);
-        stage2.calculateRowLengths();
-        stage2.calculatePairwiseSims(1, 0, NUM_ROWS);
-        stage2.finish();
+        PairwiseCosineSimilarity cosine = new PairwiseCosineSimilarity(matrix, transpose);
+        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(cosine, simPath);
+        writer.writeSims(matrix.getRowIds(), 1, NUM_ROWS);
         SparseMatrix sims = new SparseMatrix(simPath);
 
         // Calculate similarities by hand
@@ -86,6 +89,30 @@ public class TestPairwiseSimilarity {
             }
         }
         assertEquals(numCells, dot.size());
+    }
+
+    @Test
+    public void testSimilarityMatchesMostSimilar() throws IOException {
+
+        PairwiseCosineSimilarity cosine = new PairwiseCosineSimilarity(matrix, transpose);
+        int[] ids = matrix.getRowIds();
+        Map<Integer, TIntDoubleHashMap> sims = new HashMap<Integer, TIntDoubleHashMap>();
+        for (int id : ids) {
+            sims.put(id, new TIntDoubleHashMap());
+            for (DocScore score : cosine.mostSimilar(id, NUM_ROWS)) {
+                sims.get(id).put(score.getId(), score.getScore());
+            }
+        }
+        for (int id1 : ids) {
+            for (int id2 : ids) {
+                double s = cosine.similarity(id1, id2);
+                if (sims.containsKey(id1) && sims.get(id1).containsKey(id2)) {
+                    assertEquals(s, sims.get(id1).get(id2), 0.001);
+                } else {
+                    assertEquals(s, 0.0, 0.0001);
+                }
+            }
+        }
     }
 
     private long pack(int x, int y) {
