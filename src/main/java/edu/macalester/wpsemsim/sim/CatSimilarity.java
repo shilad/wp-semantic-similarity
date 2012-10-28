@@ -4,6 +4,7 @@ import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,30 +12,17 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-public class CatSimilarity extends BaseSimilarityMetric implements SimilarityMetric {
-    private AtomicInteger counter = new AtomicInteger();
-
+public class CatSimilarity implements SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(CatSimilarity.class.getName());
 
     private CategoryGraph graph;
+    private IndexHelper helper;
+    private DirectoryReader reader;
 
-    public CatSimilarity(CategoryGraph graph) {
+    public CatSimilarity(CategoryGraph graph, IndexHelper helper) {
+        this.helper = helper;
+        this.reader = helper.getReader();
         this.graph = graph;
-    }
-
-    @Override
-    protected void calculatePairwiseSims(int mod, int offset, int maxSimsPerDoc) throws IOException {
-        for (int i = offset; i < reader.maxDoc(); i += mod) {
-            Document d = reader.document(i);
-            if (graph.isCat(d)) {
-                continue;
-            }
-            DocScoreList neighbors = mostSimilar(d, maxSimsPerDoc);
-            writeOutput(helper.luceneIdToWpId(i), neighbors.getIds(), neighbors.getScoresAsFloat());
-            if (counter.incrementAndGet() % 1000 == 0) {
-                System.err.println("" + new Date() + ": finding matches for doc " + counter.get());
-            }
-        }
     }
 
     public double distanceToScore(double distance) {
@@ -48,12 +36,13 @@ public class CatSimilarity extends BaseSimilarityMetric implements SimilarityMet
 
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
-        int docId = helper.wpIdToLuceneId(wpId);
-        return mostSimilar(reader.document(docId), maxResults);
-    }
-
-    private DocScoreList mostSimilar(Document doc, int maxSimsPerDoc) {
-        CategoryBfs bfs = new CategoryBfs(graph, doc, maxSimsPerDoc);
+        int luceneId = helper.wpIdToLuceneId(wpId);
+        if (luceneId < 0) {
+            LOG.info("unknown wpId: " + wpId);
+            return new DocScoreList(0);
+        }
+        Document doc = reader.document(luceneId);
+        CategoryBfs bfs = new CategoryBfs(graph, doc, maxResults);
         while (bfs.hasMoreResults()) {
             bfs.step();
         }
@@ -120,7 +109,6 @@ public class CatSimilarity extends BaseSimilarityMetric implements SimilarityMet
         return distanceToScore(shortestDistance);
     }
 
-
     public static void main(String args[]) throws IOException, InterruptedException, CompressorException {
         if (args.length != 3 && args.length != 4) {
             System.err.println("usage: java " +
@@ -131,13 +119,11 @@ public class CatSimilarity extends BaseSimilarityMetric implements SimilarityMet
         IndexHelper helper = new IndexHelper(new File(args[0]), true);
         CategoryGraph g = new CategoryGraph(helper);
         g.init();
-        CatSimilarity cs = new CatSimilarity(g);
-        cs.openIndex(helper);
+        CatSimilarity cs = new CatSimilarity(g, helper);
         int cores = (args.length == 4)
                 ? Integer.valueOf(args[3])
                 : Runtime.getRuntime().availableProcessors();
-        cs.openOutput(new File(args[1]));
-        cs.calculatePairwiseSims(cores, Integer.valueOf(args[2]));
-        cs.closeOutput();
+        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(helper, cs, new File(args[1]));
+        writer.writeSims(cores, Integer.valueOf(args[2]));
     }
 }

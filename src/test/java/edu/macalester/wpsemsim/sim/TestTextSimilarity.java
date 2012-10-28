@@ -6,6 +6,7 @@ import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,23 +29,22 @@ public class TestTextSimilarity {
 
     @Test
     public void testSimilarity() throws IOException {
+        DirectoryReader reader = helper.getReader();
         Map<Integer, TIntDoubleHashMap> sims = new HashMap<Integer, TIntDoubleHashMap>();
-        TextSimilarity sim = new TextSimilarity("text");
+        TextSimilarity sim = new TextSimilarity(helper, "text");
         sim.setMaxPercentage(100);
-        sim.openIndex(helper);
 
-        for (int i = 0; i < sim.reader.numDocs(); i++) {
-            int wpId = Integer.valueOf(sim.reader.document(i).get("id"));
+        for (int i = 0; i < reader.numDocs(); i++) {
+            int wpId = Integer.valueOf(reader.document(i).get("id"));
             sims.put(wpId, new TIntDoubleHashMap());
             for (DocScore score : sim.mostSimilar(wpId, Integer.MAX_VALUE)) {
                 sims.get(wpId).put(score.getId(), score.getScore());
             }
         }
-        sim.openIndex(helper);
-        for (int i = 0; i < sim.reader.numDocs(); i++) {
-            for (int j = 0; j < sim.reader.numDocs(); j++) {
-                Document doc1 = sim.reader.document(i);
-                Document doc2 = sim.reader.document(j);
+        for (int i = 0; i < reader.numDocs(); i++) {
+            for (int j = 0; j < reader.numDocs(); j++) {
+                Document doc1 = reader.document(i);
+                Document doc2 = reader.document(j);
                 int wpId1 = Integer.valueOf(doc1.get("id"));
                 int wpId2 = Integer.valueOf(doc2.get("id"));
                 double s = sim.similarity(wpId1, wpId2);

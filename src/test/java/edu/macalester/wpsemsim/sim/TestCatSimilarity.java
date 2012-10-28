@@ -6,6 +6,7 @@ import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -63,8 +64,7 @@ public class TestCatSimilarity {
         graph.init();
         helper = graph.helper;
         reader = graph.reader;
-        catSim = new CatSimilarity(graph);
-        catSim.openIndex(helper);
+        catSim = new CatSimilarity(graph, helper);
 
     }
 
@@ -155,18 +155,19 @@ public class TestCatSimilarity {
     @Test
     public void testSimilarityMatchesMostSimilar() throws IOException {
 
+        DirectoryReader reader = helper.getReader();
         Map<Integer, TIntDoubleHashMap> sims = new HashMap<Integer, TIntDoubleHashMap>();
-        for (int i = 0; i < catSim.reader.numDocs(); i++) {
-            int wpId = Integer.valueOf(catSim.reader.document(i).get("id"));
+        for (int i = 0; i < reader.numDocs(); i++) {
+            int wpId = Integer.valueOf(reader.document(i).get("id"));
             sims.put(wpId, new TIntDoubleHashMap());
             for (DocScore score : catSim.mostSimilar(wpId, Integer.MAX_VALUE)) {
                 sims.get(wpId).put(score.getId(), score.getScore());
             }
         }
-        for (int i = 0; i < catSim.reader.numDocs(); i++) {
-            for (int j = 0; j < catSim.reader.numDocs(); j++) {
-                Document doc1 = catSim.reader.document(i);
-                Document doc2 = catSim.reader.document(j);
+        for (int i = 0; i < reader.numDocs(); i++) {
+            for (int j = 0; j < reader.numDocs(); j++) {
+                Document doc1 = reader.document(i);
+                Document doc2 = reader.document(j);
                 if (graph.isCat(doc1) || graph.isCat(doc2)) {
                     continue;
                 }

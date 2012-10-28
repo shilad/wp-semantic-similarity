@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.utils.DocScoreList;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Version;
@@ -14,7 +15,7 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMetric {
+public class TextSimilarity implements SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(TextSimilarity.class.getName());
     public static final int DEFAULT_MAX_PERCENTAGE = 10;
     public static final int DEFAULT_MAX_QUERY_TERMS = 100;
@@ -23,8 +24,14 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
     private String field;
     private int maxPercentage = DEFAULT_MAX_PERCENTAGE;
     private int maxQueryTerms = DEFAULT_MAX_QUERY_TERMS;
+    private IndexSearcher searcher;
+    private IndexHelper helper;
+    private DirectoryReader reader;
 
-    public TextSimilarity(String field) {
+    public TextSimilarity(IndexHelper helper, String field) {
+        this.helper = helper;
+        this.reader = helper.getReader();
+        this.searcher = helper.getSearcher();
         this.field = field;
     }
 
@@ -37,24 +44,10 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
         return mlt;
     }
 
-    protected void calculatePairwiseSims(int mod, int offset, int maxSimsPerDoc) throws IOException {
-        MoreLikeThis mlt = getMoreLikeThis();
-        for (int docId=offset; docId< reader.maxDoc(); docId += mod) {
-            if (counter.incrementAndGet() % 100 == 0) {
-                System.err.println("" + new Date() + ": finding matches for doc " + counter.get());
-            }
-            DocScoreList scores = mostSimilar(docId, maxSimsPerDoc, mlt);
-            writeOutput(helper.luceneIdToWpId(docId), scores.getIds(), scores.getScoresAsFloat());
-        }
-    }
-
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
+        MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = helper.wpIdToLuceneId(wpId);
-        return mostSimilar(luceneId, maxResults, getMoreLikeThis());
-    }
-
-    protected DocScoreList mostSimilar(int luceneId, int maxResults, MoreLikeThis mlt) throws IOException {
         Query query = mlt.like(luceneId);
         TopDocs similarDocs = searcher.search(query, maxResults);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
@@ -98,14 +91,12 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
                     " field lucene-text-index-dir output-file num-results [num-threads]");
 
         }
-        BaseSimilarityMetric dss = new TextSimilarity(args[0]);
         IndexHelper helper = new IndexHelper(new File(args[1]), true);
-        dss.openIndex(helper);
+        TextSimilarity sim = new TextSimilarity(helper, args[0]);
         int cores = (args.length == 5)
                 ? Integer.valueOf(args[4])
                 : Runtime.getRuntime().availableProcessors();
-        dss.openOutput(new File(args[2]));
-        dss.calculatePairwiseSims(cores, Integer.valueOf(args[3]));
-        dss.closeOutput();
+        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(helper, sim, new File(args[2]));
+        writer.writeSims(cores, Integer.valueOf(args[3]));
     }
 }
