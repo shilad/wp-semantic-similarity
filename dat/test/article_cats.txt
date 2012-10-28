@@ -1,0 +1,86 @@
+books, literature
+poetry, literature
+births, life events
+deaths, life events
+1809 births, births
+1865 deaths, deaths
+1905 births, births
+1947 births, births
+1982 deaths, deaths
+1986 books, books
+20th-century mathematicians, people
+20th-century philosophers, people
+21st-century mathematicians, people
+322 bc deaths, deaths
+384 bc births, births
+4th-century bc philosophers, people
+abraham lincoln, people
+academic philosophers, people
+altruism, philosphy
+alumni of the école normale supérieure
+american anti-communists, people
+american atheists, people
+american dramatists and playwrights, people
+american essayists, people
+american film awards, people
+american libertarians, people
+american novelists, people, books
+american people of english descent, people
+american people of russian-jewish descent, people
+american people of welsh descent, people
+american philosophers, people
+american science fiction writers, people
+american screenwriters, people
+american writers of russian descent, people
+anarchism, political theory
+ancient greek mathematicians, people
+ancient greek philosophers, people
+ancient greek physicists, people
+ancient greeks in macedon, people
+anti-fascism, political theory
+aristotle, people
+atheist philosophers, philosophy
+attic greek writers
+ayn rand, people
+characters in the iliad, poems
+children's picture books, books
+ethicists, philosophy
+history of logic, philosophy
+history of philosophy, philosophy
+libertarian theorists, political ideology, philosophy
+members of the french academy of sciences, people
+members of the illinois house of representatives, people
+members of the norwegian academy of science and letters, people
+members of the royal danish academy of sciences and letters, people
+members of the united states house of representatives from illinois, people
+members of the united states national academy of sciences, people
+metaphysicians, philosophy, political ideology
+natural philosophers, philosophy
+people from coles county, people
+people from larue county, people
+people from macon county, people
+people from spencer county, people
+people from springfield, people
+people murdered in washington, people
+people of illinois in the american civil war, people
+people of the black hawk war, people
+people of the trojan war, people
+philosophers and tutors of alexander the great, people
+philosophers of ancient chalcidice, people
+philosophers of language, people
+philosophers of law, people
+philosophers of mind, people
+philosophers of mind, people
+political culture, philosophy
+political ideologies, philosophy
+political philosophers, philosophy
+political theorists, philosophy
+rhetoric theorists, philosophy
+social philosophy, social psychology
+social psychology, psychology
+social theories, social psychology
+symphonic poems, poetry
+virtue ethicists, people
+vowel letters, poetry
+women philosophers, philosophy
+women science fiction and fantasy writers, people
