@@ -1,7 +1,5 @@
 package edu.macalester.wpsemsim.utils;
 
-import java.util.Comparator;
-
 public final class DocScore implements Comparable<DocScore> {
     protected int id;
     protected double score;

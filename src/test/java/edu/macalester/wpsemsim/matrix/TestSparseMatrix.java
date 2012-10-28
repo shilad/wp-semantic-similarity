@@ -3,12 +3,14 @@ package edu.macalester.wpsemsim.matrix;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestSparseMatrix {
     private List<SparseMatrixRow> srcRows;

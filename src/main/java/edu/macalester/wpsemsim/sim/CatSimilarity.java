@@ -8,8 +8,6 @@ import org.apache.lucene.index.DirectoryReader;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class CatSimilarity implements SimilarityMetric {
@@ -123,7 +121,7 @@ public class CatSimilarity implements SimilarityMetric {
         int cores = (args.length == 4)
                 ? Integer.valueOf(args[3])
                 : Runtime.getRuntime().availableProcessors();
-        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(helper, cs, new File(args[1]));
-        writer.writeSims(cores, Integer.valueOf(args[2]));
+        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(cs, new File(args[1]));
+        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[2]));
     }
 }

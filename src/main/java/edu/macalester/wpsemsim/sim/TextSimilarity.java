@@ -3,15 +3,14 @@ package edu.macalester.wpsemsim.sim;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import org.apache.commons.compress.compressors.CompressorException;
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Version;
 
-import java.io.*;
-import java.util.Date;
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -96,7 +95,7 @@ public class TextSimilarity implements SimilarityMetric {
         int cores = (args.length == 5)
                 ? Integer.valueOf(args[4])
                 : Runtime.getRuntime().availableProcessors();
-        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(helper, sim, new File(args[2]));
-        writer.writeSims(cores, Integer.valueOf(args[3]));
+        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(sim, new File(args[2]));
+        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[3]));
     }
 }

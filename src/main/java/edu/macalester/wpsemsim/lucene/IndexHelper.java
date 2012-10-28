@@ -1,11 +1,19 @@
 package edu.macalester.wpsemsim.lucene;
 
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +43,17 @@ public class IndexHelper {
         fields.add("id");
         Document d = reader.document(luceneId, fields);
         return Integer.valueOf(d.getField("id").stringValue());
+    }
+
+    public int[] getWpIds() throws IOException {
+        TIntList ids = new TIntArrayList();
+        TermsEnum terms = MultiFields.getTerms(reader, "id").iterator(null);
+        BytesRef ref;
+        while((ref = terms.next()) != null) {
+            ids.add(Integer.valueOf(ref.utf8ToString()));
+        }
+        ids.sort();
+        return ids.toArray();
     }
 
     public String luceneIdToTitle(int luceneId) throws IOException {

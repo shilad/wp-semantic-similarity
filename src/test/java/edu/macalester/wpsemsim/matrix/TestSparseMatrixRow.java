@@ -1,10 +1,10 @@
 package edu.macalester.wpsemsim.matrix;
 
-import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import java.util.LinkedHashMap;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestSparseMatrixRow {
     private int[] keys = new int[] { 9, 11, 3, 26, 54 };

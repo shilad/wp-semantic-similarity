@@ -1,13 +1,12 @@
 package edu.macalester.wpsemsim.lucene;
 
-import edu.macalester.wpsemsim.lucene.Page;
-import edu.macalester.wpsemsim.lucene.PageReader;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import org.junit.Test;
-import static org.junit.Assert.* ;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 public class PageReaderTest {
     @Test

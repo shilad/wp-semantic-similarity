@@ -1,6 +1,5 @@
 package edu.macalester.wpsemsim.matrix;
 
-import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.list.array.TShortArrayList;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -8,7 +7,10 @@ import gnu.trove.set.hash.TIntHashSet;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class SparseMatrixTransposer {

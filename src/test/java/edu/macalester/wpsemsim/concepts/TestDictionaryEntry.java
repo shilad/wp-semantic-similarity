@@ -3,7 +3,8 @@ package edu.macalester.wpsemsim.concepts;
 import org.apache.commons.lang3.math.Fraction;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class TestDictionaryEntry {
 

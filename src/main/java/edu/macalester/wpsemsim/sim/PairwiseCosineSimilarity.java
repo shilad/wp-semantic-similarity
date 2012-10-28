@@ -1,37 +1,27 @@
 package edu.macalester.wpsemsim.sim;
 
-import edu.macalester.wpsemsim.utils.DocScoreList;
-import edu.macalester.wpsemsim.utils.Leaderboard;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
-import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
+import edu.macalester.wpsemsim.utils.DocScoreList;
+import edu.macalester.wpsemsim.utils.Leaderboard;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PairwiseCosineSimilarity {
+public class PairwiseCosineSimilarity implements SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(PairwiseCosineSimilarity.class.getName());
 
-    private SparseMatrixWriter writer;
     private SparseMatrix matrix;
-    private int[] rowIds;
     private SparseMatrix transpose;
     private TIntFloatHashMap lengths;   // lengths of each row
-    private AtomicInteger counter = new AtomicInteger();
 
-    public PairwiseCosineSimilarity(SparseMatrix matrix, SparseMatrix transpose, File output) throws IOException {
+    public PairwiseCosineSimilarity(SparseMatrix matrix, SparseMatrix transpose) throws IOException {
         this.matrix = matrix;
         this.transpose = transpose;
-        this.rowIds = matrix.getRowIds();
-        this.writer = new SparseMatrixWriter(output);
+        calculateRowLengths();
     }
 
     public void calculateRowLengths() {
@@ -46,42 +36,53 @@ public class PairwiseCosineSimilarity {
         }
     }
 
-    public void calculatePairwiseSims(final int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
-        ExecutorService exec = Executors.newFixedThreadPool(threads);
-        try {
-            for (int i = 0; i < threads; i++) {
-                final int i2 = i;
-                exec.submit(new Runnable() {
-                    public void run() {
-                        try {
-                            calculatePairwiseSims(threads, i2, maxSimsPerDoc);
-                        } catch (IOException e) {
-                            LOG.log(Level.SEVERE, "error processing split " + i2, e);
-                        }
-                    }
-                });
-            }
-        } finally {
-            exec.shutdown();
-            exec.awaitTermination(60, TimeUnit.HOURS);
+    @Override
+    public double similarity(int wpId1, int wpId2) throws IOException {
+        SparseMatrixRow row1 = matrix.getRow(wpId1);
+        if (row1 == null) {
+            LOG.info("unknown wpId: " + wpId1);
+            return 0;
         }
-    }
+        SparseMatrixRow row2 = matrix.getRow(wpId2);
+        if (row2 == null) {
+            LOG.info("unknown wpId: " + wpId2);
+            return 0;
+        }
+        TIntFloatHashMap map1 = row1.asTroveMap();
+        TIntFloatHashMap map2 = row2.asTroveMap();
+        double xDotX = 0.0;
+        double yDotY = 0.0;
+        double xDotY = 0.0;
 
-    void finish() throws IOException {
-        writer.finish();
-    }
-
-    void calculatePairwiseSims(int mod, int offset, int maxSimsPerDoc) throws IOException {
-        for (int i = offset; i < rowIds.length; i += mod) {
-            SparseMatrixRow row = matrix.getRow(rowIds[i]);
-            findSimilarities(row, maxSimsPerDoc);
-            if (counter.addAndGet(1) % 1000 == 0) {
-                LOG.info("getting similarities for " + counter.get() + " of " + lengths.size());
+        for (int id : map1.keys()) {
+            float x = map1.get(id);
+            xDotX += x * x;
+            if (map2.containsKey(id)) {
+                xDotY = x * map2.get(id);
             }
         }
+
+        for (int id : map2.keys()) {
+            float y = map2.get(id);
+            yDotY += y * y;
+        }
+
+        return xDotY / Math.sqrt(xDotX * yDotY);
     }
 
-    public void findSimilarities(SparseMatrixRow row, int maxSimsPerDoc) throws IOException {
+    @Override
+    public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
+        synchronized (this) {
+            if (lengths == null) {
+                calculateRowLengths();
+            }
+        }
+
+        SparseMatrixRow row = matrix.getRow(wpId);
+        if (row == null) {
+            LOG.info("unknown wpId: " + wpId);
+            return new DocScoreList(0);
+        }
         TIntDoubleHashMap dots = new TIntDoubleHashMap();
 
         for (int i = 0; i < row.getNumCols(); i++) {
@@ -95,7 +96,7 @@ public class PairwiseCosineSimilarity {
             }
         }
 
-        final Leaderboard leaderboard = new Leaderboard(maxSimsPerDoc);
+        final Leaderboard leaderboard = new Leaderboard(maxResults);
         for (int id : dots.keys()) {
             double l1 = lengths.get(id);
             double l2 = lengths.get(row.getRowIndex());
@@ -103,12 +104,7 @@ public class PairwiseCosineSimilarity {
             double sim = dot / (l1 * l2);
             leaderboard.tallyScore(id, sim);
         }
-        writeOutput(row.getRowIndex(), leaderboard.getTop());
-
-    }
-
-    public void writeOutput(int targetDocId, DocScoreList scores) throws IOException {
-        writer.writeRow(new SparseMatrixRow(targetDocId, scores.getIds(), scores.getScoresAsFloat()));
+        return leaderboard.getTop();
     }
 
     public static int PAGE_SIZE = 1024*1024*500;    // 500MB
@@ -120,12 +116,12 @@ public class PairwiseCosineSimilarity {
         }
         SparseMatrix matrix = new SparseMatrix(new File(args[0]), false, PAGE_SIZE);
         SparseMatrix transpose = new SparseMatrix(new File(args[1]));
-        PairwiseCosineSimilarity sim = new PairwiseCosineSimilarity(matrix, transpose, new File(args[2]));
+        PairwiseCosineSimilarity sim = new PairwiseCosineSimilarity(matrix, transpose);
         int cores = (args.length == 5)
                 ? Integer.valueOf(args[4])
                 : Runtime.getRuntime().availableProcessors();
-        sim.calculateRowLengths();
-        sim.calculatePairwiseSims(cores, Integer.valueOf(args[3]));
-        sim.finish();
+
+        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(sim, new File(args[2]));
+        writer.writeSims(matrix.getRowIds(), cores, Integer.valueOf(args[3]));
     }
 }

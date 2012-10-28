@@ -1,7 +1,6 @@
 package edu.macalester.wpsemsim.sim;
 
 import gnu.trove.map.hash.TIntDoubleHashMap;
-import gnu.trove.set.hash.TIntHashSet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 

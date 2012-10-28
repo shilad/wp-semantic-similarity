@@ -3,7 +3,8 @@ package edu.macalester.wpsemsim.utils;
 import java.awt.*;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertNull;
 
 /**
  * A simple utility class that can verify that an object has been successfully garbage collected.

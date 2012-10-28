@@ -1,8 +1,11 @@
 package edu.macalester.wpsemsim.matrix;
+
 import gnu.trove.map.hash.TIntLongHashMap;
 import org.apache.commons.io.FileUtils;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;

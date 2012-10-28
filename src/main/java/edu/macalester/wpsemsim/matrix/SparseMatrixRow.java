@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.matrix;
 
+import gnu.trove.map.hash.TIntFloatHashMap;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.nio.ByteBuffer;
@@ -104,6 +105,14 @@ public final class SparseMatrixRow {
 
     public LinkedHashMap<Integer, Float> asMap() {
         LinkedHashMap<Integer, Float> result = new LinkedHashMap<Integer, Float>();
+        for (int i = 0; i < getNumCols(); i++) {
+            result.put(getColIndex(i), getColValue(i));
+        }
+        return result;
+    }
+
+    public TIntFloatHashMap asTroveMap() {
+        TIntFloatHashMap result = new TIntFloatHashMap();
         for (int i = 0; i < getNumCols(); i++) {
             result.put(getColIndex(i), getColValue(i));
         }

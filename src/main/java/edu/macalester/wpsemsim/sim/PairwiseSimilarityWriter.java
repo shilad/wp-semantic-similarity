@@ -1,10 +1,8 @@
 package edu.macalester.wpsemsim.sim;
 
-import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import edu.macalester.wpsemsim.utils.DocScoreList;
-import org.apache.lucene.index.DirectoryReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,18 +19,14 @@ public class PairwiseSimilarityWriter {
 
     private SimilarityMetric metric;
     private SparseMatrixWriter writer;
-    private IndexHelper helper;
-    private DirectoryReader reader;
     private AtomicInteger counter = new AtomicInteger();
 
-    public PairwiseSimilarityWriter(IndexHelper helper, SimilarityMetric metric, File outputFile) throws IOException {
+    public PairwiseSimilarityWriter(SimilarityMetric metric, File outputFile) throws IOException {
         this.metric = metric;
         this.writer = new SparseMatrixWriter(outputFile);
-        this.helper = helper;
-        this.reader = helper.getReader();
     }
 
-    public void writeSims(final int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
+    public void writeSims(final int wpIds[], final int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
         ExecutorService exec = Executors.newFixedThreadPool(threads);
         try {
             for (int i = 0; i < threads; i++) {
@@ -40,7 +34,7 @@ public class PairwiseSimilarityWriter {
                 exec.submit(new Runnable() {
                     public void run() {
                         try {
-                            writeSims(threads, i2, maxSimsPerDoc);
+                            writeSims(wpIds, threads, i2, maxSimsPerDoc);
                         } catch (Exception e) {
                             LOG.log(Level.SEVERE, "error processing split " + i2, e);
                         }
@@ -54,12 +48,12 @@ public class PairwiseSimilarityWriter {
         this.writer.finish();
     }
 
-    private void writeSims(int nthreads, int offset, int maxSimsPerDoc) throws IOException {
-        for (int i = offset; i < reader.maxDoc(); i += nthreads) {
+    private void writeSims(int[] wpIds, int nthreads, int offset, int maxSimsPerDoc) throws IOException {
+        for (int i = offset; i < wpIds.length; i += nthreads) {
             if (counter.incrementAndGet() % 10000 == 0) {
                 System.err.println("" + new Date() + ": finding matches for doc " + counter.get());
             }
-            int wpId = helper.luceneIdToWpId(i);
+            int wpId = wpIds[i];
             DocScoreList scores = metric.mostSimilar(wpId, maxSimsPerDoc);
             writer.writeRow(new SparseMatrixRow(wpId, scores.getIds(), scores.getScoresAsFloat()));
         }

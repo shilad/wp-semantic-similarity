@@ -4,8 +4,6 @@ import edu.macalester.wpsemsim.lucene.IndexHelper;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.store.FSDirectory;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,21 +1,21 @@
 package edu.macalester.wpsemsim.sim;
 
-import edu.macalester.wpsemsim.utils.TestUtils;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
+import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TLongDoubleHashMap;
 import org.apache.commons.collections.CollectionUtils;
-
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestPairwiseSimilarity {
     int NUM_ROWS = 100;

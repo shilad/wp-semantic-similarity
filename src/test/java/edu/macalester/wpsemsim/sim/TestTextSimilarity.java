@@ -2,7 +2,6 @@ package edu.macalester.wpsemsim.sim;
 
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScore;
-import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.lucene.document.Document;
@@ -10,12 +9,13 @@ import org.apache.lucene.index.DirectoryReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestTextSimilarity {
     static File indexPath;

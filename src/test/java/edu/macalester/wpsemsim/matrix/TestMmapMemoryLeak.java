@@ -4,10 +4,11 @@ package edu.macalester.wpsemsim.matrix;
 import edu.macalester.wpsemsim.utils.MemoryLeakVerifier;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
+
+import static org.junit.Assert.*;
 
 public class TestMmapMemoryLeak {
     static final int NUM_ROWS = 10000;
