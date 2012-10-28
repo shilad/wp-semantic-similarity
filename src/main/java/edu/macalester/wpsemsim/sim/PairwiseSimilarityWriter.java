@@ -56,7 +56,7 @@ public class PairwiseSimilarityWriter {
 
     private void writeSims(int nthreads, int offset, int maxSimsPerDoc) throws IOException {
         for (int i = offset; i < reader.maxDoc(); i += nthreads) {
-            if (counter.incrementAndGet() % 100 == 0) {
+            if (counter.incrementAndGet() % 10000 == 0) {
                 System.err.println("" + new Date() + ": finding matches for doc " + counter.get());
             }
             int wpId = helper.luceneIdToWpId(i);
