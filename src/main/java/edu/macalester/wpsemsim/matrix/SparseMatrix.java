@@ -177,6 +177,10 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
         }
     }
 
+    public File getPath() {
+        return path;
+    }
+
 
     private void info(String message) {
         LOG.log(Level.INFO, "sparse matrix " + path + ": " + message);

@@ -9,6 +9,7 @@ import gnu.trove.map.hash.TIntFloatHashMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.logging.Logger;
 
 public class PairwiseCosineSimilarity implements SimilarityMetric {
@@ -17,11 +18,23 @@ public class PairwiseCosineSimilarity implements SimilarityMetric {
     private SparseMatrix matrix;
     private SparseMatrix transpose;
     private TIntFloatHashMap lengths;   // lengths of each row
+    private String name;
 
     public PairwiseCosineSimilarity(SparseMatrix matrix, SparseMatrix transpose) throws IOException {
         this.matrix = matrix;
         this.transpose = transpose;
+        this.name = "pairwise-cosine-similarity (matrix=" +
+                matrix.getPath() + ", transpose=" +
+                transpose.getPath() + ")";
     }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    public String getName() {
+        return name;
+    }
+
 
     public void calculateRowLengths() {
         LOG.info("calculating row lengths");

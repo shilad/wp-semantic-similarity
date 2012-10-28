@@ -3,12 +3,13 @@ package edu.macalester.wpsemsim.sim;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
+import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -28,13 +29,29 @@ public class RegressionFitter {
         this.gold = readGoldStandard(goldStandard);
     }
 
-    public void calculateCorrelation(SparseMatrix matrix) {
-        double X[] = new double[gold.size()];
-        double Y[] = new double[gold.size()];
-        Arrays.fill(Y, -1.0);
+    public void analyzeMetrics(List<SimilarityMetric> metrics, BufferedWriter writer) throws IOException {
+        NumberFormat format = DecimalFormat.getPercentInstance();
+        format.setMaximumFractionDigits(1);
+        format.setMinimumFractionDigits(1);
+        for (SimilarityMetric metric : metrics) {
+            double[] r = calculateCorrelation(metric);
+            writer.write("analyzing metric: " + metric.getName() + "\n");
+            writer.write("\tcoverage=" + format.format(100.0 * r[1]) + "%\n");
+            writer.write("\tpearson=" + r[0] + "\n");
+        }
+    }
+
+    /**
+     * Calculates the pearson correlation between the metric and the gold standard
+     * @param metric
+     * @return [pearson-correlation, coverage between 0 and 1.0]
+     * @throws IOException
+     */
+    public double[] calculateCorrelation(SimilarityMetric metric) throws IOException {
+        TDoubleArrayList X = new TDoubleArrayList();
+        TDoubleArrayList Y = new TDoubleArrayList();
         for (int i = 0; i < gold.size(); i++) {
             KnownSim ks = gold.get(i);
-            X[i] = ks.similarity;
             LinkedHashMap<String, Float> concept1s = mapper.map(ks.phrase1);
             LinkedHashMap<String, Float> concept2s= mapper.map(ks.phrase2);
 
@@ -50,7 +67,32 @@ public class RegressionFitter {
             // for, now choose the first concepts
             String article1 = concept1s.keySet().iterator().next();
             String article2 = concept2s.keySet().iterator().next();
+
+            int wpId1 = helper.titleToWpId(article1);
+            if (wpId1 < 0) {
+                LOG.info("couldn't find article with title '" + article1 + "'");
+                continue;
+            }
+            int wpId2 = helper.titleToWpId(article2);
+            if (wpId2 < 0) {
+                LOG.info("couldn't find article with title '" + article2 + "'");
+                continue;
+            }
+
+            double sim = metric.similarity(wpId1, wpId2);
+            if (Double.isInfinite(sim) || Double.isNaN(sim)) {
+                LOG.info("sim between '" + article2 + "' and '" + article2 + "' is NAN or INF");
+                continue;
+            }
+
+            X.add(ks.similarity);
+            Y.add(sim);
         }
+
+        return new double[] {
+                new PearsonsCorrelation().correlation(X.toArray(), Y.toArray()),
+                1.0 * X.size() / gold.size()
+        };
     }
 
     private List<KnownSim> readGoldStandard(File path) throws IOException {
@@ -75,7 +117,6 @@ public class RegressionFitter {
         return result;
     }
 
-
     class KnownSim {
         String phrase1;
         String phrase2;
@@ -86,5 +127,9 @@ public class RegressionFitter {
             this.phrase2 = phrase2;
             this.similarity = similarity;
         }
+    }
+
+    public static void main(String args[]) {
+
     }
 }

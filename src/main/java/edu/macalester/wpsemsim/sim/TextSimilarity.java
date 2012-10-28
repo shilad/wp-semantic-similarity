@@ -19,19 +19,27 @@ public class TextSimilarity implements SimilarityMetric {
     public static final int DEFAULT_MAX_PERCENTAGE = 10;
     public static final int DEFAULT_MAX_QUERY_TERMS = 100;
 
-    private AtomicInteger counter = new AtomicInteger();
     private String field;
     private int maxPercentage = DEFAULT_MAX_PERCENTAGE;
     private int maxQueryTerms = DEFAULT_MAX_QUERY_TERMS;
     private IndexSearcher searcher;
     private IndexHelper helper;
     private DirectoryReader reader;
+    private String name;
 
     public TextSimilarity(IndexHelper helper, String field) {
         this.helper = helper;
         this.reader = helper.getReader();
         this.searcher = helper.getSearcher();
         this.field = field;
+        this.name = "text-similarity (field=" + field + ")";
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    public String getName() {
+        return name;
     }
 
     private MoreLikeThis getMoreLikeThis() {

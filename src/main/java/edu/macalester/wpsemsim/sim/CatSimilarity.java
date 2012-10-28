@@ -16,11 +16,20 @@ public class CatSimilarity implements SimilarityMetric {
     private CategoryGraph graph;
     private IndexHelper helper;
     private DirectoryReader reader;
+    private String name;
 
     public CatSimilarity(CategoryGraph graph, IndexHelper helper) {
         this.helper = helper;
         this.reader = helper.getReader();
         this.graph = graph;
+        this.name = "category-similarity";
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    public String getName() {
+        return name;
     }
 
     public double distanceToScore(double distance) {
