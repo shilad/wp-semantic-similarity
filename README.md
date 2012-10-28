@@ -19,7 +19,7 @@ Instructions for building the semantic similarity network:
 * Download the wikipedia dumps from http://dumps.wikimedia.org/enwiki/ . You want the *-pages-articles*.bz2 files, but the version broken down into many (25 or so) different bz2 files.
 * Create the lucene index. This should take an hour or two:
 
-  `./bin/index.sh`
+  `./bin/index.sh path/to/dump/bz2s/dir lucene/output/dir jvm_MBs`
 
 * Generate the similarity files:
 
