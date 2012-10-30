@@ -114,6 +114,9 @@ public class TextSimilarity implements SimilarityMetric {
         }
         IndexHelper helper = new IndexHelper(new File(args[1]), true);
         TextSimilarity sim = new TextSimilarity(helper, args[0]);
+        if (args[0].equals("links")) {
+            sim.setMinTermFreq(1);  // HACK!
+        }
         int cores = (args.length == 5)
                 ? Integer.valueOf(args[4])
                 : Runtime.getRuntime().availableProcessors();
