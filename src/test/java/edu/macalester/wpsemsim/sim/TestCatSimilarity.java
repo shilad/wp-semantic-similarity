@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestCatSimilarity {
-    private static final File TEST_CATEGORIES = new File("dat/test/article_cats.txt");
     private static final File TEST_CATEGORY_DUMP = new File("dat/test/cat_info.txt");
 
     static File indexPath;
@@ -33,30 +32,7 @@ public class TestCatSimilarity {
 
     @BeforeClass
     public static void createIndex() throws IOException, InterruptedException {
-        // Add fake documents for category structure
-        List<Document> cats = new ArrayList<Document>();
-        BufferedReader breader = new BufferedReader(new FileReader(TEST_CATEGORIES));
-        int id = 1000000;   // larger than any article id in dump file
-        while (true) {
-            String line = breader.readLine();
-            if (line == null) {
-                break;
-            }
-            String tokens[] = line.split(",");
-            if (tokens.length >= 2) {
-                String title = "Category:" + tokens[0].trim();
-                StringBuffer text = new StringBuffer("here comez the cats\n");
-                for (int i = 1; i < tokens.length; i++) {
-                    text.append(" [[Category:" + tokens[i].trim() + "]]\n");
-                }
-                Page p = new Page(14, id, false, title, text.toString());
-                assert(p.getCategories().size() == tokens.length - 1);
-                cats.add(p.toLuceneDoc());
-                id++;
-            }
-        }
-
-        indexPath = new File(TestUtils.buildIndex(cats), "cats");
+        indexPath = new File(TestUtils.buildIndexWithCategories(), "cats");
         helper = new IndexHelper(indexPath, true);
         graph = new CategoryGraph(helper);
         graph.init();

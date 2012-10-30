@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,7 +20,8 @@ public class PairwiseSimilarityWriter {
 
     private SimilarityMetric metric;
     private SparseMatrixWriter writer;
-    private AtomicInteger counter = new AtomicInteger();
+    private AtomicInteger idCounter = new AtomicInteger();
+    private long numCells;
 
     public PairwiseSimilarityWriter(SimilarityMetric metric, File outputFile) throws IOException {
         this.metric = metric;
@@ -45,16 +47,20 @@ public class PairwiseSimilarityWriter {
             exec.shutdown();
             exec.awaitTermination(60, TimeUnit.HOURS);
         }
+        LOG.info("wrote " + numCells + " non-zero similarity cells");
         this.writer.finish();
     }
 
     private void writeSims(int[] wpIds, int nthreads, int offset, int maxSimsPerDoc) throws IOException {
         for (int i = offset; i < wpIds.length; i += nthreads) {
-            if (counter.incrementAndGet() % 10000 == 0) {
-                System.err.println("" + new Date() + ": finding matches for doc " + counter.get());
+            if (idCounter.incrementAndGet() % 10000 == 0) {
+                System.err.println("" + new Date() + ": finding matches for doc " + idCounter.get());
             }
             int wpId = wpIds[i];
             DocScoreList scores = metric.mostSimilar(wpId, maxSimsPerDoc);
+            synchronized (this) {
+                numCells += scores.getIds().length;
+            }
             writer.writeRow(new SparseMatrixRow(wpId, scores.getIds(), scores.getScoresAsFloat()));
         }
     }

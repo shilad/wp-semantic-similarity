@@ -9,7 +9,6 @@ import gnu.trove.map.hash.TIntFloatHashMap;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.logging.Logger;
 
 public class PairwiseCosineSimilarity implements SimilarityMetric {

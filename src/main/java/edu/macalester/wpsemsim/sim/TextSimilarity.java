@@ -18,10 +18,14 @@ public class TextSimilarity implements SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(TextSimilarity.class.getName());
     public static final int DEFAULT_MAX_PERCENTAGE = 10;
     public static final int DEFAULT_MAX_QUERY_TERMS = 100;
+    public static final int DEFAULT_MIN_TERM_FREQ = 2;
+    public static final int DEFAULT_MIN_DOC_FREQ = 2;
 
     private String field;
     private int maxPercentage = DEFAULT_MAX_PERCENTAGE;
     private int maxQueryTerms = DEFAULT_MAX_QUERY_TERMS;
+    private int minTermFreq = DEFAULT_MIN_TERM_FREQ;
+    private int minDocFreq = DEFAULT_MIN_DOC_FREQ;
     private IndexSearcher searcher;
     private IndexHelper helper;
     private DirectoryReader reader;
@@ -46,6 +50,8 @@ public class TextSimilarity implements SimilarityMetric {
         MoreLikeThis mlt = new MoreLikeThis(reader); // Pass the reader reader
         mlt.setMaxDocFreqPct(maxPercentage);
         mlt.setMaxQueryTerms(maxQueryTerms);
+        mlt.setMinDocFreq(minDocFreq);
+        mlt.setMinTermFreq(minTermFreq);
         mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_40));
         mlt.setFieldNames(new String[]{field}); // specify the fields for similiarity
         return mlt;
@@ -89,6 +95,14 @@ public class TextSimilarity implements SimilarityMetric {
 
     public void setMaxQueryTerms(int maxQueryTerms) {
         this.maxQueryTerms = maxQueryTerms;
+    }
+
+    public void setMinTermFreq(int minTermFreq) {
+        this.minTermFreq = minTermFreq;
+    }
+
+    public void setMinDocFreq(int minDocFreq) {
+        this.minDocFreq = minDocFreq;
     }
 
     public static void main(String args[]) throws IOException, InterruptedException, CompressorException {

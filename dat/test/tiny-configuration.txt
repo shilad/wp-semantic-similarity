@@ -1,0 +1,15 @@
+{
+    "index" : "LUCENE/links",
+    "article-links" : {
+        "type" : "text",
+        "field" : "links",
+        "lucene" : "LUCENE/links",
+        "max-percentage" : 100,
+    },
+    "pairwise-links" : {
+        "type" : "pairwise",
+        "matrix" : "DAT/links-sims.matrix",
+        "basedOn" : "article-links",
+        "transpose" : "DAT/links-sims.transpose.matrix",
+    },
+}

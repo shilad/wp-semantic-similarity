@@ -2,59 +2,67 @@ package edu.macalester.wpsemsim.sim;
 
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.plist.PropertyListConfiguration;
-import org.apache.commons.configuration.tree.ConfigurationNode;
-import org.junit.experimental.categories.Category;
+import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
+import edu.macalester.wpsemsim.utils.ConfigurationFile;
+import org.json.simple.JSONObject;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.Logger;
+
+import static edu.macalester.wpsemsim.utils.ConfigurationFile.*;
 
 /*
-* TODO: share resources when possible; move to a true
+* TODO: share resources when possible; move to a true dependency injection framework
+*
 * For format, see:
-* https://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/PropertyLists/OldStylePlists/OldStylePLists.html
+* <a href="https://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/PropertyLists/OldStylePlists/OldStylePLists.html">The Mac documentation</a>
 * And look at dat/example.conf
 */
 public class SimilarityMetricConfigurator {
-    PropertyListConfiguration configuration;
+    private static final Logger LOG = Logger.getLogger(SimilarityMetricConfigurator.class.getName());
 
-    public SimilarityMetricConfigurator(File file) throws ConfigurationException {
-        this.configuration = new PropertyListConfiguration(file);
+    ConfigurationFile configuration;
+
+    public SimilarityMetricConfigurator(ConfigurationFile conf) {
+        this.configuration = conf;
     }
 
-    public List<SimilarityMetric> configure() throws IOException, ConfigurationException {
+    public List<SimilarityMetric> load() throws IOException, ConfigurationException {
+        info("loading metrics");
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-        ConfigurationNode root = configuration.getRootNode();
-        for (ConfigurationNode child : root.getChildren()) {
-            metrics.add(configureMetric(child));
+        for (String key : configuration.getKeys()) {
+            if (configuration.isSimilarityMetric(key)) {
+                metrics.add(loadMetric(key, configuration.get(key)));
+            }
         }
-
         return metrics;
     }
 
-    private SimilarityMetric configureMetric(ConfigurationNode root) throws ConfigurationException, IOException {
-        Map<String, Object> params = new LinkedHashMap<String, Object>();
-        for (ConfigurationNode child : root.getChildren()) {
-            params.put(child.getName(), child.getValue());
-        }
-        return configureMetric(params);
-    }
-
-    protected SimilarityMetric configureMetric(Map<String,Object> params) throws ConfigurationException, IOException {
-        String name = requireString(params, "name");
+    protected SimilarityMetric loadMetric(String name, JSONObject params) throws ConfigurationException, IOException {
+        info("loading metric " + name);
         String type = requireString(params, "type");
         SimilarityMetric metric;
         if (type.equals("category")) {
             File luceneDir = requireDirectory(params, "lucene");
             IndexHelper helper = new IndexHelper(luceneDir, true);
             CategoryGraph graph = new CategoryGraph(helper);
+            graph.init();
             metric = new CatSimilarity(graph, helper);
         } else if (type.equals("text")) {
             File luceneDir = requireDirectory(params, "lucene");
             IndexHelper helper = new IndexHelper(luceneDir, true);
             String field = requireString(params, "field");
             metric = new TextSimilarity(helper, field);
+            if (params.containsKey("maxPercentage")) {
+                ((TextSimilarity)metric).setMaxPercentage(requireInteger(params, "maxPercentage"));
+            }
+            if (params.containsKey("minTermFreq")) {
+                ((TextSimilarity)metric).setMinTermFreq(requireInteger(params, "minTermFreq"));
+            }
+            if (params.containsKey("minDocFreq")) {
+                ((TextSimilarity)metric).setMinDocFreq(requireInteger(params, "minDocFreq"));
+            }
         } else if (type.equals("pairwise")) {
             SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"), false, PairwiseCosineSimilarity.PAGE_SIZE);
             SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
@@ -63,47 +71,62 @@ public class SimilarityMetricConfigurator {
             throw new ConfigurationException("Unknown metric type: " + type);
         }
         metric.setName(name);
-        return null;
+        return metric;
     }
 
-    protected String requireString(Map<String, Object> params, String key) throws ConfigurationException {
-        Object val = params.get(key);
-        if (val == null) {
-            throw new ConfigurationException("Missing configuration parameter " + key);
+
+    public void build() throws IOException, ConfigurationException, InterruptedException {
+        info("building all metrics");
+        List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
+
+        IndexHelper helper = new IndexHelper(requireDirectory(configuration.get(), "index"), true);
+
+        // first do non-pairwise (no pre-processing required)
+        for (String key : configuration.getKeys()) {
+            if (configuration.isSimilarityMetric(key) && !configuration.get(key).get("type").equals("pairwise")) {
+                metrics.add(loadMetric(key, configuration.get(key)));
+            }
         }
-        if (!(val instanceof String)) {
-            throw new ConfigurationException("expected " + key + " to be a string, was " + val.getClass().getName());
+
+        // next do pairwise
+        for (String key : configuration.getKeys()) {
+            if (configuration.isSimilarityMetric(key) && configuration.get(key).get("type").equals("pairwise")) {
+                metrics.add(buildPairwise(key, configuration.get(key), metrics, helper.getWpIds()));
+            }
         }
-        return (String)val;
+
     }
-    protected File requireDirectory(Map<String, Object> params, String key) throws ConfigurationException {
-        File f = new File(requireString(params, key));
-        if (!f.isDirectory()) {
-            throw new ConfigurationException("directory for parameter " + key + " = " + f + " does not exist.");
+
+    protected SimilarityMetric buildPairwise(String name, JSONObject params, List<SimilarityMetric> metrics, int[] wpIds) throws ConfigurationException, IOException, InterruptedException {
+        info("building metric " + name);
+        String basedOnName = requireString(params, "basedOn");
+        SimilarityMetric basedOn = null;
+        for (SimilarityMetric m : metrics) {
+            if (m.getName().equals(basedOnName)) {
+                basedOn = m;
+                break;
+            }
         }
-        return f;
+        if (basedOn == null) {
+            throw new ConfigurationException("could not find basedOn metric: " + basedOnName);
+        }
+
+        File matrixFile = new File(requireString(params, "matrix"));
+        File transposeFile = new File(requireString(params, "transpose"));
+        PairwiseSimilarityWriter writer =
+                new PairwiseSimilarityWriter(basedOn, matrixFile);
+        writer.writeSims(wpIds, 1, 20);
+        SparseMatrix matrix = new SparseMatrix(matrixFile);
+        SparseMatrixTransposer transposer = new SparseMatrixTransposer(matrix, transposeFile, 100);
+        transposer.transpose();
+        SparseMatrix transpose = new SparseMatrix(transposeFile);
+
+        SimilarityMetric metric = new PairwiseCosineSimilarity(matrix, transpose);
+        metric.setName(name);
+        return metric;
     }
-    protected File requireFile(Map<String, Object> params, String key) throws ConfigurationException {
-        File f = new File(requireString(params, key));
-        if (!f.isFile()) {
-            throw new ConfigurationException("file for parameter " + key + " = " + f + " does not exist.");
-        }
-        return f;
-    }
-    protected Integer requireInteger(Map<String, Object> params, String key) throws ConfigurationException {
-        String s = requireString(params, key);
-        try {
-            return Integer.valueOf(s);
-        } catch (NumberFormatException e) {
-            throw new ConfigurationException("parameter " + key + " = " + s + " is not an integer");
-        }
-    }
-    protected Double requireDouble(Map<String, Object> params, String key) throws ConfigurationException {
-        String s = requireString(params, key);
-        try {
-            return Double.valueOf(s);
-        } catch (NumberFormatException e) {
-            throw new ConfigurationException("parameter " + key + " = " + s + " is not a double");
-        }
+
+    private void info(String message) {
+        LOG.info("configurator for " + configuration.getPath() + ": " + message);
     }
 }

@@ -1,16 +1,20 @@
 package edu.macalester.wpsemsim.utils;
 
 import edu.macalester.wpsemsim.lucene.IndexBuilder;
+import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
+import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
 import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
+import edu.macalester.wpsemsim.sim.*;
 import gnu.trove.set.hash.TIntHashSet;
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.MMapDirectory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,7 +22,8 @@ import java.util.Random;
 
 public class TestUtils {
     public static File TEST_INPUT_FILE = new File("dat/test/dump/wp.test.xml");
-
+    public static final File TEST_CATEGORIES = new File("dat/test/article_cats.txt");
+    public static final File TEST_CONF = new File("dat/test/test-configuration.txt");
     /**
      * Build a lucene index for the test data.
      * @return
@@ -41,6 +46,53 @@ public class TestUtils {
         }
         builder.write(1);
         return outputDir;
+    }
+
+    public static File buildIndexWithCategories() throws IOException, InterruptedException {
+        // Add fake documents for category structure
+        List<Document> cats = new ArrayList<Document>();
+        BufferedReader breader = new BufferedReader(new FileReader(TEST_CATEGORIES));
+        int id = 1000000;   // larger than any article id in dump file
+        while (true) {
+            String line = breader.readLine();
+            if (line == null) {
+                break;
+            }
+            String tokens[] = line.split(",");
+            if (tokens.length >= 2) {
+                String title = "Category:" + tokens[0].trim();
+                StringBuffer text = new StringBuffer("here comez the cats\n");
+                for (int i = 1; i < tokens.length; i++) {
+                    text.append(" [[Category:" + tokens[i].trim() + "]]\n");
+                }
+                Page p = new Page(14, id, false, title, text.toString());
+                assert(p.getCategories().size() == tokens.length - 1);
+                cats.add(p.toLuceneDoc());
+                id++;
+            }
+        }
+        breader.close();
+        return buildIndex(cats);
+    }
+
+    public static List<SimilarityMetric> buildAllModels() throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
+        File index = buildIndexWithCategories();
+        File dat = File.createTempFile("wpsemsim-dat", null);
+        dat.delete();
+        dat.mkdirs();
+        File conf = File.createTempFile("wpsemsim-conf", null);
+        dat.deleteOnExit();
+        conf.deleteOnExit();
+
+        String content = FileUtils.readFileToString(TEST_CONF);
+        content = content.replaceAll("DAT", dat.getAbsolutePath());
+        content = content.replaceAll("LUCENE", index.getAbsolutePath());
+        FileUtils.writeStringToFile(conf, content, false);
+
+        SimilarityMetricConfigurator configurator =
+                new SimilarityMetricConfigurator(new ConfigurationFile(conf));
+        configurator.build();
+        return configurator.load();
     }
 
     /**

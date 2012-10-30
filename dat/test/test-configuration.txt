@@ -1,0 +1,42 @@
+{
+    "index" : "LUCENE/links",
+    "article-cats" : {
+        "type" : "category",
+        "lucene" : "LUCENE/cats",
+        "test-list" : ["foo", "bar"],
+    },
+    "article-text" : {
+        "type" : "text",
+        "field" : "text",
+        "maxPercentage" : 100,
+        "minTermFreq" : 2,
+        "minDocFreq" : 2,
+        "lucene" : "LUCENE/text",
+    },
+    "article-links" : {
+        "type" : "text",
+        "field" : "links",
+        "maxPercentage" : 100,
+        "minTermFreq" : 1,
+        "minDocFreq" : 2,
+        "lucene" : "LUCENE/links",
+    },
+    "pairwise-text" : {
+        "type" : "pairwise",
+        "matrix" : "DAT/text-sims.matrix",
+        "basedOn" : "article-text",
+        "transpose" : "DAT/text-sims.transpose.matrix",
+    },
+    "pairwise-links" : {
+        "type" : "pairwise",
+        "matrix" : "DAT/links-sims.matrix",
+        "basedOn" : "article-links",
+        "transpose" : "DAT/links-sims.transpose.matrix",
+    },
+    "pairwise-cats" : {
+        "type" : "pairwise",
+        "matrix" : "DAT/cats-sims.matrix",
+        "basedOn" : "article-cats",
+        "transpose" : "DAT/cats-sims.transpose.matrix",
+    },
+}

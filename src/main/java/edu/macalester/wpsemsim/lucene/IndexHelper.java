@@ -35,6 +35,7 @@ public class IndexHelper {
                 mmap ? MMapDirectory.open(indexDir)
                         : FSDirectory.open(indexDir)
         );
+        LOG.info("opening index helper for " + indexDir + " with " + reader.numDocs() + " docs");
         this.searcher = new IndexSearcher(this.reader);
     }
 
