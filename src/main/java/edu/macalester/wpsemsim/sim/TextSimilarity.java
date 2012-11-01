@@ -61,15 +61,20 @@ public class TextSimilarity implements SimilarityMetric {
     public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
         MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = helper.wpIdToLuceneId(wpId);
-        Query query = mlt.like(luceneId);
-        TopDocs similarDocs = searcher.search(query, maxResults);
+        TopDocs similarDocs = searcher.search(mlt.like(luceneId), maxResults);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
-        for (int j = 0; j < similarDocs.scoreDocs.length; j++) {
-            ScoreDoc sd = similarDocs.scoreDocs[j];
-            scores.set(j,
+        for (int i = 0; i < similarDocs.scoreDocs.length; i++) {
+            ScoreDoc sd = similarDocs.scoreDocs[i];
+            scores.set(i,
                     helper.luceneIdToWpId(sd.doc),
-                    similarDocs.scoreDocs[j].score);
+                    similarDocs.scoreDocs[i].score);
         }
+//        System.err.println(
+//                "wpId=" + wpId +
+//                " links=" + reader.document(luceneId).get(field) +
+//                " luceneId=" + luceneId +
+//                " maxResults=" + maxResults +
+//                " results=" + similarDocs.scoreDocs.length);
         return scores;
     }
 

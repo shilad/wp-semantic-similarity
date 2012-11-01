@@ -2,6 +2,7 @@ package edu.macalester.wpsemsim.lucene;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -137,7 +138,7 @@ public class IndexBuilder {
     private void storePageInIndex(Document src, int index) throws IOException {
         String info[] = INDEX_INFO[index];
         String nss[] = info[1].split(",");
-        if (!contains(nss, src.getField("ns").stringValue())) {
+        if (!ArrayUtils.contains(nss, src.getField("ns").stringValue())) {
             return;
         }
         Document pruned = new Document();
@@ -147,15 +148,6 @@ public class IndexBuilder {
             }
         }
         writers[index].addDocument(pruned);
-    }
-
-    private static boolean contains(String A[], String el) {
-        for (String s : A) {
-            if (s.equals(el)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static void main(String args[]) throws IOException, InterruptedException {
