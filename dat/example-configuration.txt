@@ -1,18 +1,18 @@
 {
     // The lucene index directory used to get Wikipedia ids and
     // a mapping between ids and article titles
-    "index" : "LUCENE/links",
+    "index" : "dat/lucene/links",
 
     // The concept mapper that maps phrases to articles
     "concept-mapper" : {
-        "dictionary" : "DAT/dictionary.pruned"
+        "dictionary" : "dat/dictionary.pruned"
     },
 
-    // similarity metrics
+    // The similarity metrics
     "metrics" : {
         "article-cats" : {
             "type" : "category",
-            "lucene" : "LUCENE/cats",
+            "lucene" : "dat/lucene/cats",
             "test-list" : ["foo", "bar"],
         },
         "article-text" : {
@@ -21,7 +21,7 @@
             "maxPercentage" : 100,
             "minTermFreq" : 2,
             "minDocFreq" : 2,
-            "lucene" : "LUCENE/text",
+            "lucene" : "dat/lucene/text",
         },
         "article-links" : {
             "type" : "text",
@@ -29,25 +29,25 @@
             "maxPercentage" : 100,
             "minTermFreq" : 1,
             "minDocFreq" : 2,
-            "lucene" : "LUCENE/links",
+            "lucene" : "dat/lucene/links",
         },
         "pairwise-text" : {
             "type" : "pairwise",
-            "matrix" : "DAT/text-sims.matrix",
+            "matrix" : "dat/text-sims.matrix",
             "basedOn" : "article-text",
-            "transpose" : "DAT/text-sims.transpose.matrix",
+            "transpose" : "dat/text-sims.transpose.matrix",
         },
         "pairwise-links" : {
             "type" : "pairwise",
-            "matrix" : "DAT/links-sims.matrix",
+            "matrix" : "dat/links-sims.matrix",
             "basedOn" : "article-links",
-            "transpose" : "DAT/links-sims.transpose.matrix",
+            "transpose" : "dat/links-sims.transpose.matrix",
         },
         "pairwise-cats" : {
             "type" : "pairwise",
-            "matrix" : "DAT/cats-sims.matrix",
+            "matrix" : "dat/cats-sims.matrix",
             "basedOn" : "article-cats",
-            "transpose" : "DAT/cats-sims.transpose.matrix",
+            "transpose" : "dat/cats-sims.transpose.matrix",
         },
     }
 }

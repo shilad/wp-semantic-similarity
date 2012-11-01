@@ -15,10 +15,19 @@ public class ConfigurationFile {
 
     public ConfigurationFile(File file) throws IOException, ConfigurationException {
         this.file = file;
-        String content = FileUtils.readFileToString(file);
+
+        // HACK: treat lines that start with "//" as comments
+        List<String> lines = FileUtils.readLines(file);
+        StringBuffer content = new StringBuffer();
+        for (String line : lines) {
+            if (!line.trim().startsWith("//")) {
+                content.append(line);
+            }
+        }
+
         Object obj= null;
         try {
-            obj = JSONValue.parseWithException(content);
+            obj = JSONValue.parseWithException(content.toString());
         } catch (ParseException e) {
             throw new ConfigurationException("parse error in configuration file " + file + ": " + e.toString());
         }
@@ -32,12 +41,23 @@ public class ConfigurationFile {
         return conf.get(key);
     }
 
-    public JSONObject get(String key) {
-        return (JSONObject) conf.get(key);
+    public JSONObject get(String ...keys) {
+        JSONObject obj = conf;
+        for (int i = 0; i < keys.length; i++) {
+            Object val = obj.get(keys[i]);
+            if (val == null) {
+                throw new RuntimeException("missing key: " + keys[i]);
+            }
+            if (!(val instanceof JSONObject)) {
+                throw new RuntimeException("key " + keys[i] + " is not a JSONObject. It is a " + val.getClass().getName());
+            }
+            obj = (JSONObject) val;
+        }
+        return obj;
     }
 
-    public Set<String> getKeys() {
-        return conf.keySet();
+    public Set<String> getKeys(String ...keys) {
+        return get(keys).keySet();
     }
 
     public static String requireString(Map<String, Object> params, String key) throws ConfigurationException {

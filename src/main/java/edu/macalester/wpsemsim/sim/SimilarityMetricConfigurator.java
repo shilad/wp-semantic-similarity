@@ -1,5 +1,8 @@
 package edu.macalester.wpsemsim.sim;
 
+import com.sleepycat.je.DatabaseException;
+import edu.macalester.wpsemsim.concepts.ConceptMapper;
+import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
@@ -28,13 +31,11 @@ public class SimilarityMetricConfigurator {
         this.configuration = conf;
     }
 
-    public List<SimilarityMetric> load() throws IOException, ConfigurationException {
+    public List<SimilarityMetric> loadAllMetrics() throws IOException, ConfigurationException {
         info("loading metrics");
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-        for (String key : configuration.getKeys()) {
-            if (configuration.isSimilarityMetric(key)) {
-                metrics.add(loadMetric(key, configuration.get(key)));
-            }
+        for (String key : configuration.getKeys("metrics")) {
+            metrics.add(loadMetric(key, configuration.get("metrics", key)));
         }
         return metrics;
     }
@@ -74,24 +75,36 @@ public class SimilarityMetricConfigurator {
         return metric;
     }
 
+    public IndexHelper buildIndexHelper() throws ConfigurationException, IOException {
+        return new IndexHelper(requireDirectory(configuration.get(), "index"), true);
+    }
+
+    public ConceptMapper buildConceptMapper() throws ConfigurationException, IOException, DatabaseException {
+        return new DictionaryDatabase(
+                    requireDirectory(
+                            configuration.get("concept-mapper"), "dictionary"
+                ));
+    }
 
     public void build() throws IOException, ConfigurationException, InterruptedException {
         info("building all metrics");
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
 
-        IndexHelper helper = new IndexHelper(requireDirectory(configuration.get(), "index"), true);
-
         // first do non-pairwise (no pre-processing required)
-        for (String key : configuration.getKeys()) {
-            if (configuration.isSimilarityMetric(key) && !configuration.get(key).get("type").equals("pairwise")) {
-                metrics.add(loadMetric(key, configuration.get(key)));
+        for (String key : configuration.getKeys("metrics")) {
+            JSONObject params = configuration.get("metrics", key);
+            if (!params.get("type").equals("pairwise")) {
+                metrics.add(loadMetric(key, params));
             }
         }
 
         // next do pairwise
-        for (String key : configuration.getKeys()) {
-            if (configuration.isSimilarityMetric(key) && configuration.get(key).get("type").equals("pairwise")) {
-                metrics.add(buildPairwise(key, configuration.get(key), metrics, helper.getWpIds()));
+        IndexHelper helper = buildIndexHelper();
+        int wpIds[] = helper.getWpIds();
+        for (String key : configuration.getKeys("metrics")) {
+            JSONObject params = configuration.get("metrics", key);
+            if (params.get("type").equals("pairwise")) {
+                metrics.add(buildPairwise(key, params, metrics, wpIds));
             }
         }
 

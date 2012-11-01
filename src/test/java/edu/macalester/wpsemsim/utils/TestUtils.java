@@ -1,11 +1,9 @@
 package edu.macalester.wpsemsim.utils;
 
 import edu.macalester.wpsemsim.lucene.IndexBuilder;
-import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
-import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
 import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import edu.macalester.wpsemsim.sim.*;
 import gnu.trove.set.hash.TIntHashSet;
@@ -92,7 +90,7 @@ public class TestUtils {
         SimilarityMetricConfigurator configurator =
                 new SimilarityMetricConfigurator(new ConfigurationFile(conf));
         configurator.build();
-        return configurator.load();
+        return configurator.loadAllMetrics();
     }
 
     /**

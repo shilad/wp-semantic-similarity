@@ -1,8 +1,11 @@
 package edu.macalester.wpsemsim.sim;
 
+import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
+import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
+import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
@@ -129,7 +132,25 @@ public class RegressionFitter {
         }
     }
 
-    public static void main(String args[]) {
-
+    public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException {
+        if (args.length != 3) {
+            System.err.println(
+                    "usage: java " + RegressionFitter.class.toString() +
+                    " path/to/sim/metric/conf.txt" +
+                    " path/to/gold/standard.txt" +
+                    " path/to/reg/model_output.txt"
+            );
+            System.exit(1);
+        }
+        SimilarityMetricConfigurator conf = new SimilarityMetricConfigurator(
+                new ConfigurationFile(new File(args[0])));
+        RegressionFitter fitter = new RegressionFitter(
+                new File(args[1]),
+                conf.buildConceptMapper(),
+                conf.buildIndexHelper()
+        );
+        BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
+        fitter.analyzeMetrics(conf.loadAllMetrics(), writer);
+        writer.close();
     }
 }

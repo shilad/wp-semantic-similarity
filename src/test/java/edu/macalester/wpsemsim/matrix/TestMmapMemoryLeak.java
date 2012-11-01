@@ -17,7 +17,7 @@ public class TestMmapMemoryLeak {
     @Test
     public void testOnlyOnePageLoaded() throws IOException {
         SparseMatrix m = TestUtils.createTestMatrix(NUM_ROWS, MAX_ROW_LENGTH, false, NUM_ROWS * 20, false);
-        SparseMatrixRow first = m.getRow(m.getRowIds()[0]); // force the first page to load.
+        SparseMatrixRow first = m.getRow(m.getRowIds()[0]); // force the first page to loadAllMetrics.
         first = null;
         MappedByteBuffer buffer = m.buffers.get(0).buffer;
         MemoryLeakVerifier verifier = new MemoryLeakVerifier(buffer);
