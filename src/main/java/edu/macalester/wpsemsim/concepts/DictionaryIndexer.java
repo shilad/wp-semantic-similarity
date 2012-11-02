@@ -53,7 +53,7 @@ public class DictionaryIndexer {
     }
 
     public boolean retain(DictionaryEntry entry) {
-        Fraction f = entry.getFractionEnglishQueries();
+        Fraction f = entry.getFractionEnglishLinks();
         return (
             f != null
             && f.getNumerator() >= minNumLinks

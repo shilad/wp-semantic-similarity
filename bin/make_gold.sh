@@ -40,9 +40,9 @@ cp -p $DL/atlasify240.csv $SRC/atlasify240.csv ||
 
 # WikiSimi
 #
-wget -P $DL http://sigwp.org/wikisimi/WikiSimi3000_1.csv &&
-cp -p $DL/WikiSimi3000_1.csv  $SRC/WikiSimi3000.tab ||
-{ echo "ERROR: preparing wikisimi dataset failed" >&2; exit 1;}
+#wget -P $DL http://sigwp.org/wikisimi/WikiSimi3000_1.csv &&
+#cp -p $DL/WikiSimi3000_1.csv  $SRC/WikiSimi3000.tab ||
+#{ echo "ERROR: preparing wikisimi dataset failed" >&2; exit 1;}
 
 python src/main/python/combine_gold.py $SRC/*.* >dat/gold/combined.tab.txt || 
 { echo "ERROR: combining datasets failed" >&2; exit 1;}

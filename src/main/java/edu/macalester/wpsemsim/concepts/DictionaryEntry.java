@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.concepts;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.Fraction;
 
 import java.util.regex.Matcher;
@@ -9,6 +10,7 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
     private String text;
     private float fraction;
     private String article;
+    private int numLinks;
     private String flags[];
 
     // Format: text + "\t" + probability + " " + url + " " + flags...
@@ -25,6 +27,7 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
         this.fraction = Float.valueOf(m.group(2));
         this.article = m.group(3);
         this.flags = m.group(4).split(" ");
+        this.numLinks = getNumberEnglishLinks();
 
         // Strip newline
         if (!line.isEmpty() && line.endsWith("\n")) {
@@ -53,13 +56,22 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
         return line;
     }
 
-    public Fraction getFractionEnglishQueries() {
+    public Fraction getFractionEnglishLinks() {
         for (String f : flags) {
             if (f.startsWith("W:")) {
                 return Fraction.getFraction(f.substring(2));
             }
         }
         return null;
+    }
+
+    public int getNumberEnglishLinks() {
+        Fraction f = getFractionEnglishLinks();
+        return (f == null) ? 0 : f.getNumerator();
+    }
+
+    public boolean hasFlag(String flag) {
+        return ArrayUtils.contains(flags, flag);
     }
 
     public String getNormalizedText() {
@@ -75,12 +87,6 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
 
     @Override
     public int compareTo(DictionaryEntry e) {
-        if (this.fraction < e.fraction) {
-            return -1;
-        } else if (this.fraction > e.fraction) {
-            return +1;
-        } else {
-            return line.compareTo(e.line);
-        }
+        return this.numLinks - e.numLinks;
     }
 }

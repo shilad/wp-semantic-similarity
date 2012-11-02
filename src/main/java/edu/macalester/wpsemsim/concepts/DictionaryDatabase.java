@@ -72,7 +72,6 @@ public class DictionaryDatabase implements ConceptMapper {
     public List<DictionaryEntry> get(String text) throws DatabaseException {
         DatabaseEntry current = new DatabaseEntry();
         DatabaseEntry key = new DatabaseEntry(DictionaryEntry.normalize(text).getBytes());
-        System.err.println("in get key is " + new String(key.getData()));
         OperationStatus status = db.get(null, key, current, null);
         if (status.equals(OperationStatus.NOTFOUND)) {
             return new ArrayList<DictionaryEntry>();
@@ -94,7 +93,9 @@ public class DictionaryDatabase implements ConceptMapper {
             Collections.sort(entries);
             Collections.reverse(entries);
             for (DictionaryEntry e : entries) {
-                mapping.put(e.getArticle(), e.getFraction());
+                if (e.hasFlag("W09")) { // TODO: remove after we handle redirects and disambigs
+                    mapping.put(e.getArticle(), e.getFraction());
+                }
             }
         } catch (DatabaseException e) {
             LOG.log(Level.SEVERE, "concept mapping for '" + text + "' failed:", e);

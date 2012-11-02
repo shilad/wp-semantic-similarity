@@ -81,7 +81,11 @@ public class IndexHelper {
 
     public int titleToWpId(String title) {
         try {
-            Document d = reader.document(titleToLuceneId((title)));
+            int luceneId = titleToLuceneId(title);
+            if (luceneId < 0) {
+                return -1;
+            }
+            Document d = reader.document(luceneId);
             return Integer.valueOf(d.getField("id").stringValue());
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "fetching wp id for " + title + " failed:", e);
@@ -89,6 +93,7 @@ public class IndexHelper {
         }
     }
     public int titleToLuceneId(String title) {
+        title = title.replaceAll("_", " ");
         Query query = new TermQuery(new Term("title", title));
         try {
             ScoreDoc[] hits = searcher.search(query, null, 1).scoreDocs;

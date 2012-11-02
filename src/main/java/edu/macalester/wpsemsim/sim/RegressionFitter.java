@@ -39,7 +39,7 @@ public class RegressionFitter {
         for (SimilarityMetric metric : metrics) {
             double[] r = calculateCorrelation(metric);
             writer.write("analyzing metric: " + metric.getName() + "\n");
-            writer.write("\tcoverage=" + format.format(100.0 * r[1]) + "%\n");
+            writer.write("\tcoverage=" + format.format(r[1]) + "%\n");
             writer.write("\tpearson=" + r[0] + "\n");
         }
     }
@@ -54,15 +54,18 @@ public class RegressionFitter {
         TDoubleArrayList X = new TDoubleArrayList();
         TDoubleArrayList Y = new TDoubleArrayList();
         for (int i = 0; i < gold.size(); i++) {
+            if (i % 500 == 0) {
+                LOG.info("calculating metric " + metric.getName() + " gold results for number " + i);
+            }
             KnownSim ks = gold.get(i);
             LinkedHashMap<String, Float> concept1s = mapper.map(ks.phrase1);
             LinkedHashMap<String, Float> concept2s= mapper.map(ks.phrase2);
 
             if (concept1s.isEmpty()) {
-                LOG.info("no concepts for phrase " + ks.phrase1);
+//                LOG.info("no concepts for phrase " + ks.phrase1);
             }
             if (concept2s.isEmpty()) {
-                LOG.info("no concepts for phrase " + ks.phrase2);
+//                LOG.info("no concepts for phrase " + ks.phrase2);
             }
             if (concept1s.isEmpty() || concept2s.isEmpty()) {
                 continue;
@@ -73,29 +76,33 @@ public class RegressionFitter {
 
             int wpId1 = helper.titleToWpId(article1);
             if (wpId1 < 0) {
-                LOG.info("couldn't find article with title '" + article1 + "'");
+//                LOG.info("couldn't find article with title '" + article1 + "'");
                 continue;
             }
             int wpId2 = helper.titleToWpId(article2);
             if (wpId2 < 0) {
-                LOG.info("couldn't find article with title '" + article2 + "'");
+//                LOG.info("couldn't find article with title '" + article2 + "'");
                 continue;
             }
 
-            double sim = metric.similarity(wpId1, wpId2);
-            if (Double.isInfinite(sim) || Double.isNaN(sim)) {
-                LOG.info("sim between '" + article2 + "' and '" + article2 + "' is NAN or INF");
-                continue;
+            double sim;
+            if (wpId1 == wpId2) {
+                sim = 1.0;
+            } else {
+                sim = metric.similarity(wpId1, wpId2);
+                if (Double.isInfinite(sim) || Double.isNaN(sim)) {
+                    LOG.info("sim between '" + article1 + "' and '" + article2 + "' is NAN or INF");
+                    continue;
+                }
             }
 
             X.add(ks.similarity);
             Y.add(sim);
         }
 
-        return new double[] {
-                new PearsonsCorrelation().correlation(X.toArray(), Y.toArray()),
-                1.0 * X.size() / gold.size()
-        };
+        double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
+        LOG.info("correlation for " + metric.getName() + " is " + pearson);
+        return new double[] { pearson, 1.0 * X.size() / gold.size() };
     }
 
     private List<KnownSim> readGoldStandard(File path) throws IOException {

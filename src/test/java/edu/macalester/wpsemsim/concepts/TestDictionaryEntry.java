@@ -16,7 +16,7 @@ public class TestDictionaryEntry {
         assertEquals(e1.getFlags()[1], "RWB");
         assertEquals(e1.getFraction(), 0.0, 0.00001);
         assertEquals(e1.getArticle(), "Pru_(Thai_band)");
-        assertNull(e1.getFractionEnglishQueries());
+        assertNull(e1.getFractionEnglishLinks());
 
 
         DictionaryEntry e2 = new DictionaryEntry("Personal life\t1.39776e-05 Paul_Kariya KB W:1/71421 W08 W09 WDB");
@@ -25,7 +25,7 @@ public class TestDictionaryEntry {
         assertEquals(e2.getFlags()[1], "W:1/71421");
         assertEquals(e2.getFraction(), 1.39776e-05, 0.00001);
         assertEquals(e2.getArticle(), "Paul_Kariya");
-        assertEquals(e2.getFractionEnglishQueries(), Fraction.getFraction(1, 71421));
+        assertEquals(e2.getFractionEnglishLinks(), Fraction.getFraction(1, 71421));
     }
 
     @Test

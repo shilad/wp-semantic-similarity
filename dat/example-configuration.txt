@@ -18,15 +18,15 @@
         "article-text" : {
             "type" : "text",
             "field" : "text",
-            "maxPercentage" : 100,
+            "maxPercentage" : 10,
             "minTermFreq" : 2,
-            "minDocFreq" : 2,
+            "minDocFreq" : 6,
             "lucene" : "dat/lucene/text",
         },
         "article-links" : {
             "type" : "text",
             "field" : "links",
-            "maxPercentage" : 100,
+            "maxPercentage" : 10,
             "minTermFreq" : 1,
             "minDocFreq" : 2,
             "lucene" : "dat/lucene/links",
@@ -39,15 +39,15 @@
         },
         "pairwise-links" : {
             "type" : "pairwise",
-            "matrix" : "dat/links-sims.matrix",
+            "matrix" : "dat/link-sims.matrix",
             "basedOn" : "article-links",
-            "transpose" : "dat/links-sims.transpose.matrix",
+            "transpose" : "dat/link-sims.transpose.matrix",
         },
         "pairwise-cats" : {
             "type" : "pairwise",
-            "matrix" : "dat/cats-sims.matrix",
+            "matrix" : "dat/cat-sims.matrix",
             "basedOn" : "article-cats",
-            "transpose" : "dat/cats-sims.transpose.matrix",
+            "transpose" : "dat/cat-sims.transpose.matrix",
         },
     }
 }
