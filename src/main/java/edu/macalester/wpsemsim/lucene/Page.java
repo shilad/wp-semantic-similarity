@@ -15,10 +15,11 @@ public final class Page {
     private String title;
     private String text;
     private int ns = 0;
-    private boolean redirect = false;
+    private String redirect = null;
     private String strippedText;
+    private Document luceneDoc;
 
-    public Page(int ns, int id, boolean redirect, String title, String text) {
+    public Page(int ns, int id, String redirect, String title, String text) {
         this.ns = ns;
         this.id = id;
         this.title = title;
@@ -44,22 +45,42 @@ public final class Page {
     }
 
     public boolean isRedirect() {
+        return redirect != null;
+    }
+
+    public String getRedirect() {
         return redirect;
     }
 
-    public Document toLuceneDoc() {
-        Document d = new Document();
-        d.add(new StringField("title", title, Field.Store.YES));
-        d.add(new StringField("id", ""+id, Field.Store.YES));
-        d.add(new StringField("ns", ""+ns, Field.Store.YES));
-        d.add(new TextField("text", strippedText, Field.Store.YES));
-        for (String l : getAnchorLinksWithoutFragments()) {
-            d.add(new StringField("links", l, Field.Store.YES));
+    public synchronized Document toLuceneDoc() {
+        if (this.luceneDoc == null) {
+            Document d = new Document();
+            d.add(new StringField("title", title, Field.Store.YES));
+            d.add(new StringField("id", ""+id, Field.Store.YES));
+            d.add(new StringField("ns", ""+ns, Field.Store.YES));
+            d.add(new TextField("text", strippedText, Field.Store.YES));
+            for (String l : getAnchorLinksWithoutFragments()) {
+                d.add(new StringField("links", l, Field.Store.YES));
+            }
+            for (String c : getCategories()) {
+                d.add(new StringField("cats", c, Field.Store.YES));
+            }
+            String type;
+            if (redirect != null) {
+                type = "redirect";
+                d.add(new StringField("redirect", redirect, Field.Store.YES));
+            } else if (isDisambiguation()) {
+                type = "dab";
+                for (String l : getDisambiguationLinksWithoutFragments()) {
+                    d.add(new StringField("dab", l, Field.Store.YES));
+                }
+            } else {
+                type = "normal";
+            }
+            d.add(new StringField("type", type, Field.Store.YES));
+            this.luceneDoc = d;
         }
-        for (String c : getCategories()) {
-            d.add(new StringField("cats", c, Field.Store.YES));
-        }
-        return d;
+        return this.luceneDoc   ;
     }
     public static List<String> removeFragments(List<String> links) {
         List<String> result = new ArrayList<String>();
@@ -104,5 +125,82 @@ public final class Page {
             }
         }
         return anchorLinks;
+    }
+
+    private static final String DAB_BLACKLIST [] = {
+            "disambiguation",
+            "disambig",
+            "dab",
+            "disamb",
+            "dmbox",
+            "geodis",
+            "numberdis",
+            "dmbox",
+            "mathdab",
+            "hndis",
+            "hospitaldis",
+            "mathdab",
+            "mountainindex",
+            "roaddis",
+            "schooldis",
+            "shipindex"
+    };
+
+    private static final String DAB_WHITELIST [] = {
+            "dablink",
+            "disambiguation needed",
+    };
+    public boolean isDisambiguation() {
+        // look for dab phrases
+        for (String p : DAB_BLACKLIST) {
+            // TODO: accept whitespace around within curlies
+            int i = text.toLowerCase().indexOf("{{" + p);
+
+            // is this part of a phrase that is not a dab phrase?
+            if (i >= 0) {
+                for (String p2 : DAB_WHITELIST) {
+                    if (text.substring(i).startsWith("{{" + p2)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int getNumWordsInText() {
+        return text.split("\\s+").length;
+    }
+
+
+    private static final Pattern DAB_LINK_PATTERN = Pattern.compile("\\*(?:[ \"']*)?\\s*\\[\\[([^\\]]+?)\\]\\](?:[ '\"]*)?");
+
+    public List<String> getDisambiguationLinks() {
+        ArrayList<String> anchorLinks = new ArrayList<String>();
+        Matcher linkMatcher;
+        linkMatcher = DAB_LINK_PATTERN.matcher(text);
+        int earliest = -1;
+        while (linkMatcher.find()) {
+            if (earliest == -1) earliest = linkMatcher.start();
+            String addition = linkMatcher.group(1);
+            if (addition.contains("|")) {
+                addition = addition.substring(0, addition.indexOf("|"));
+            }
+            if (!addition.contains("Image:")) {
+                anchorLinks.add(addition);
+            }
+        }
+        // Add any links that appear before the first bulleted DAB link
+        if (earliest > 0) {
+            anchorLinks.addAll(0,
+                    removeFragments(getAnchorLinks(
+                            text.substring(0, earliest))));
+        }
+        return anchorLinks;
+    }
+
+    public List<String> getDisambiguationLinksWithoutFragments() {
+        return removeFragments(getDisambiguationLinks());
     }
 }

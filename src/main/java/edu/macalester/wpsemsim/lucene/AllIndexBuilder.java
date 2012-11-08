@@ -15,10 +15,7 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -26,21 +23,26 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class IndexBuilder {
-    public static final String INDEX_INFO[][] = new String[][] {
-            // { index name, namespaces, field1, field2, ... }
-            { "text",  "0",    "id", "title", "text"},
-            { "cats",  "0,14", "id", "ns", "title", "cats"},
-            { "links", "0",    "id", "title", "links"},
-    };
+public class AllIndexBuilder {
+    List<BaseIndexGenerator> generators = Arrays.asList(
+            new MainIndexGenerator(),
 
-    private static final Logger LOG = Logger.getLogger(IndexBuilder.class.getName());
+            new FieldsIndexGenerator("text", "id", "title"),
+            new FieldsIndexGenerator("links", "id", "title"),
+            new FieldsIndexGenerator("cats", "id", "ns", "title")
+                    .setNamespaces(0, 14),
+
+            new FieldsIndexGenerator("links", "text", "id", "title")
+                    .setMinLinks(5).setMinWords(150).setName("esa")
+    );
+
+    private static final Logger LOG = Logger.getLogger(AllIndexBuilder.class.getName());
     private AtomicInteger numDocs = new AtomicInteger();
-    private IndexWriter writers[] = new IndexWriter[INDEX_INFO.length];
+
     private File outputDir;
     private File inputPath;
 
-    public IndexBuilder(File inputPath, File outputDir) {
+    public AllIndexBuilder(File inputPath, File outputDir) {
         this.inputPath = inputPath;
         this.outputDir = outputDir;
     }
@@ -48,15 +50,8 @@ public class IndexBuilder {
     public void openIndex(int bufferMB) throws IOException {
         FileUtils.deleteDirectory(outputDir);
         outputDir.mkdirs();
-        for (int i = 0; i < INDEX_INFO.length; i++) {
-            File indexDir = new File(outputDir, INDEX_INFO[i][0]);
-            indexDir.mkdirs();
-            Directory dir = FSDirectory.open(indexDir);
-            Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
-            IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);
-            iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
-            iwc.setRAMBufferSizeMB(bufferMB / INDEX_INFO.length);
-            writers[i] = new IndexWriter(dir, iwc);
+        for (BaseIndexGenerator g : generators) {
+            g.openIndex(new File(outputDir, g.getName()), bufferMB / generators.size());
         }
     }
 
@@ -107,52 +102,37 @@ public class IndexBuilder {
             exec.awaitTermination(60, TimeUnit.HOURS);
         }
 
-
-        for (IndexWriter w : writers) {
-            w.close();
+        for (BaseIndexGenerator g : generators) {
+            g.close();
         }
     }
 
     public void processOneFile(File path) throws IOException {
         LOG.info("reading input file " + path);
         for (Page p : new PageReader(path)) {
-            if (p.isRedirect()) {
-                continue;
-            }
-            storePage(p.toLuceneDoc());
+            storePage(p);
             if (numDocs.incrementAndGet() % 1000 == 0) {
                 LOG.info("read doc " + numDocs + " from " + path + ": " + p.getTitle());
             }
-//            if (numDocs.get() > 200000) {
+//            if (numDocs.get() > 10000) {
 //                break;
 //            }
         }
     }
 
-    public void storePage(Document d) throws IOException {
-        for (int i = 0; i < INDEX_INFO.length; i++) {
-            storePageInIndex(d, i);
+    public void storePage(Page p) throws IOException {
+        for (BaseIndexGenerator g : generators) {
+            g.storePage(p);
         }
     }
 
-    private void storePageInIndex(Document src, int index) throws IOException {
-        String info[] = INDEX_INFO[index];
-        String nss[] = info[1].split(",");
-        if (!ArrayUtils.contains(nss, src.getField("ns").stringValue())) {
-            return;
-        }
-        Document pruned = new Document();
-        for (int j = 2; j < info.length; j++) {
-            for (IndexableField f : src.getFields(info[j])) {
-                pruned.add(f);
-            }
-        }
-        writers[index].addDocument(pruned);
+    public List<BaseIndexGenerator> getGenerators() {
+        return generators;
     }
 
     public static void main(String args[]) throws IOException, InterruptedException {
         if (args.length != 3 && args.length != 4) {
-            System.err.println("usage: java " + IndexBuilder.class.getCanonicalName() + " path-in path-out memory-cache-in-MB [num-threads]");
+            System.err.println("usage: java " + AllIndexBuilder.class.getCanonicalName() + " path-in path-out memory-cache-in-MB [num-threads]");
         }
         int cores = (args.length == 4)
                 ? Integer.valueOf(args[3])
@@ -160,7 +140,7 @@ public class IndexBuilder {
         LOG.info("using " + cores + " threads");
         File inputPath = new File(args[0]);
         File outputPath = new File(args[1]);
-        IndexBuilder writer = new IndexBuilder(inputPath, outputPath);
+        AllIndexBuilder writer = new AllIndexBuilder(inputPath, outputPath);
         writer.openIndex(Integer.valueOf(args[2]));
         writer.write(cores);
     }

@@ -70,9 +70,12 @@ public class PageReader implements Iterable<Page> {
                 String title = matchTextElement("title", true);
                 String ns = matchTextElement("ns", true);
                 String id = matchTextElement("id", true);
-                String redirect = matchTextElement("redirect", false);
+                String redirect = null;
+                if (matchElement("redirect", false, false)) {
+                    redirect = reader.getAttributeValue(null, "title");
+                }
                 String text = searchTextElement("text", true);
-                buffer =new Page(Integer.valueOf(ns), Integer.valueOf(id), redirect != null, title, text);
+                buffer =new Page(Integer.valueOf(ns), Integer.valueOf(id), redirect, title, text);
             } catch (XMLStreamException e) {
                 LOG.severe("parsing page failed");
                 e.printStackTrace();

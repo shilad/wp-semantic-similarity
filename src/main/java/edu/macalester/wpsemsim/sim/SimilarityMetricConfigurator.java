@@ -26,6 +26,8 @@ public class SimilarityMetricConfigurator {
     private static final Logger LOG = Logger.getLogger(SimilarityMetricConfigurator.class.getName());
 
     ConfigurationFile configuration;
+    ConceptMapper mapper;
+    IndexHelper helper;
 
     public SimilarityMetricConfigurator(ConfigurationFile conf) {
         this.configuration = conf;
@@ -44,17 +46,23 @@ public class SimilarityMetricConfigurator {
         info("loading metric " + name);
         String type = requireString(params, "type");
         SimilarityMetric metric;
+        ConceptMapper mapper = null;
+        try {
+            mapper = getMapper();
+        } catch (DatabaseException e) {
+            throw new ConfigurationException(e.getMessage());
+        }
         if (type.equals("category")) {
             File luceneDir = requireDirectory(params, "lucene");
             IndexHelper helper = new IndexHelper(luceneDir, true);
             CategoryGraph graph = new CategoryGraph(helper);
             graph.init();
-            metric = new CatSimilarity(graph, helper);
+            metric = new CatSimilarity(mapper, graph, helper);
         } else if (type.equals("text")) {
             File luceneDir = requireDirectory(params, "lucene");
             IndexHelper helper = new IndexHelper(luceneDir, true);
             String field = requireString(params, "field");
-            metric = new TextSimilarity(helper, field);
+            metric = new TextSimilarity(mapper, helper, field);
             if (params.containsKey("maxPercentage")) {
                 ((TextSimilarity)metric).setMaxPercentage(requireInteger(params, "maxPercentage"));
             }
@@ -64,10 +72,17 @@ public class SimilarityMetricConfigurator {
             if (params.containsKey("minDocFreq")) {
                 ((TextSimilarity)metric).setMinDocFreq(requireInteger(params, "minDocFreq"));
             }
+            if (params.containsKey("useInternalMapper")) {
+                ((TextSimilarity)metric).setUseInternalMapper(requireBoolean(params, "useInternalMapper"));
+            }
+        } else if (type.equals("esa")) {
+            File textDir = requireDirectory(params, "luceneText");
+            File linksDir = requireDirectory(params, "luceneLinks");
+            metric = new ESASimilarity(new IndexHelper(textDir, true), new IndexHelper(linksDir, true));
         } else if (type.equals("pairwise")) {
             SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"), false, PairwiseCosineSimilarity.PAGE_SIZE);
             SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
-            metric = new PairwiseCosineSimilarity(m, mt);
+            metric = new PairwiseCosineSimilarity(mapper, getHelper(), m, mt);
         } else {
             throw new ConfigurationException("Unknown metric type: " + type);
         }
@@ -75,15 +90,21 @@ public class SimilarityMetricConfigurator {
         return metric;
     }
 
-    public IndexHelper buildIndexHelper() throws ConfigurationException, IOException {
-        return new IndexHelper(requireDirectory(configuration.get(), "index"), true);
+    public synchronized IndexHelper getHelper() throws ConfigurationException, IOException {
+        if (helper == null) {
+            helper = new IndexHelper(requireDirectory(configuration.get(), "index"), true);
+        }
+        return helper;
     }
 
-    public ConceptMapper buildConceptMapper() throws ConfigurationException, IOException, DatabaseException {
-        return new DictionaryDatabase(
+    public synchronized  ConceptMapper getMapper() throws ConfigurationException, IOException, DatabaseException {
+        if (mapper == null && configuration.get().containsKey("concept-mapper")) {
+            mapper = new DictionaryDatabase(
                     requireDirectory(
                             configuration.get("concept-mapper"), "dictionary"
                 ));
+        }
+        return mapper;
     }
 
     public void build() throws IOException, ConfigurationException, InterruptedException {
@@ -99,7 +120,7 @@ public class SimilarityMetricConfigurator {
         }
 
         // next do pairwise
-        IndexHelper helper = buildIndexHelper();
+        IndexHelper helper = getHelper();
         int wpIds[] = helper.getWpIds();
         for (String key : configuration.getKeys("metrics")) {
             JSONObject params = configuration.get("metrics", key);

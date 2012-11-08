@@ -1,5 +1,7 @@
 package edu.macalester.wpsemsim.sim;
 
+import edu.macalester.wpsemsim.concepts.ConceptMapper;
+import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.utils.DocScoreList;
@@ -11,29 +13,25 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-public class PairwiseCosineSimilarity implements SimilarityMetric {
+public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(PairwiseCosineSimilarity.class.getName());
 
     private SparseMatrix matrix;
     private SparseMatrix transpose;
     private TIntFloatHashMap lengths;   // lengths of each row
-    private String name;
 
     public PairwiseCosineSimilarity(SparseMatrix matrix, SparseMatrix transpose) throws IOException {
+        this(null, null, matrix, transpose);
+
+    }
+    public PairwiseCosineSimilarity(ConceptMapper mapper, IndexHelper helper, SparseMatrix matrix, SparseMatrix transpose) throws IOException {
+        super(mapper, helper);
         this.matrix = matrix;
         this.transpose = transpose;
-        this.name = "pairwise-cosine-similarity (matrix=" +
+        setName("pairwise-cosine-similarity (matrix=" +
                 matrix.getPath() + ", transpose=" +
-                transpose.getPath() + ")";
+                transpose.getPath() + ")");
     }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-    public String getName() {
-        return name;
-    }
-
 
     public void calculateRowLengths() {
         LOG.info("calculating row lengths");

@@ -11,7 +11,10 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.FieldCacheTermsFilter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
@@ -19,34 +22,33 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMetric {
-    private static final Logger LOG = Logger.getLogger(TextSimilarity.class.getName());
+public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMetric {
+    private static final Logger LOG = Logger.getLogger(ESASimilarity.class.getName());
     public static final int DEFAULT_MAX_PERCENTAGE = 10;
     public static final int DEFAULT_MAX_QUERY_TERMS = 100;
     public static final int DEFAULT_MIN_TERM_FREQ = 2;
     public static final int DEFAULT_MIN_DOC_FREQ = 2;
 
-    private String field;
     private int maxPercentage = DEFAULT_MAX_PERCENTAGE;
     private int maxQueryTerms = DEFAULT_MAX_QUERY_TERMS;
     private int minTermFreq = DEFAULT_MIN_TERM_FREQ;
     private int minDocFreq = DEFAULT_MIN_DOC_FREQ;
     private IndexSearcher searcher;
-    private IndexHelper helper;
+    private IndexHelper textHelper;
+    private IndexHelper linkHelper;
     private DirectoryReader reader;
-    private boolean useInternalMapper = false;
 
-    public TextSimilarity(IndexHelper helper, String field) {
-        this(null, helper, field);
+    public ESASimilarity(IndexHelper textHelper, IndexHelper linkHelper) {
+        this(null, textHelper, linkHelper);
     }
 
-    public TextSimilarity(ConceptMapper mapper, IndexHelper helper, String field) {
-        super(mapper, helper);
-        this.helper = helper;
-        this.reader = helper.getReader();
-        this.searcher = helper.getSearcher();
-        this.field = field;
-        this.setName("text-similarity (field=" + field + ")");
+    public ESASimilarity(ConceptMapper mapper, IndexHelper textHelper, IndexHelper linkHelper) {
+        super(mapper, textHelper);
+        this.textHelper = textHelper;
+        this.linkHelper = linkHelper;
+        this.reader = textHelper.getReader();
+        this.searcher = textHelper.getSearcher();
+        this.setName("esa-similarity");
     }
 
     private MoreLikeThis getMoreLikeThis() {
@@ -56,24 +58,21 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
         mlt.setMinDocFreq(minDocFreq);
         mlt.setMinTermFreq(minTermFreq);
         mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_40));
-        mlt.setFieldNames(new String[]{field}); // specify the fields for similiarity
+        mlt.setFieldNames(new String[]{"text"}); // specify the fields for similiarity
         return mlt;
     }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
-        if (!useInternalMapper) {
-            return super.similarity(phrase1, phrase2);
-        }
         Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
-        QueryParser parser = new QueryParser(Version.LUCENE_40, field, analyzer);
+        QueryParser parser = new QueryParser(Version.LUCENE_40, "text", analyzer);
 
         TopDocs similarDocs1 = null;
         TopDocs similarDocs2 = null;
 
         try {
-            similarDocs1 = searcher.search(parser.parse(phrase1), 100000);
-            similarDocs2 = searcher.search(parser.parse(phrase2), 100000);
+            similarDocs1 = searcher.search(parser.parse(phrase1), 200);
+            similarDocs2 = searcher.search(parser.parse(phrase2), 200);
         } catch (IOException e) {
             LOG.log(Level.WARNING, "parsing of phrase " + phrase1 + " failed", e);
             return Double.NaN;
@@ -85,32 +84,31 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
 //        System.out.println("top docs for " + phrase1 + " are:");
 //        for (int i = 0; i < 10; i++) {
 //            System.out.println("\t" + similarDocs1.scoreDocs[i].score + ": " +
-//                        helper.luceneIdToTitle(similarDocs1.scoreDocs[i].doc));
+//                        textHelper.luceneIdToTitle(similarDocs1.scoreDocs[i].doc));
 //        }
 //        System.out.println("top docs for " + phrase2 + " are:");
 //        for (int i = 0; i < 10; i++) {
 //            System.out.println("\t" + similarDocs2.scoreDocs[i].score + ": " +
-//                    helper.luceneIdToTitle(similarDocs2.scoreDocs[i].doc));
+//                    textHelper.luceneIdToTitle(similarDocs2.scoreDocs[i].doc));
 //        }
 
         double xDotX = 0.0;
         double yDotY = 0.0;
         double xDotY = 0.0;
 
-        TIntDoubleHashMap scores1 = new TIntDoubleHashMap();
-        for (int i = 0; i < similarDocs1.scoreDocs.length; i++) {
-            int id = similarDocs1.scoreDocs[i].doc;
-            double x = similarDocs1.scoreDocs[i].score;
-            scores1.put(id, x);
+        TIntDoubleHashMap scores1 = expandScores(similarDocs1.scoreDocs);
+        TIntDoubleHashMap scores2 = expandScores(similarDocs2.scoreDocs);
+
+        for (int id : scores1.keys()) {
+            double x = scores1.get(id);
             xDotX += x * x;
-        }
-        for (int i = 0; i < similarDocs2.scoreDocs.length; i++) {
-            int id = similarDocs2.scoreDocs[i].doc;
-            double y= similarDocs2.scoreDocs[i].score;
-            yDotY += y * y;
-            if (scores1.containsKey(id)) {
-                xDotY += scores1.get(id) * y;
+            if (scores2.containsKey(id)) {
+                xDotY += x * scores2.get(id);
             }
+        }
+        for (int id : scores2.keys()) {
+            double y = scores2.get(id);
+            yDotY += y * y;
         }
 
         if (yDotY == 0.0) {
@@ -120,16 +118,28 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
         }
     }
 
+    private TIntDoubleHashMap expandScores(ScoreDoc scores[]) throws IOException {
+        TIntDoubleHashMap expanded = new TIntDoubleHashMap();
+        double alpha = 0.5;
+        for (ScoreDoc sd : scores) {
+            expanded.adjustOrPutValue(sd.doc, sd.score, sd.score);
+            for (int luceneId : linkHelper.getLinkedLuceneIds(sd.doc).toArray()) {
+                expanded.adjustOrPutValue(luceneId, alpha*sd.score, alpha*sd.score);
+            }
+        }
+        return expanded;
+    }
+
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
         MoreLikeThis mlt = getMoreLikeThis();
-        int luceneId = helper.wpIdToLuceneId(wpId);
+        int luceneId = textHelper.wpIdToLuceneId(wpId);
         TopDocs similarDocs = searcher.search(mlt.like(luceneId), maxResults);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
         for (int i = 0; i < similarDocs.scoreDocs.length; i++) {
             ScoreDoc sd = similarDocs.scoreDocs[i];
             scores.set(i,
-                    helper.luceneIdToWpId(sd.doc),
+                    textHelper.luceneIdToWpId(sd.doc),
                     similarDocs.scoreDocs[i].score);
         }
 //        System.err.println(
@@ -143,8 +153,8 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
 
     @Override
     public double similarity(int wpId1, int wpId2) throws IOException {
-        int doc1 = helper.wpIdToLuceneId(wpId1);
-        int doc2 = helper.wpIdToLuceneId(wpId2);
+        int doc1 = textHelper.wpIdToLuceneId(wpId1);
+        int doc2 = textHelper.wpIdToLuceneId(wpId2);
 
         MoreLikeThis mlt = getMoreLikeThis();
         TopDocs similarDocs = searcher.search(mlt.like(doc1), new FieldCacheTermsFilter("id", "" + wpId2), 1);
@@ -173,22 +183,16 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
         this.minDocFreq = minDocFreq;
     }
 
-    public void setUseInternalMapper(boolean useInternalMapper) {
-        this.useInternalMapper = useInternalMapper;
-    }
-
     public static void main(String args[]) throws IOException, InterruptedException, CompressorException {
         if (args.length != 4 && args.length != 5) {
             System.err.println("usage: java " +
-                    TextSimilarity.class.getName() +
-                    " field lucene-text-index-dir output-file num-results [num-threads]");
+                    ESASimilarity.class.getName() +
+                    " lucene-text-index-dir lucene-link-index-dir output-file num-results [num-threads]");
 
         }
-        IndexHelper helper = new IndexHelper(new File(args[1]), true);
-        TextSimilarity sim = new TextSimilarity(helper, args[0]);
-        if (args[0].equals("links")) {
-            sim.setMinTermFreq(1);  // HACK!
-        }
+        IndexHelper helper = new IndexHelper(new File(args[0]), true);
+        IndexHelper linkHelper = new IndexHelper(new File(args[1]), true);
+        ESASimilarity sim = new ESASimilarity(helper, linkHelper);
         int cores = (args.length == 5)
                 ? Integer.valueOf(args[4])
                 : Runtime.getRuntime().availableProcessors();

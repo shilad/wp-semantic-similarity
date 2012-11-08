@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.sim;
 
+import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -10,26 +11,23 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-public class CatSimilarity implements SimilarityMetric {
+public class CatSimilarity extends BaseSimilarityMetric {
     private static final Logger LOG = Logger.getLogger(CatSimilarity.class.getName());
 
     private CategoryGraph graph;
     private IndexHelper helper;
     private DirectoryReader reader;
-    private String name;
 
     public CatSimilarity(CategoryGraph graph, IndexHelper helper) {
+        this(null, graph, helper);
+    }
+
+    public CatSimilarity(ConceptMapper mapper, CategoryGraph graph, IndexHelper helper) {
+        super(mapper, helper);
         this.helper = helper;
         this.reader = helper.getReader();
         this.graph = graph;
-        this.name = "category-similarity";
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-    public String getName() {
-        return name;
+        setName("category-similarity");
     }
 
     public double distanceToScore(double distance) {
@@ -126,7 +124,7 @@ public class CatSimilarity implements SimilarityMetric {
         IndexHelper helper = new IndexHelper(new File(args[0]), true);
         CategoryGraph g = new CategoryGraph(helper);
         g.init();
-        CatSimilarity cs = new CatSimilarity(g, helper);
+        CatSimilarity cs = new CatSimilarity(null, g, helper);
         int cores = (args.length == 4)
                 ? Integer.valueOf(args[3])
                 : Runtime.getRuntime().availableProcessors();

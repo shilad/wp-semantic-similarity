@@ -3,10 +3,10 @@
     // a mapping between ids and article titles
     "index" : "LUCENE/links",
 
-    // The concept mapper that maps phrases to articles
-    "concept-mapper" : {
-        "dictionary" : "DAT/dictionary.pruned"
-    },
+    // The concept mapper that maps phrases to articles TODO: integrate this with tests
+//    "concept-mapper" : {
+//        "dictionary" : "DAT/dictionary.pruned"
+//    },
 
     // similarity metrics
     "metrics" : {

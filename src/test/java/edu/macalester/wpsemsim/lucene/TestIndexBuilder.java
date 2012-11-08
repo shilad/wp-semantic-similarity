@@ -21,15 +21,18 @@ public class TestIndexBuilder {
     @Test
     public void walkBuilder() throws IOException, InterruptedException {
         File dir = TestUtils.buildIndex();
-        for (int i = 0; i < IndexBuilder.INDEX_INFO.length; i++) {
-            String type = IndexBuilder.INDEX_INFO[i][0];
-            DirectoryReader reader = TestUtils.openReader(dir, type);
+        for (BaseIndexGenerator g : new AllIndexBuilder(null, null).generators) {
+            DirectoryReader reader = TestUtils.openReader(dir, g.getName());
             int count = 0;
             for (int j = 0; j < reader.maxDoc(); j++) {
                 Document d = reader.document(j);
                 count++;
             }
-            assertEquals(17, count);    // ignores redirects
+            if (g.getName().equals("main")) {
+                assertEquals(83, count);
+            } else {
+                assertEquals(17, count);    // ignores redirects
+            }
         }
         dir.delete();
     }

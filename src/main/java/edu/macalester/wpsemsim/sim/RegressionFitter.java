@@ -2,20 +2,21 @@ package edu.macalester.wpsemsim.sim;
 
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
-import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
-import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
+import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -32,77 +33,96 @@ public class RegressionFitter {
         this.gold = readGoldStandard(goldStandard);
     }
 
-    public void analyzeMetrics(List<SimilarityMetric> metrics, BufferedWriter writer) throws IOException {
+    public void analyzeMetrics(List<SimilarityMetric> metrics, BufferedWriter writer) throws IOException, ParseException {
         NumberFormat format = DecimalFormat.getPercentInstance();
         format.setMaximumFractionDigits(1);
         format.setMinimumFractionDigits(1);
+        RealMatrix simMatrix = new Array2DRowRealMatrix(gold.size(), metrics.size());
+
+        int i = 0;
         for (SimilarityMetric metric : metrics) {
-            double[] r = calculateCorrelation(metric);
+            Object[] r = calculateCorrelation(metric);
+            Double pearson = (Double) r[0];
+            Double coverage = (Double) r[1];
+            double X[] = (double[]) r[2];
             writer.write("analyzing metric: " + metric.getName() + "\n");
-            writer.write("\tcoverage=" + format.format(r[1]) + "%\n");
-            writer.write("\tpearson=" + r[0] + "\n");
+            writer.write("\tcoverage=" + coverage + "%\n");
+            writer.write("\tpearson=" + pearson + "\n");
+            simMatrix.setColumn(i++, X);
         }
+
+        fit(metrics, simMatrix);
+    }
+
+    private void fit(List<SimilarityMetric> metrics, RealMatrix simMatrix) {
+
+        // calculate indexes that have full coverage
+        int numCovered = 0;
+        for (int i = 0; i < gold.size(); i++) {
+            if (!simMatrix.getRowVector(i).isNaN()) {
+                numCovered++;
+            }
+        }
+        LOG.info("full coverage on " + numCovered + " of  " + gold.size());
+        RealMatrix covered = new Array2DRowRealMatrix(numCovered, simMatrix.getColumnDimension());
+        double Y[] = new double[numCovered];
+        int j = 0;
+        for (int i = 0; i < gold.size(); i++) {
+            if (!simMatrix.getRowVector(i).isNaN()) {
+                covered.setRow(j, simMatrix.getRow(i));
+                Y[j] = gold.get(i).similarity;
+                j++;
+            }
+        }
+
+        assert(j == numCovered);
+
+        MyOLS ols = new MyOLS();
+        ols.newSampleData(Y, covered.getData());
+
+        double beta[] = ols.estimateRegressionParameters();
+        for (int i = 0; i < metrics.size(); i++) {
+            System.out.println("coefficient for " + metrics.get(i).getName() + " is " + beta[i]);
+            System.out.println("pearson is " + pearson(covered.getColumn(i), Y));
+        }
+        System.out.println("R-squared is " + ols.calculateRSquared());
+        System.out.println("Pearson is " + pearson(Y, ols.getPredictions()));
+    }
+
+    private double pearson(double X[], double Y[]) {
+        return new PearsonsCorrelation().correlation(X, Y);
     }
 
     /**
      * Calculates the pearson correlation between the metric and the gold standard
      * @param metric
-     * @return [pearson-correlation, coverage between 0 and 1.0]
+     * @return [pearson-correlation, coverage between 0 and 1.0, all y values]
      * @throws IOException
      */
-    public double[] calculateCorrelation(SimilarityMetric metric) throws IOException {
+    public Object[] calculateCorrelation(SimilarityMetric metric) throws IOException, ParseException {
         TDoubleArrayList X = new TDoubleArrayList();
         TDoubleArrayList Y = new TDoubleArrayList();
+        double allX[] = new double[gold.size()];
+        Arrays.fill(allX, Double.NaN);
+//        SimpleRegression reg = new SimpleRegression();
         for (int i = 0; i < gold.size(); i++) {
-            if (i % 500 == 0) {
+            if (i % 50 == 0) {
                 LOG.info("calculating metric " + metric.getName() + " gold results for number " + i);
             }
             KnownSim ks = gold.get(i);
-            LinkedHashMap<String, Float> concept1s = mapper.map(ks.phrase1);
-            LinkedHashMap<String, Float> concept2s= mapper.map(ks.phrase2);
-
-            if (concept1s.isEmpty()) {
-//                LOG.info("no concepts for phrase " + ks.phrase1);
+            double sim = metric.similarity(ks.phrase1, ks.phrase2);
+            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
+//            reg.addData(sim, ks.similarity);
+                allX[i] = sim;
+                X.add(ks.similarity);
+                Y.add(sim);
             }
-            if (concept2s.isEmpty()) {
-//                LOG.info("no concepts for phrase " + ks.phrase2);
-            }
-            if (concept1s.isEmpty() || concept2s.isEmpty()) {
-                continue;
-            }
-            // for, now choose the first concepts
-            String article1 = concept1s.keySet().iterator().next();
-            String article2 = concept2s.keySet().iterator().next();
-
-            int wpId1 = helper.titleToWpId(article1);
-            if (wpId1 < 0) {
-//                LOG.info("couldn't find article with title '" + article1 + "'");
-                continue;
-            }
-            int wpId2 = helper.titleToWpId(article2);
-            if (wpId2 < 0) {
-//                LOG.info("couldn't find article with title '" + article2 + "'");
-                continue;
-            }
-
-            double sim;
-            if (wpId1 == wpId2) {
-                sim = 1.0;
-            } else {
-                sim = metric.similarity(wpId1, wpId2);
-                if (Double.isInfinite(sim) || Double.isNaN(sim)) {
-                    LOG.info("sim between '" + article1 + "' and '" + article2 + "' is NAN or INF");
-                    continue;
-                }
-            }
-
-            X.add(ks.similarity);
-            Y.add(sim);
         }
 
+//        System.err.println("rsquared for fit is " + reg.getRSquare());
         double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
         LOG.info("correlation for " + metric.getName() + " is " + pearson);
-        return new double[] { pearson, 1.0 * X.size() / gold.size() };
+        return new Object[] { pearson, 1.0 * X.size() / gold.size(), allX };
     }
 
     private List<KnownSim> readGoldStandard(File path) throws IOException {
@@ -139,7 +159,13 @@ public class RegressionFitter {
         }
     }
 
-    public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException {
+    public class MyOLS extends OLSMultipleLinearRegression {
+        public double[] getPredictions() {
+            return this.getX().operate(this.calculateBeta()).toArray();
+        }
+    }
+
+    public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException {
         if (args.length != 3) {
             System.err.println(
                     "usage: java " + RegressionFitter.class.toString() +
@@ -153,8 +179,8 @@ public class RegressionFitter {
                 new ConfigurationFile(new File(args[0])));
         RegressionFitter fitter = new RegressionFitter(
                 new File(args[1]),
-                conf.buildConceptMapper(),
-                conf.buildIndexHelper()
+                conf.getMapper(),
+                conf.getHelper()
         );
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
         fitter.analyzeMetrics(conf.loadAllMetrics(), writer);

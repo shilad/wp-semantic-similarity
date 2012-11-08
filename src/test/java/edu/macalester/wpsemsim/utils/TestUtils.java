@@ -1,6 +1,6 @@
 package edu.macalester.wpsemsim.utils;
 
-import edu.macalester.wpsemsim.lucene.IndexBuilder;
+import edu.macalester.wpsemsim.lucene.AllIndexBuilder;
 import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
@@ -29,17 +29,17 @@ public class TestUtils {
      * @throws InterruptedException
      */
     public static File buildIndex() throws IOException, InterruptedException {
-        return buildIndex(new ArrayList<Document>());
+        return buildIndex(new ArrayList<Page>());
     }
-    public static File buildIndex(List<Document> additional) throws IOException, InterruptedException {
+    public static File buildIndex(List<Page> additional) throws IOException, InterruptedException {
         File outputDir = File.createTempFile("lucene", null);
         if (outputDir.isFile()) { outputDir.delete(); }
         if (!outputDir.mkdir()) {
             throw new AssertionError("couldn't make directory " + outputDir);
         }
-        IndexBuilder builder = new IndexBuilder(TEST_INPUT_FILE, outputDir);
+        AllIndexBuilder builder = new AllIndexBuilder(TEST_INPUT_FILE, outputDir);
         builder.openIndex(10);
-        for (Document d : additional) {
+        for (Page d : additional) {
             builder.storePage(d);
         }
         builder.write(1);
@@ -48,7 +48,7 @@ public class TestUtils {
 
     public static File buildIndexWithCategories() throws IOException, InterruptedException {
         // Add fake documents for category structure
-        List<Document> cats = new ArrayList<Document>();
+        List<Page> cats = new ArrayList<Page>();
         BufferedReader breader = new BufferedReader(new FileReader(TEST_CATEGORIES));
         int id = 1000000;   // larger than any article id in dump file
         while (true) {
@@ -63,9 +63,9 @@ public class TestUtils {
                 for (int i = 1; i < tokens.length; i++) {
                     text.append(" [[Category:" + tokens[i].trim() + "]]\n");
                 }
-                Page p = new Page(14, id, false, title, text.toString());
+                Page p = new Page(14, id, null, title, text.toString());
                 assert(p.getCategories().size() == tokens.length - 1);
-                cats.add(p.toLuceneDoc());
+                cats.add(p);
                 id++;
             }
         }
@@ -95,7 +95,7 @@ public class TestUtils {
 
     /**
      * Open a lucene reader from the lucene directory.
-     * Type is from the first column from the IndexBuilder info table (i.e. "cats").
+     * Type is from the first column from the AllIndexBuilder info table (i.e. "cats").
      *
      * @param parent
      * @param type

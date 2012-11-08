@@ -90,6 +90,16 @@ public class ConfigurationFile {
         }
         return ((Number)val).doubleValue();
     }
+    public static boolean requireBoolean(Map<String, Object> params, String key) throws ConfigurationException {
+        Object val = params.get(key);
+        if (val == null) {
+            throw new ConfigurationException("Missing configuration parameter " + key);
+        }
+        if (!(val instanceof Boolean)) {
+            throw new ConfigurationException("expected " + key + " to be a Boolean, was " + val.getClass().getName());
+        }
+        return ((Boolean)val);
+    }
     public static File requireDirectory(Map<String, Object> params, String key) throws ConfigurationException {
         File f = new File(requireString(params, key));
         if (!f.isDirectory()) {
