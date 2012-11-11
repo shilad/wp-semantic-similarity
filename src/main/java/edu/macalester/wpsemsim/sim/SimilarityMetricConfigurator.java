@@ -76,9 +76,8 @@ public class SimilarityMetricConfigurator {
                 ((TextSimilarity)metric).setUseInternalMapper(requireBoolean(params, "useInternalMapper"));
             }
         } else if (type.equals("esa")) {
-            File textDir = requireDirectory(params, "luceneText");
-            File linksDir = requireDirectory(params, "luceneLinks");
-            metric = new ESASimilarity(new IndexHelper(textDir, true), new IndexHelper(linksDir, true));
+            File luceneDir = requireDirectory(params, "lucene");
+            metric = new ESASimilarity(new IndexHelper(luceneDir, true));
         } else if (type.equals("pairwise")) {
             SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"), false, PairwiseCosineSimilarity.PAGE_SIZE);
             SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));

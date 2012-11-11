@@ -106,7 +106,7 @@ public class RegressionFitter {
         Arrays.fill(allX, Double.NaN);
 //        SimpleRegression reg = new SimpleRegression();
         for (int i = 0; i < gold.size(); i++) {
-            if (i % 50 == 0) {
+            if (i % 10 == 0) {
                 LOG.info("calculating metric " + metric.getName() + " gold results for number " + i);
             }
             KnownSim ks = gold.get(i);

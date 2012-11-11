@@ -12,25 +12,25 @@ mkdir $SRC
 
 # Gabrilovich et al, 2002
 # see http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/
-wget -P $DL http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip &&
-mkdir $DL/wordsim353 &&
-unzip -d $DL/wordsim353 $DL/wordsim353.zip &&
-tail +2 $DL/wordsim353/combined.csv > $SRC/wordsim353.csv || 
-{ echo "ERROR: preparing wordsim353 failed" >&2; exit 1;}
+#wget -P $DL http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip &&
+#mkdir $DL/wordsim353 &&
+#unzip -d $DL/wordsim353 $DL/wordsim353.zip &&
+#tail +2 $DL/wordsim353/combined.csv > $SRC/wordsim353.csv || 
+#{ echo "ERROR: preparing wordsim353 failed" >&2; exit 1;}
 
 # MTurk, Radinsky et al, 2011
 # see http://www.technion.ac.il/~kirar/Datasets.html
-wget -P $DL http://www.technion.ac.il/~kirar/files/Mtruk.csv &&
-cp -p $DL/Mtruk.csv $SRC/radinsky.csv || 
-{ echo "ERROR: preparing radinsky dataset failed" >&2; exit 1;}
+#wget -P $DL http://www.technion.ac.il/~kirar/files/Mtruk.csv &&
+#cp -p $DL/Mtruk.csv $SRC/radinsky.csv || 
+#{ echo "ERROR: preparing radinsky dataset failed" >&2; exit 1;}
 
 # Concept sim, Miller et al, 1991
 # http://www.seas.upenn.edu/~hansens/conceptSim/
-wget -P $DL http://www.seas.upenn.edu/~hansens/conceptSim/ConceptSim.tar.gz &&
-tar -C $DL -xzvf $DL/ConceptSim.tar.gz &&
-sed -e 's/	[	]*/,/g' < $DL/ConceptSim/MC_word.txt  > $SRC/MC.csv &&
-sed -e 's/	[	]*/,/g' < $DL/ConceptSim/RG_word.txt  > $SRC/RG.csv ||
-{ echo "ERROR: preparing conceptsim dataset failed" >&2; exit 1;}
+#wget -P $DL http://www.seas.upenn.edu/~hansens/conceptSim/ConceptSim.tar.gz &&
+#tar -C $DL -xzvf $DL/ConceptSim.tar.gz &&
+#sed -e 's/	[	]*/,/g' < $DL/ConceptSim/MC_word.txt  > $SRC/MC.csv &&
+#sed -e 's/	[	]*/,/g' < $DL/ConceptSim/RG_word.txt  > $SRC/RG.csv ||
+#{ echo "ERROR: preparing conceptsim dataset failed" >&2; exit 1;}
 
 # Atlasify: Hecht et al, 2012
 #

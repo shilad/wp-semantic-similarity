@@ -1,11 +1,14 @@
 package edu.macalester.wpsemsim.lucene;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,8 +61,9 @@ public final class Page {
             d.add(new StringField("title", title, Field.Store.YES));
             d.add(new StringField("id", ""+id, Field.Store.YES));
             d.add(new StringField("ns", ""+ns, Field.Store.YES));
-            d.add(new TextField("text", strippedText, Field.Store.YES));
-            for (String l : getAnchorLinksWithoutFragments()) {
+            d.add(new TextField("text", text, Field.Store.YES));
+//            d.add(new TextField("text", strippedText, Field.Store.YES));
+            for (String l : getAnchorLinks()) {
                 d.add(new StringField("links", l, Field.Store.YES));
             }
             for (String c : getCategories()) {
@@ -71,7 +75,7 @@ public final class Page {
                 d.add(new StringField("redirect", redirect, Field.Store.YES));
             } else if (isDisambiguation()) {
                 type = "dab";
-                for (String l : getDisambiguationLinksWithoutFragments()) {
+                for (String l : getDisambiguationLinks()) {
                     d.add(new StringField("dab", l, Field.Store.YES));
                 }
             } else {
@@ -94,13 +98,13 @@ public final class Page {
         }
         return result;
     }
-    public List<String> getAnchorLinksWithoutFragments() {
-        return removeFragments(getAnchorLinks(text));
+    public List<String> getAnchorLinks() {
+        return removeFragments(getAnchorLinksWithFragments(text));
     }
 
     public List<String> getCategories() {
         List<String> cats = new ArrayList<String>();
-        for (String link : getAnchorLinksWithoutFragments()) {
+        for (String link : getAnchorLinks()) {
             if (link.toLowerCase().startsWith("category:")) {
                 cats.add(link.substring("category:".length()));
             }
@@ -110,7 +114,7 @@ public final class Page {
 
     private static final Pattern LINK_PATTERN = Pattern.compile("\\[\\[([^\\]]+?)\\]\\]");
 
-    public static ArrayList<String> getAnchorLinks(String text) {
+    public static ArrayList<String> getAnchorLinksWithFragments(String text) {
         ArrayList<String> anchorLinks = new ArrayList<String>();
         Matcher linkMatcher;
         linkMatcher = LINK_PATTERN.matcher(text);
@@ -125,6 +129,26 @@ public final class Page {
             }
         }
         return anchorLinks;
+    }
+
+    public List<String> getTextOfAnchors() {
+        ArrayList<String> descriptions = new ArrayList<String>();
+        Matcher linkMatcher;
+        linkMatcher = LINK_PATTERN.matcher(text);
+        while (linkMatcher.find()) {
+            String addition = linkMatcher.group(1);
+            String description = addition;
+            if (addition.contains("|")) {
+                description = addition.substring(addition.indexOf("|") + 1);
+                addition = addition.substring(0, addition.indexOf("|"));
+            }
+            addition = addition.trim().replaceAll("\\s+", "_");
+            if (!addition.contains("Image:")) {
+                descriptions.add(description);
+            }
+        }
+        return descriptions;
+
     }
 
     private static final String DAB_BLACKLIST [] = {
@@ -150,33 +174,40 @@ public final class Page {
             "dablink",
             "disambiguation needed",
     };
-    public boolean isDisambiguation() {
-        // look for dab phrases
-        for (String p : DAB_BLACKLIST) {
-            // TODO: accept whitespace around within curlies
-            int i = text.toLowerCase().indexOf("{{" + p);
 
-            // is this part of a phrase that is not a dab phrase?
-            if (i >= 0) {
-                for (String p2 : DAB_WHITELIST) {
-                    if (text.substring(i).startsWith("{{" + p2)) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-        }
-        return false;
+    static final Pattern DAB_REGEX;
+    static {
+        String regex = "\\{\\s*\\{\\s*(";
+
+        // whitelist
+        regex += "(?!";
+        regex += StringUtils.join(DAB_WHITELIST, "|");
+        regex += ")";
+
+        // blacklist (greedy, so that whitelist has a chance to match)
+        regex += "(";
+        regex += StringUtils.join(DAB_BLACKLIST, "|");
+        regex += ".*))";
+        System.out.println(regex);
+        DAB_REGEX = Pattern.compile(regex);
     }
 
-    public int getNumWordsInText() {
-        return text.split("\\s+").length;
+    public boolean isDisambiguation() {
+        return isDisambiguation(text);
+    }
+
+    public static boolean isDisambiguation(String s) {
+        return DAB_REGEX.matcher(s.toLowerCase()).find();
+    }
+
+    public int getNumUniqueWordsInText() {
+        return new HashSet<String>(Arrays.asList(text.split("\\s+"))).size();
     }
 
 
     private static final Pattern DAB_LINK_PATTERN = Pattern.compile("\\*(?:[ \"']*)?\\s*\\[\\[([^\\]]+?)\\]\\](?:[ '\"]*)?");
 
-    public List<String> getDisambiguationLinks() {
+    public List<String> getDisambiguationLinksWithFragments() {
         ArrayList<String> anchorLinks = new ArrayList<String>();
         Matcher linkMatcher;
         linkMatcher = DAB_LINK_PATTERN.matcher(text);
@@ -194,13 +225,13 @@ public final class Page {
         // Add any links that appear before the first bulleted DAB link
         if (earliest > 0) {
             anchorLinks.addAll(0,
-                    removeFragments(getAnchorLinks(
+                    removeFragments(getAnchorLinksWithFragments(
                             text.substring(0, earliest))));
         }
         return anchorLinks;
     }
 
-    public List<String> getDisambiguationLinksWithoutFragments() {
-        return removeFragments(getDisambiguationLinks());
+    public List<String> getDisambiguationLinks() {
+        return removeFragments(getDisambiguationLinksWithFragments());
     }
 }

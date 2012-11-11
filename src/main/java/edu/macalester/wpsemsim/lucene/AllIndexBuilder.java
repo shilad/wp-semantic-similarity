@@ -1,5 +1,7 @@
 package edu.macalester.wpsemsim.lucene;
 
+import edu.macalester.wpsemsim.sim.ESAAnalyzer;
+import edu.macalester.wpsemsim.sim.ESASimilarity;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -25,15 +27,27 @@ import java.util.logging.Logger;
 
 public class AllIndexBuilder {
     List<BaseIndexGenerator> generators = Arrays.asList(
-            new MainIndexGenerator(),
+//            new MainIndexGenerator(),
+//
+//            new FieldsIndexGenerator("text", "id", "title"),
+//            new FieldsIndexGenerator("links", "id", "title"),
+//            new FieldsIndexGenerator("cats", "id", "ns", "title")
+//                    .setNamespaces(0, 14),
 
-            new FieldsIndexGenerator("text", "id", "title"),
-            new FieldsIndexGenerator("links", "id", "title"),
-            new FieldsIndexGenerator("cats", "id", "ns", "title")
-                    .setNamespaces(0, 14),
-
-            new FieldsIndexGenerator("links", "text", "id", "title")
-                    .setMinLinks(5).setMinWords(150).setName("esa")
+            new FieldsIndexGenerator("links", "text", "id", "title", "inlinks")
+                    .setMinLinks(15).setMinWords(300)
+                    .setTitleMultiplier(4)
+                    .setAddInLinksToText(true)
+                    .setName("esa")
+                    .setSimilarity(new ESASimilarity.LuceneSimilarity())
+                    .setAnalyzer(new ESAAnalyzer())
+//            new FieldsIndexGenerator("links", "text", "id", "title", "inlinks")
+//                    .setMinLinks(3).setMinWords(300)
+//                    .setTitleMultiplier(4)
+//                    .setAddInLinksToText(true)
+//                    .setName("esa2")
+//                    .setSimilarity(new ESASimilarity.LuceneSimilarity())
+//                    .setAnalyzer(new ESAAnalyzer())
     );
 
     private static final Logger LOG = Logger.getLogger(AllIndexBuilder.class.getName());
@@ -48,7 +62,7 @@ public class AllIndexBuilder {
     }
 
     public void openIndex(int bufferMB) throws IOException {
-        FileUtils.deleteDirectory(outputDir);
+//        FileUtils.deleteDirectory(outputDir);
         outputDir.mkdirs();
         for (BaseIndexGenerator g : generators) {
             g.openIndex(new File(outputDir, g.getName()), bufferMB / generators.size());

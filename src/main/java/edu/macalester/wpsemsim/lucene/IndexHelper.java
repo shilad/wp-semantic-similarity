@@ -9,7 +9,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -17,6 +16,7 @@ import org.apache.lucene.util.BytesRef;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,7 +36,6 @@ public class IndexHelper {
         );
         LOG.info("opening index helper for " + indexDir + " with " + reader.numDocs() + " docs");
         this.searcher = new IndexSearcher(this.reader);
-//        searcher.setSimilarity(new ESASimilarity());
     }
 
     public int luceneIdToWpId(int luceneId) throws IOException {
@@ -144,7 +143,10 @@ public class IndexHelper {
             return new TIntArrayList();
         }
         TIntArrayList result = new TIntArrayList();
+        Set<String> finished = new HashSet<String>();
         for (IndexableField f : reader.document(luceneId).getFields("links")) {
+            String title = f.stringValue();
+            if (finished.contains(title)) { continue; }
             int luceneId2 = titleToLuceneId(f.stringValue());
             if (luceneId2 < 0) {
 //                LOG.info("no lucene id associated with link title " + f.stringValue());
@@ -152,13 +154,14 @@ public class IndexHelper {
 //                System.out.println("id of " + f.stringValue() + " is " + luceneId2);
                 result.add(luceneId2);
             }
+            finished.add(title);
         }
 //        System.err.println("mapped " + wpId + " to " + result);
         return result;
     }
 
     public boolean hasField(String field) throws IOException {
-        FieldsEnum fields = MultiFields.getFields(reader).iterator();
+        Iterator<String> fields = MultiFields.getFields(reader).iterator();
         while (true) {
             String f = fields.next();
             if (f == null) {
@@ -172,16 +175,5 @@ public class IndexHelper {
 
     public IndexSearcher getSearcher() {
         return searcher;
-    }
-    public class ESASimilarity extends DefaultSimilarity {
-        @Override
-        public float idf(long docFreq, long numDocs) {
-            return (float) Math.log(numDocs / (double) docFreq);
-        }
-
-        @Override
-        public float tf(float freq) {
-            return (float) (1.0 + Math.log(freq));
-        }
     }
 }

@@ -1,24 +1,30 @@
 package edu.macalester.wpsemsim.sim;
 
+import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
+import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.map.hash.TIntDoubleHashMap;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
-import org.apache.lucene.search.FieldCacheTermsFilter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,20 +40,21 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     private int minTermFreq = DEFAULT_MIN_TERM_FREQ;
     private int minDocFreq = DEFAULT_MIN_DOC_FREQ;
     private IndexSearcher searcher;
-    private IndexHelper textHelper;
-    private IndexHelper linkHelper;
+    private IndexHelper helper;
     private DirectoryReader reader;
+    private Analyzer analyzer = new ESAAnalyzer();
 
-    public ESASimilarity(IndexHelper textHelper, IndexHelper linkHelper) {
-        this(null, textHelper, linkHelper);
+    public ESASimilarity(IndexHelper helper) {
+        this(null, helper);
     }
 
-    public ESASimilarity(ConceptMapper mapper, IndexHelper textHelper, IndexHelper linkHelper) {
-        super(mapper, textHelper);
-        this.textHelper = textHelper;
-        this.linkHelper = linkHelper;
-        this.reader = textHelper.getReader();
-        this.searcher = textHelper.getSearcher();
+    public ESASimilarity(ConceptMapper mapper, IndexHelper helper) {
+        super(mapper, helper);
+        this.helper = helper;
+        this.reader = helper.getReader();
+        this.searcher = helper.getSearcher();
+        searcher.setSimilarity(new LuceneSimilarity());
+//        searcher.setSimilarity(new Metric());
         this.setName("esa-similarity");
     }
 
@@ -57,22 +64,22 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         mlt.setMaxQueryTerms(maxQueryTerms);
         mlt.setMinDocFreq(minDocFreq);
         mlt.setMinTermFreq(minTermFreq);
-        mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_40));
+        mlt.setAnalyzer(analyzer);
         mlt.setFieldNames(new String[]{"text"}); // specify the fields for similiarity
         return mlt;
     }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
-        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
         QueryParser parser = new QueryParser(Version.LUCENE_40, "text", analyzer);
 
         TopDocs similarDocs1 = null;
         TopDocs similarDocs2 = null;
 
         try {
-            similarDocs1 = searcher.search(parser.parse(phrase1), 200);
-            similarDocs2 = searcher.search(parser.parse(phrase2), 200);
+            Filter filter = NumericRangeFilter.newIntRange("inlinks", 50, Integer.MAX_VALUE, true, false);
+            similarDocs1 = searcher.search(parser.parse(phrase1), filter, 5000);
+            similarDocs2 = searcher.search(parser.parse(phrase2), filter, 5000);
         } catch (IOException e) {
             LOG.log(Level.WARNING, "parsing of phrase " + phrase1 + " failed", e);
             return Double.NaN;
@@ -81,15 +88,20 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
             return Double.NaN;
         }
 
+        pruneSimilar(similarDocs1);
+        pruneSimilar(similarDocs2);
+
 //        System.out.println("top docs for " + phrase1 + " are:");
-//        for (int i = 0; i < 10; i++) {
+//        for (int i = 0; i < 10 && i < similarDocs1.scoreDocs.length; i++) {
 //            System.out.println("\t" + similarDocs1.scoreDocs[i].score + ": " +
-//                        textHelper.luceneIdToTitle(similarDocs1.scoreDocs[i].doc));
+//                        helper.luceneIdToTitle(similarDocs1.scoreDocs[i].doc) + ", "
+//                    + reader.document(similarDocs1.scoreDocs[i].doc).get("text").split("\\s+").length);
 //        }
 //        System.out.println("top docs for " + phrase2 + " are:");
-//        for (int i = 0; i < 10; i++) {
+//        for (int i = 0; i < 10 && i < similarDocs2.scoreDocs.length; i++) {
 //            System.out.println("\t" + similarDocs2.scoreDocs[i].score + ": " +
-//                    textHelper.luceneIdToTitle(similarDocs2.scoreDocs[i].doc));
+//                    helper.luceneIdToTitle(similarDocs2.scoreDocs[i].doc) + ", "
+//            + reader.document(similarDocs2.scoreDocs[i].doc).get("text").split("\\s+").length);
 //        }
 
         double xDotX = 0.0;
@@ -118,13 +130,56 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         }
     }
 
+    private void pruneSimilar(TopDocs docs) throws IOException {
+        if (docs.scoreDocs.length == 0) {
+            return;
+        }
+        for (ScoreDoc sd : docs.scoreDocs) {
+            sd.score *= getBoost(sd.doc);
+        }
+        Arrays.sort(docs.scoreDocs, new Comparator<ScoreDoc>() {
+            @Override
+            public int compare(ScoreDoc sd1, ScoreDoc sd2) {
+                if (sd1.score > sd2.score) {
+                    return -1;
+                } else if (sd1.score < sd2.score) {
+                    return +1;
+                } else {
+                    return sd1.doc - sd2.doc;
+                }
+            }
+        });
+        int cutoff = docs.scoreDocs.length;
+        double threshold = 0.05 * docs.scoreDocs[0].score;
+        for (int i = 0, j = 100; j < docs.scoreDocs.length; i++, j++) {
+            float delta = docs.scoreDocs[i].score - docs.scoreDocs[j].score;
+            if (delta < threshold) {
+                cutoff = j;
+                break;
+            }
+        }
+        if (cutoff < docs.scoreDocs.length) {
+//            LOG.info("pruned results from " + docs.scoreDocs.length + " to " + cutoff);
+            docs.scoreDocs = ArrayUtils.subarray(docs.scoreDocs, 0, cutoff);
+        }
+    }
+
     private TIntDoubleHashMap expandScores(ScoreDoc scores[]) throws IOException {
         TIntDoubleHashMap expanded = new TIntDoubleHashMap();
-        double alpha = 0.5;
         for (ScoreDoc sd : scores) {
             expanded.adjustOrPutValue(sd.doc, sd.score, sd.score);
-            for (int luceneId : linkHelper.getLinkedLuceneIds(sd.doc).toArray()) {
-                expanded.adjustOrPutValue(luceneId, alpha*sd.score, alpha*sd.score);
+        }
+        double alpha = 0.5;
+        for (ScoreDoc sd : scores) {
+            int n1 = reader.document(sd.doc).getField("inlinks").numericValue().intValue();
+            for (int luceneId : helper.getLinkedLuceneIds(sd.doc).toArray()) {
+                if (expanded.containsKey(luceneId)) {
+                    int n2 = reader.document(luceneId).getField("inlinks").numericValue().intValue();
+                    System.out.println("comparing " + n1 + " and " + n2);
+//                    if (n1 * 10 < n2) {
+                        expanded.adjustOrPutValue(luceneId, alpha*sd.score, alpha*sd.score);
+//                    }
+                }
             }
         }
         return expanded;
@@ -133,13 +188,13 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
         MoreLikeThis mlt = getMoreLikeThis();
-        int luceneId = textHelper.wpIdToLuceneId(wpId);
+        int luceneId = helper.wpIdToLuceneId(wpId);
         TopDocs similarDocs = searcher.search(mlt.like(luceneId), maxResults);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
         for (int i = 0; i < similarDocs.scoreDocs.length; i++) {
             ScoreDoc sd = similarDocs.scoreDocs[i];
             scores.set(i,
-                    textHelper.luceneIdToWpId(sd.doc),
+                    helper.luceneIdToWpId(sd.doc),
                     similarDocs.scoreDocs[i].score);
         }
 //        System.err.println(
@@ -153,8 +208,8 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
 
     @Override
     public double similarity(int wpId1, int wpId2) throws IOException {
-        int doc1 = textHelper.wpIdToLuceneId(wpId1);
-        int doc2 = textHelper.wpIdToLuceneId(wpId2);
+        int doc1 = helper.wpIdToLuceneId(wpId1);
+        int doc2 = helper.wpIdToLuceneId(wpId2);
 
         MoreLikeThis mlt = getMoreLikeThis();
         TopDocs similarDocs = searcher.search(mlt.like(doc1), new FieldCacheTermsFilter("id", "" + wpId2), 1);
@@ -183,20 +238,40 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         this.minDocFreq = minDocFreq;
     }
 
-    public static void main(String args[]) throws IOException, InterruptedException, CompressorException {
+    private double getBoost(int luceneId) throws IOException {
+        Document d = reader.document(luceneId, new HashSet<String>(Arrays.asList("inlinks")));
+        return (Math.log(d.getField("inlinks").numericValue().intValue()));
+    }
+
+    public static class LuceneSimilarity extends DefaultSimilarity {
+        @Override
+        public float idf(long docFreq, long numDocs) {
+            return (float) Math.log(numDocs / (double) docFreq);
+        }
+
+        @Override
+        public float tf(float freq) {
+            return (float) (1.0 + Math.log(freq));
+        }
+    }
+
+    public static void main(String args[]) throws IOException, InterruptedException, CompressorException, ParseException, DatabaseException {
         if (args.length != 4 && args.length != 5) {
             System.err.println("usage: java " +
                     ESASimilarity.class.getName() +
-                    " lucene-text-index-dir lucene-link-index-dir output-file num-results [num-threads]");
+                    " lucene-index-dir output-file num-results [num-threads]");
 
         }
-        IndexHelper helper = new IndexHelper(new File(args[0]), true);
-        IndexHelper linkHelper = new IndexHelper(new File(args[1]), true);
-        ESASimilarity sim = new ESASimilarity(helper, linkHelper);
-        int cores = (args.length == 5)
-                ? Integer.valueOf(args[4])
-                : Runtime.getRuntime().availableProcessors();
-        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(sim, new File(args[2]));
-        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[3]));
+//        IndexHelper helper = new IndexHelper(new File(args[0]), true);
+//        ESASimilarity sim = new ESASimilarity(helper);
+//        int cores = (args.length == 5)
+//                ? Integer.valueOf(args[4])
+//                : Runtime.getRuntime().availableProcessors();
+//        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(sim, new File(args[2]));
+//        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[3]));
+        IndexHelper helper = new IndexHelper(new File("dat/lucene/esa"), true);
+        ConceptMapper mapper = new DictionaryDatabase(new File("dat/dictionary.pruned"), false);
+        ESASimilarity sim = new ESASimilarity(mapper, helper);
+        sim.similarity("Wal-Mart supply chain goes real time", "Bing");
     }
 }

@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class PageReaderTest {
     @Test
@@ -36,13 +36,22 @@ public class PageReaderTest {
 
     @Test
     public void testDisambiguation() throws IOException {
+
+        assertFalse(Page.isDisambiguation("FOO"));
+        assertTrue(Page.isDisambiguation("FODFS SDSFD {  { dabfooSD"));
+        assertTrue(Page.isDisambiguation("FODFS SDSFD {{ dablink  } } \n{  { dabfooSD}}"));
+        assertFalse(Page.isDisambiguation("FODFS SDSFD {{ dablink  } } {  { dablink }}"));
+        assertTrue(Page.isDisambiguation("FODFS SDSFD {{ dablink  } } {  { dablink }} {{dabFOO}}"));
+        assertFalse(Page.isDisambiguation("FODFS SDSFD {{ dablink  } } \n{  { dablink }} {{z dabFOO}}"));
+
         String text = FileUtils.readFileToString(new File("dat/test/apple.txt"));
         Page p = new Page(0, 0, null, null, text);
         assert(p.isDisambiguation());
-        List<String> links = p.getDisambiguationLinks();
+        List<String> links = p.getDisambiguationLinksWithFragments();
         assertEquals(links.size(), 47);
         assertEquals(links.get(0), "apple");
         assertEquals(links.get(1), "Cashew apple");
         assertEquals(links.get(46), "The Apple Tree");
+
     }
 }

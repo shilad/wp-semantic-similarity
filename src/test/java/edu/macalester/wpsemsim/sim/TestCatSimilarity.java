@@ -7,7 +7,10 @@ import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -131,7 +134,9 @@ public class TestCatSimilarity {
 
         DirectoryReader reader = helper.getReader();
         Map<Integer, TIntDoubleHashMap> sims = new HashMap<Integer, TIntDoubleHashMap>();
+        Bits bits = MultiFields.getLiveDocs(reader);
         for (int i = 0; i < reader.numDocs(); i++) {
+            if (bits != null && !bits.get(i)) { continue; }
             int wpId = Integer.valueOf(reader.document(i).get("id"));
             sims.put(wpId, new TIntDoubleHashMap());
             for (DocScore score : catSim.mostSimilar(wpId, Integer.MAX_VALUE)) {
@@ -139,7 +144,9 @@ public class TestCatSimilarity {
             }
         }
         for (int i = 0; i < reader.numDocs(); i++) {
+            if (bits != null && !bits.get(i)) { continue; }
             for (int j = 0; j < reader.numDocs(); j++) {
+                if (bits != null && !bits.get(j)) { continue; }
                 Document doc1 = reader.document(i);
                 Document doc2 = reader.document(j);
                 if (graph.isCat(doc1) || graph.isCat(doc2)) {

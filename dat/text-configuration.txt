@@ -13,8 +13,7 @@
 
         "esa" : {
             "type" : "esa",
-            "luceneText" : "dat/lucene/text",
-            "luceneLinks" : "dat/lucene/links",
+            "lucene" : "dat/lucene/esa",
         },
 
 //        "article-text" : {
