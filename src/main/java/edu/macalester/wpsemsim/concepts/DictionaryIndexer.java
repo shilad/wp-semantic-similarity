@@ -13,7 +13,7 @@ public class DictionaryIndexer {
     private static final Logger LOG = Logger.getLogger(DictionaryIndexer.class.getName());
 
     private int minNumLinks = 5;
-    private double minFractionLinks = 0.2;
+    private double minFractionLinks = 0.01;
     private DictionaryDatabase db;
 
     public DictionaryIndexer(File path) throws IOException, DatabaseException {
@@ -29,7 +29,7 @@ public class DictionaryIndexer {
             if (line == null) {
                 break;
             }
-            if (++numLines % 1000000 == 0) {
+            if (++numLines % 100000 == 0) {
                 double p = 100.0 * numLinesRetained / numLines;
                 LOG.info("processing line: " + numLines +
                         ", retained " + numLinesRetained +
@@ -59,8 +59,8 @@ public class DictionaryIndexer {
             && f.getNumerator() >= minNumLinks
             && 1.0 * f.getNumerator() / f.getDenominator() > minFractionLinks
         );
-
     }
+
     public int getMinNumLinks() {
         return minNumLinks;
     }
@@ -86,7 +86,7 @@ public class DictionaryIndexer {
             in = new BufferedReader(
                     new InputStreamReader(
                             new BZip2CompressorInputStream(
-                                    new FileInputStream(args[0]))));
+                                    new FileInputStream(args[0]), true)));
         } else {
             in = new BufferedReader(new FileReader(args[0]));
         }

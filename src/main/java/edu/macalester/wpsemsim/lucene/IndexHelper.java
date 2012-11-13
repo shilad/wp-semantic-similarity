@@ -107,6 +107,15 @@ public class IndexHelper {
         }
     }
 
+    public Document titleToLuceneDoc(String title) throws IOException {
+        int docId = titleToLuceneId(title);
+        if (docId >= 0) {
+            return reader.document(docId);
+        } else {
+            return null;
+        }
+    }
+
     public String wpIdToTitle(int wpId) {
         Query query = new TermQuery(new Term("id", "" + wpId));
         try {
@@ -132,16 +141,20 @@ public class IndexHelper {
      * @return
      * @throws IOException
      */
-    public TIntList getLinkedLuceneIds(int wpId) throws IOException {
+    public TIntList getLinkedLuceneIdsForWpId(int wpId) throws IOException {
         if (!hasField("links")) {
             throw new UnsupportedOperationException("index does not have a field called 'links'");
         }
 
         int luceneId = wpIdToLuceneId(wpId);
         if (luceneId < 0) {
-//            LOG.info("no lucene id associated with wpId " + wpId);
+            LOG.info("no lucene id associated with wpId " + wpId);
             return new TIntArrayList();
         }
+        return getLinkedLuceneIdsForLuceneId(luceneId);
+    }
+
+    public TIntList getLinkedLuceneIdsForLuceneId(int luceneId) throws IOException {
         TIntArrayList result = new TIntArrayList();
         Set<String> finished = new HashSet<String>();
         for (IndexableField f : reader.document(luceneId).getFields("links")) {

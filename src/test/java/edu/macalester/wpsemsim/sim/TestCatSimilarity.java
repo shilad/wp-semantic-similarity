@@ -60,6 +60,11 @@ public class TestCatSimilarity {
     }
 
     @Test
+    public void testLongerIsWorse() {
+        assertTrue(pathSimilarity("vowel letters") > pathSimilarity( "vowel letters", "poetry"));
+    }
+
+    @Test
     public void testPathScores() {
         assertTrue(
                 pathDistance("vowel letters", "poetry", "symphonic poems") <

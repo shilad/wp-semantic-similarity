@@ -15,7 +15,7 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
 
     // Format: text + "\t" + probability + " " + url + " " + flags...
     private static final Pattern MATCH_ENTRY =
-            Pattern.compile("([^\t]*)\t([0-9.e-]+) ([^ ]*) (.*)");
+            Pattern.compile("([^\t]*)\t([0-9.e-]+) ([^ ]*)(| (.*))$");
     private String line;
 
     public DictionaryEntry(String line) {

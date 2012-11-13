@@ -1,7 +1,7 @@
 {
     // The lucene index directory used to get Wikipedia ids and
     // a mapping between ids and article titles
-    "index" : "dat/lucene/links",
+    "index" : "dat/lucene/main",
 
     // The concept mapper that maps phrases to articles
     "concept-mapper" : {
@@ -11,20 +11,19 @@
     // The similarity metrics
     "metrics" : {
 
-        "esa" : {
-            "type" : "esa",
-            "lucene" : "dat/lucene/esa",
-        },
-
-//        "article-text" : {
-//            "type" : "text",
-//            "field" : "text",
-//            "maxPercentage" : 10,
-//            "minTermFreq" : 2,
-//            "minDocFreq" : 6,
-//            "lucene" : "dat/lucene/text",
-//            "useInternalMapper" : true
+//        "esa" : {
+//            "type" : "esa",
+//            "lucene" : "dat/lucene/esa",
 //        },
+
+        "article-text" : {
+            "type" : "text",
+            "field" : "text",
+            "maxPercentage" : 10,
+            "minTermFreq" : 2,
+            "minDocFreq" : 6,
+            "lucene" : "dat/lucene/text",
+        },
 //        "article-links" : {
 //            "type" : "text",
 //            "field" : "links",

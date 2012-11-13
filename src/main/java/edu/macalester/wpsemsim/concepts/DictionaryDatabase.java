@@ -4,12 +4,11 @@ import com.sleepycat.je.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.io.InputStreamReader;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -76,7 +75,9 @@ public class DictionaryDatabase implements ConceptMapper {
         if (status.equals(OperationStatus.NOTFOUND)) {
             return new ArrayList<DictionaryEntry>();
         } else {
-            return new Record(current).entries;
+            Record r = new Record(current);
+            r.sort();
+            return r.entries;
         }
     }
 
@@ -86,21 +87,42 @@ public class DictionaryDatabase implements ConceptMapper {
     }
 
     @Override
-    public LinkedHashMap<String, Float> map(String text) {
-        LinkedHashMap<String, Float> mapping = new LinkedHashMap<String, Float>();
+    public LinkedHashMap<String, Float> map(String text, int maxConcepts) {
         try {
-            List<DictionaryEntry> entries = get(text);
-            Collections.sort(entries);
-            Collections.reverse(entries);
-            for (DictionaryEntry e : entries) {
-                if (e.hasFlag("W09")) { // TODO: remove after we handle redirects and disambigs
-                    mapping.put(e.getArticle(), e.getFraction());
+            long sum = 0;
+            final Map<String, Float> s = new HashMap<String, Float>();
+            for (DictionaryEntry e : get(text)) {
+                sum += e.getNumberEnglishLinks();
+                if (s.containsKey(e.getArticle())) {
+                    s.put(e.getArticle(), s.get(e.getArticle()) + e.getNumberEnglishLinks());
+                } else {
+                    s.put(e.getArticle(), 1.0f * e.getNumberEnglishLinks());
                 }
             }
+
+            List<String> keys = new ArrayList<String>(s.keySet());
+            Collections.sort(keys, new Comparator<String>() {
+                @Override
+                public int compare(String s1, String s2) {
+                    return -1 * s.get(s1).compareTo(s.get(s2));
+                }
+            } );
+
+                    // normalize so that all entries sum to 0.0
+            LinkedHashMap < String, Float > result = new LinkedHashMap<String, Float>();
+            if (sum > 0) {
+                for (String article : keys) {
+                    if (result.size() >= maxConcepts) {
+                        break;
+                    }
+                    result.put(article, s.get(article) / sum);
+                }
+            }
+            return result;
         } catch (DatabaseException e) {
             LOG.log(Level.SEVERE, "concept mapping for '" + text + "' failed:", e);
+            return null;
         }
-        return mapping;
     }
 
     public static class Record {
@@ -113,8 +135,8 @@ public class DictionaryDatabase implements ConceptMapper {
             text = entries.get(0).getNormalizedText();
         }
         Record(DictionaryEntry entry) {
+            text = entry.getNormalizedText();
             this.add(entry);
-            text = entries.get(0).getNormalizedText();
         }
         Record(DatabaseEntry entry) {
             for (String line : new String(entry.getData()).split("\n")) {
@@ -134,6 +156,10 @@ public class DictionaryDatabase implements ConceptMapper {
                 this.add(e);
             }
         }
+        void sort() {
+            Collections.sort(entries);
+            Collections.reverse(entries);
+        }
         DatabaseEntry getDatabaseKey() {
             return new DatabaseEntry(text.getBytes());
         }
@@ -146,6 +172,24 @@ public class DictionaryDatabase implements ConceptMapper {
                 buff.append(entry.toString());
             }
             return new DatabaseEntry(buff.toString().getBytes());
+        }
+    }
+
+    public static void main(String args[]) throws IOException, DatabaseException {
+        DictionaryDatabase db = new DictionaryDatabase(new File(args[0]), false);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        while (true) {
+            System.out.print("Enter phrase: ");
+            String line = reader.readLine();
+            if (line == null) {
+                break;
+            }
+            line = line.trim();
+            System.out.println("results for '" + line + "'");
+            Map<String, Float> mapping = db.map(line, 500);
+            for (DictionaryEntry entry : db.get(line)) {
+                System.out.println("\t" + mapping.get(entry.getArticle()) +  ": " + entry.toString());
+            }
         }
     }
 }

@@ -10,5 +10,5 @@ public interface ConceptMapper {
      * @param text
      * @return
      */
-    public LinkedHashMap<String, Float> map(String text);
+    public LinkedHashMap<String, Float> map(String text, int maxConcepts);
 }

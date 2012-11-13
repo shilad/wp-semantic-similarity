@@ -36,6 +36,7 @@ public class CatSimilarity extends BaseSimilarityMetric {
 
     public static double distanceToScore(CategoryGraph graph, double distance) {
         distance = Math.max(distance, graph.minCost);
+        assert(graph.minCost < 1.0);    // if this isn't true, direction is flipped.
         return  (Math.log(distance) / Math.log(graph.minCost));
     }
 

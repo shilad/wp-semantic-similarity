@@ -27,12 +27,12 @@ import java.util.logging.Logger;
 
 public class AllIndexBuilder {
     List<BaseIndexGenerator> generators = Arrays.asList(
-//            new MainIndexGenerator(),
-//
-//            new FieldsIndexGenerator("text", "id", "title"),
-//            new FieldsIndexGenerator("links", "id", "title"),
-//            new FieldsIndexGenerator("cats", "id", "ns", "title")
-//                    .setNamespaces(0, 14),
+            new MainIndexGenerator(),
+
+            new FieldsIndexGenerator("text", "id", "title"),
+            new FieldsIndexGenerator("links", "id", "title"),
+            new FieldsIndexGenerator("cats", "id", "ns", "title")
+                    .setNamespaces(0, 14),
 
             new FieldsIndexGenerator("links", "text", "id", "title", "inlinks")
                     .setMinLinks(15).setMinWords(300)
@@ -59,6 +59,15 @@ public class AllIndexBuilder {
     public AllIndexBuilder(File inputPath, File outputDir) {
         this.inputPath = inputPath;
         this.outputDir = outputDir;
+    }
+
+    public BaseIndexGenerator getGenerator(String name) {
+        for (BaseIndexGenerator g : generators) {
+            if (g.getName().equals(name)) {
+                return g;
+            }
+        }
+        return null;
     }
 
     public void openIndex(int bufferMB) throws IOException {

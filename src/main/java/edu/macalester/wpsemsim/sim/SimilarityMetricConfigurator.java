@@ -3,6 +3,7 @@ package edu.macalester.wpsemsim.sim;
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
+import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
@@ -98,10 +99,18 @@ public class SimilarityMetricConfigurator {
 
     public synchronized  ConceptMapper getMapper() throws ConfigurationException, IOException, DatabaseException {
         if (mapper == null && configuration.get().containsKey("concept-mapper")) {
-            mapper = new DictionaryDatabase(
-                    requireDirectory(
-                            configuration.get("concept-mapper"), "dictionary"
-                ));
+            if (configuration.get("concept-mapper").containsKey("dictionary")) {
+                mapper = new DictionaryDatabase(
+                        requireDirectory(
+                                configuration.get("concept-mapper"), "dictionary"
+                        ));
+            } else if (configuration.get("concept-mapper").containsKey("lucene")) {
+                IndexHelper helper = new IndexHelper(
+                        requireDirectory(configuration.get("concept-mapper"), "lucene"), false);
+                mapper = new LuceneMapper(helper);
+            } else {
+                throw new IllegalArgumentException("unrecognized concept mapper");
+            }
         }
         return mapper;
     }

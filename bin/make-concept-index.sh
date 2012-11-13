@@ -11,4 +11,4 @@ mb=$3
 
 export MAVEN_OPTS="-Xmx${mb}M -ea -server"
 mvn compile
-mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.concepts.DictionaryIndexer" -D exec.classpathScope=runtime  -D exec.args="$in $out"
+mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.concepts.DictionaryIndexer" -D exec.classpathScope=runtime  -D exec.args="$in $out 3 0.01"

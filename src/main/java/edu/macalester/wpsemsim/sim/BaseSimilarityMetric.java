@@ -3,6 +3,7 @@ package edu.macalester.wpsemsim.sim;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScoreList;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
-        LinkedHashMap<String, Float> concepts = mapper.map(phrase);
+        LinkedHashMap<String, Float> concepts = mapper.map(phrase, maxResults);
         if (concepts.isEmpty()) {
             LOG.info("no concepts for phrase " + phrase);
             return new DocScoreList(0);
@@ -55,8 +56,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
-        LinkedHashMap<String, Float> concept1s = mapper.map(phrase1);
-        LinkedHashMap<String, Float> concept2s= mapper.map(phrase2);
+        LinkedHashMap<String, Float> concept1s = mapper.map(phrase1, 10);
+        LinkedHashMap<String, Float> concept2s= mapper.map(phrase2, 10);
 
         if (concept1s.isEmpty()) {
             LOG.info("no concepts for phrase " + phrase1);
@@ -68,33 +69,57 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
             return Double.NaN;
         }
 
+        double top1 = Double.NEGATIVE_INFINITY;
+        double top2 = Double.NEGATIVE_INFINITY;
+        double bestScore = -1.0;
+        double bestSim = Double.NaN;
         // for, now choose the first concepts
-        String article1 = concept1s.keySet().iterator().next();
-        String article2 = concept2s.keySet().iterator().next();
+        for (String article1 : concept1s.keySet()) {
+//            System.err.println("article1 is " + article1);
+            double score1 = concept1s.get(article1);
+            top1 = Math.max(top1, score1);
+//            if (score1 < 0.1 * top1) {
+//                break;
+//            }
+            int wpId1 = helper.titleToWpId(article1);
+            if (wpId1 < 0) {
+                continue;
+            }
+            for (String article2 : concept2s.keySet()) {
+//                System.err.println("article2 is " + article2);
+                double score2 = concept2s.get(article2);
+                top2 = Math.max(top2, score2);
+//                if (score2 < 0.1 * top2) {
+//                    break;
+//                }
+                int wpId2 = helper.titleToWpId(article2);
+                if (wpId2 < 0) {
+                    continue;
+                }
+                double sim = 0.0;
+                if (wpId1 == wpId2) {
+                    sim = 1.0;
+                } else {
+                    sim = similarity(wpId1, wpId2);
+                    if (Double.isInfinite(sim) || Double.isNaN(sim)) {
+                        LOG.info("sim between '" + article1 + "' and '" + article2 + "' is NAN or INF");
+                        continue;
+                    }
+                }
 
-        int wpId1 = helper.titleToWpId(article1);
-        int wpId2 = helper.titleToWpId(article2);
-        if (wpId1 < 0) {
-            LOG.info("couldn't find article with title '" + article1 + "'");
-        }
-        if (wpId2 < 0) {
-            LOG.info("couldn't find article with title '" + article2 + "'");
-        }
-        if (wpId1 < 0 || wpId2 < 0) {
-            return Double.NaN;
-        }
+                double score = score1 * score2 * sim;
 
-        double sim;
-        if (wpId1 == wpId2) {
-            sim = 1.0;
-        } else {
-            sim = similarity(wpId1, wpId2);
-            if (Double.isInfinite(sim) || Double.isNaN(sim)) {
-                LOG.info("sim between '" + article1 + "' and '" + article2 + "' is NAN or INF");
-                sim = Double.NaN;
+//                System.out.println("for " + phrase1 + ", " + phrase2 + " is " +
+//                        "" + article1 + ", " + article2 +
+//                        ": " + score1 + ", " + score2 + ", " + sim);
+                if (score > bestScore) {
+                    bestSim = sim;
+                    bestScore = score;
+                }
+
             }
         }
-        return sim;
+        return bestSim;
     }
 
     @Override

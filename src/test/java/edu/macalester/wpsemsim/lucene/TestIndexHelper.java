@@ -2,7 +2,6 @@ package edu.macalester.wpsemsim.lucene;
 
 import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.list.TIntList;
-import gnu.trove.list.linked.TIntLinkedList;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.junit.After;
@@ -52,7 +51,7 @@ public class TestIndexHelper {
 
     @Test
     public void testGetLinkedLuceneIds() throws IOException {
-        TIntList otherIds = linkHelper.getLinkedLuceneIds(12);
+        TIntList otherIds = linkHelper.getLinkedLuceneIdsForWpId(12);
         assertEquals(otherIds.size(), 2);
 
         // Ayn Rand should come first.

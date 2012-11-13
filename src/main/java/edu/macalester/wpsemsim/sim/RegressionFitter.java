@@ -18,6 +18,10 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RegressionFitter {
@@ -99,23 +103,45 @@ public class RegressionFitter {
      * @return [pearson-correlation, coverage between 0 and 1.0, all y values]
      * @throws IOException
      */
-    public Object[] calculateCorrelation(SimilarityMetric metric) throws IOException, ParseException {
-        TDoubleArrayList X = new TDoubleArrayList();
-        TDoubleArrayList Y = new TDoubleArrayList();
-        double allX[] = new double[gold.size()];
+    public Object[] calculateCorrelation(final SimilarityMetric metric) throws IOException, ParseException {
+        final TDoubleArrayList X = new TDoubleArrayList();
+        final TDoubleArrayList Y = new TDoubleArrayList();
+        final double allX[] = new double[gold.size()];
         Arrays.fill(allX, Double.NaN);
+        ExecutorService exec = Executors.newFixedThreadPool(
+                Runtime.getRuntime().availableProcessors());
 //        SimpleRegression reg = new SimpleRegression();
-        for (int i = 0; i < gold.size(); i++) {
-            if (i % 10 == 0) {
-                LOG.info("calculating metric " + metric.getName() + " gold results for number " + i);
+        try {
+            for (int i = 0; i < gold.size(); i++) {
+                final KnownSim ks = gold.get(i);
+                final int finalI = i;
+                exec.submit(new Runnable() {
+                    public void run() {
+                        try {
+                            if (finalI % 10 == 0) {
+                                LOG.info("calculating metric " + metric.getName() + " gold results for number " + finalI);
+                            }
+                            double sim = metric.similarity(ks.phrase1, ks.phrase2);
+                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
+    //            reg.addData(sim, ks.similarity);
+                                synchronized (X) {
+                                    allX[finalI] = sim;
+                                    X.add(ks.similarity);
+                                    Y.add(sim);
+                                }
+                            }
+                        } catch (Exception e) {
+                            LOG.log(Level.SEVERE, "error processing similarity entry  " + ks, e);
+                        }
+                    }
+                });
             }
-            KnownSim ks = gold.get(i);
-            double sim = metric.similarity(ks.phrase1, ks.phrase2);
-            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-//            reg.addData(sim, ks.similarity);
-                allX[i] = sim;
-                X.add(ks.similarity);
-                Y.add(sim);
+        } finally {
+            exec.shutdown();
+            try {
+                exec.awaitTermination(60, TimeUnit.HOURS);
+            } catch (InterruptedException e) {
+                LOG.log(Level.WARNING, "error while awaiting termination:", e);
             }
         }
 
@@ -156,6 +182,15 @@ public class RegressionFitter {
             this.phrase1 = phrase1;
             this.phrase2 = phrase2;
             this.similarity = similarity;
+        }
+
+        @Override
+        public String toString() {
+            return "KnownSim{" +
+                    "phrase1='" + phrase1 + '\'' +
+                    ", phrase2='" + phrase2 + '\'' +
+                    ", similarity=" + similarity +
+                    '}';
         }
     }
 

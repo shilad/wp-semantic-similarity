@@ -12,11 +12,11 @@ mkdir $SRC
 
 # Gabrilovich et al, 2002
 # see http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/
-#wget -P $DL http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip &&
-#mkdir $DL/wordsim353 &&
-#unzip -d $DL/wordsim353 $DL/wordsim353.zip &&
-#tail +2 $DL/wordsim353/combined.csv > $SRC/wordsim353.csv || 
-#{ echo "ERROR: preparing wordsim353 failed" >&2; exit 1;}
+wget -P $DL http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip &&
+mkdir $DL/wordsim353 &&
+unzip -d $DL/wordsim353 $DL/wordsim353.zip &&
+tail +2 $DL/wordsim353/combined.csv > $SRC/wordsim353.csv || 
+{ echo "ERROR: preparing wordsim353 failed" >&2; exit 1;}
 
 # MTurk, Radinsky et al, 2011
 # see http://www.technion.ac.il/~kirar/Datasets.html
@@ -34,9 +34,9 @@ mkdir $SRC
 
 # Atlasify: Hecht et al, 2012
 #
-wget -P $DL http://www.cs.northwestern.edu/~ddowney/data/atlasify240.csv &&
-cp -p $DL/atlasify240.csv $SRC/atlasify240.csv ||
-{ echo "ERROR: preparing atlasify dataset failed" >&2; exit 1;}
+#wget -P $DL http://www.cs.northwestern.edu/~ddowney/data/atlasify240.csv &&
+#cp -p $DL/atlasify240.csv $SRC/atlasify240.csv ||
+#{ echo "ERROR: preparing atlasify dataset failed" >&2; exit 1;}
 
 # WikiSimi
 #

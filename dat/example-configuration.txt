@@ -1,11 +1,12 @@
 {
     // The lucene index directory used to get Wikipedia ids and
     // a mapping between ids and article titles
-    "index" : "dat/lucene/links",
+    "index" : "dat/lucene/main",
 
     // The concept mapper that maps phrases to articles
     "concept-mapper" : {
-        "dictionary" : "dat/dictionary.pruned"
+        //"dictionary" : "dat/dictionary.pruned"
+        "lucene" : "dat/lucene/esa"
     },
 
     // The similarity metrics
@@ -14,6 +15,10 @@
             "type" : "category",
             "lucene" : "dat/lucene/cats",
             "test-list" : ["foo", "bar"],
+        },
+        "esa" : {
+            "type" : "esa",
+            "lucene" : "dat/lucene/esa",
         },
         "article-text" : {
             "type" : "text",
@@ -31,23 +36,23 @@
             "minDocFreq" : 2,
             "lucene" : "dat/lucene/links",
         },
-        "pairwise-text" : {
-            "type" : "pairwise",
-            "matrix" : "dat/text-sims.matrix",
-            "basedOn" : "article-text",
-            "transpose" : "dat/text-sims.transpose.matrix",
-        },
-        "pairwise-links" : {
-            "type" : "pairwise",
-            "matrix" : "dat/link-sims.matrix",
-            "basedOn" : "article-links",
-            "transpose" : "dat/link-sims.transpose.matrix",
-        },
-        "pairwise-cats" : {
-            "type" : "pairwise",
-            "matrix" : "dat/cat-sims.matrix",
-            "basedOn" : "article-cats",
-            "transpose" : "dat/cat-sims.transpose.matrix",
-        },
+//        "pairwise-text" : {
+//            "type" : "pairwise",
+//            "matrix" : "dat/text-sims.matrix",
+//            "basedOn" : "article-text",
+//            "transpose" : "dat/text-sims.transpose.matrix",
+//        },
+//        "pairwise-links" : {
+//            "type" : "pairwise",
+//            "matrix" : "dat/link-sims.matrix",
+//            "basedOn" : "article-links",
+//            "transpose" : "dat/link-sims.transpose.matrix",
+//        },
+//        "pairwise-cats" : {
+//            "type" : "pairwise",
+//            "matrix" : "dat/cat-sims.matrix",
+//            "basedOn" : "article-cats",
+//            "transpose" : "dat/cat-sims.transpose.matrix",
+//        },
     }
 }
