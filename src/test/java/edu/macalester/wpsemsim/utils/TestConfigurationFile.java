@@ -17,7 +17,7 @@ public class TestConfigurationFile {
         ConfigurationFile conf = new ConfigurationFile(TestUtils.TEST_CONF);
         assertEquals(3, conf.getKeys().size());
         assertEquals(
-                new HashSet<String>(Arrays.asList("index", "metrics")),
+                new HashSet<String>(Arrays.asList("index", "metrics", "indexes")),
                 conf.getKeys()
         );
         assertEquals(6, conf.getKeys("metrics").size());

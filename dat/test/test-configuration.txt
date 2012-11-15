@@ -1,7 +1,7 @@
 {
     // The lucene index directory used to get Wikipedia ids and
     // a mapping between ids and article titles
-    "index" : "LUCENE/links",
+    "index" : "DAT/lucene/main",
 
     // The concept mapper that maps phrases to articles TODO: integrate this with tests
 //    "concept-mapper" : {
@@ -24,7 +24,8 @@
         },
         "cats" : {
             "type" : "fields",
-            "fields" : ["cats", "id", "title"],
+            "fields" : ["cats", "id", "title", "ns"],
+            "namespaces" : [0, 14]
         },
     }
 
@@ -32,7 +33,7 @@
     "metrics" : {
         "article-cats" : {
             "type" : "category",
-            "lucene" : "LUCENE/cats",
+            "lucene" : "DAT/lucene/cats",
             "test-list" : ["foo", "bar"],
         },
         "article-text" : {
@@ -41,7 +42,7 @@
             "maxPercentage" : 100,
             "minTermFreq" : 2,
             "minDocFreq" : 2,
-            "lucene" : "LUCENE/text",
+            "lucene" : "DAT/lucene/text",
         },
         "article-links" : {
             "type" : "text",
@@ -49,7 +50,7 @@
             "maxPercentage" : 100,
             "minTermFreq" : 1,
             "minDocFreq" : 2,
-            "lucene" : "LUCENE/links",
+            "lucene" : "DAT/lucene/links",
         },
         "pairwise-text" : {
             "type" : "pairwise",

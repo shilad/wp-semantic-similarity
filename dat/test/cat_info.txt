@@ -2,210 +2,210 @@ Category information
 
 
 Non-orphaned category hierarchy:
-id=0, books, parents=[literature (id=1)], children=[children's picture books (id=50), american novelists (id=29), 1986 books (id=11)]
-id=1, literature, parents=[], children=[poetry (id=2), books (id=0)]
-id=2, poetry, parents=[literature (id=1)], children=[vowel letters (id=89), symphonic poems (id=87)]
-id=3, births, parents=[life events (id=4)], children=[384 bc births (id=17), 1947 births (id=9), 1905 births (id=8), 1809 births (id=6)]
-id=4, life events, parents=[], children=[deaths (id=5), births (id=3)]
-id=5, deaths, parents=[life events (id=4)], children=[322 bc deaths (id=16), 1982 deaths (id=10), 1865 deaths (id=7)]
-id=6, 1809 births, parents=[births (id=3)], children=[]
-id=7, 1865 deaths, parents=[deaths (id=5)], children=[]
-id=8, 1905 births, parents=[births (id=3)], children=[]
-id=9, 1947 births, parents=[births (id=3)], children=[]
-id=10, 1982 deaths, parents=[deaths (id=5)], children=[]
-id=11, 1986 books, parents=[books (id=0)], children=[]
-id=12, 20th-century mathematicians, parents=[people (id=13)], children=[]
-id=13, people, parents=[], children=[women science fiction and fantasy writers (id=91), virtue ethicists (id=88), philosophers of mind (id=77), philosophers of mind (id=77), philosophers of law (id=76), philosophers of language (id=75), philosophers of ancient chalcidice (id=74), philosophers and tutors of alexander the great (id=73), people of the trojan war (id=72), people of the black hawk war (id=71), people of illinois in the american civil war (id=70), people murdered in washington (id=69), people from springfield (id=68), people from spencer county (id=67), people from macon county (id=66), people from larue county (id=65), people from coles county (id=64), members of the united states national academy of sciences (id=61), members of the united states house of representatives from illinois (id=60), members of the royal danish academy of sciences and letters (id=59), members of the norwegian academy of science and letters (id=58), members of the illinois house of representatives (id=57), members of the french academy of sciences (id=56), ayn rand (id=47), aristotle (id=44), ancient greeks in macedon (id=42), ancient greek physicists (id=41), ancient greek philosophers (id=40), ancient greek mathematicians (id=39), american writers of russian descent (id=36), american screenwriters (id=35), american science fiction writers (id=34), american philosophers (id=33), american people of welsh descent (id=32), american people of russian-jewish descent (id=31), american people of english descent (id=30), american novelists (id=29), american libertarians (id=28), american film awards (id=27), american essayists (id=26), american dramatists and playwrights (id=25), american atheists (id=24), american anti-communists (id=23), academic philosophers (id=20), abraham lincoln (id=19), 4th-century bc philosophers (id=18), 21st-century mathematicians (id=15), 20th-century philosophers (id=14), 20th-century mathematicians (id=12)]
-id=14, 20th-century philosophers, parents=[people (id=13)], children=[]
-id=15, 21st-century mathematicians, parents=[people (id=13)], children=[]
-id=16, 322 bc deaths, parents=[deaths (id=5)], children=[]
-id=17, 384 bc births, parents=[births (id=3)], children=[]
-id=18, 4th-century bc philosophers, parents=[people (id=13)], children=[]
-id=19, abraham lincoln, parents=[people (id=13)], children=[]
-id=20, academic philosophers, parents=[people (id=13)], children=[]
-id=21, altruism, parents=[philosphy (id=22)], children=[]
-id=22, philosphy, parents=[], children=[altruism (id=21)]
-id=23, american anti-communists, parents=[people (id=13)], children=[]
-id=24, american atheists, parents=[people (id=13)], children=[]
-id=25, american dramatists and playwrights, parents=[people (id=13)], children=[]
-id=26, american essayists, parents=[people (id=13)], children=[]
-id=27, american film awards, parents=[people (id=13)], children=[]
-id=28, american libertarians, parents=[people (id=13)], children=[]
-id=29, american novelists, parents=[people (id=13), books (id=0)], children=[]
-id=30, american people of english descent, parents=[people (id=13)], children=[]
-id=31, american people of russian-jewish descent, parents=[people (id=13)], children=[]
-id=32, american people of welsh descent, parents=[people (id=13)], children=[]
-id=33, american philosophers, parents=[people (id=13)], children=[]
-id=34, american science fiction writers, parents=[people (id=13)], children=[]
-id=35, american screenwriters, parents=[people (id=13)], children=[]
-id=36, american writers of russian descent, parents=[people (id=13)], children=[]
-id=37, anarchism, parents=[political theory (id=38)], children=[]
-id=38, political theory, parents=[], children=[anti-fascism (id=43), anarchism (id=37)]
-id=39, ancient greek mathematicians, parents=[people (id=13)], children=[]
-id=40, ancient greek philosophers, parents=[people (id=13)], children=[]
-id=41, ancient greek physicists, parents=[people (id=13)], children=[]
-id=42, ancient greeks in macedon, parents=[people (id=13)], children=[]
-id=43, anti-fascism, parents=[political theory (id=38)], children=[]
-id=44, aristotle, parents=[people (id=13)], children=[]
-id=45, atheist philosophers, parents=[philosophy (id=46)], children=[]
-id=46, philosophy, parents=[], children=[women philosophers (id=90), rhetoric theorists (id=82), political theorists (id=81), political philosophers (id=80), political ideologies (id=79), political culture (id=78), natural philosophers (id=63), metaphysicians (id=62), libertarian theorists (id=54), history of philosophy (id=53), history of logic (id=52), ethicists (id=51), atheist philosophers (id=45)]
-id=47, ayn rand, parents=[people (id=13)], children=[]
-id=48, characters in the iliad, parents=[poems (id=49)], children=[]
-id=49, poems, parents=[], children=[characters in the iliad (id=48)]
-id=50, children's picture books, parents=[books (id=0)], children=[]
-id=51, ethicists, parents=[philosophy (id=46)], children=[]
-id=52, history of logic, parents=[philosophy (id=46)], children=[]
-id=53, history of philosophy, parents=[philosophy (id=46)], children=[]
-id=54, libertarian theorists, parents=[political ideology (id=55), philosophy (id=46)], children=[]
-id=55, political ideology, parents=[], children=[metaphysicians (id=62), libertarian theorists (id=54)]
-id=56, members of the french academy of sciences, parents=[people (id=13)], children=[]
-id=57, members of the illinois house of representatives, parents=[people (id=13)], children=[]
-id=58, members of the norwegian academy of science and letters, parents=[people (id=13)], children=[]
-id=59, members of the royal danish academy of sciences and letters, parents=[people (id=13)], children=[]
-id=60, members of the united states house of representatives from illinois, parents=[people (id=13)], children=[]
-id=61, members of the united states national academy of sciences, parents=[people (id=13)], children=[]
-id=62, metaphysicians, parents=[philosophy (id=46), political ideology (id=55)], children=[]
-id=63, natural philosophers, parents=[philosophy (id=46)], children=[]
-id=64, people from coles county, parents=[people (id=13)], children=[]
-id=65, people from larue county, parents=[people (id=13)], children=[]
-id=66, people from macon county, parents=[people (id=13)], children=[]
-id=67, people from spencer county, parents=[people (id=13)], children=[]
-id=68, people from springfield, parents=[people (id=13)], children=[]
-id=69, people murdered in washington, parents=[people (id=13)], children=[]
-id=70, people of illinois in the american civil war, parents=[people (id=13)], children=[]
-id=71, people of the black hawk war, parents=[people (id=13)], children=[]
-id=72, people of the trojan war, parents=[people (id=13)], children=[]
-id=73, philosophers and tutors of alexander the great, parents=[people (id=13)], children=[]
-id=74, philosophers of ancient chalcidice, parents=[people (id=13)], children=[]
-id=75, philosophers of language, parents=[people (id=13)], children=[]
-id=76, philosophers of law, parents=[people (id=13)], children=[]
-id=77, philosophers of mind, parents=[people (id=13)], children=[]
-id=78, political culture, parents=[philosophy (id=46)], children=[]
-id=79, political ideologies, parents=[philosophy (id=46)], children=[]
-id=80, political philosophers, parents=[philosophy (id=46)], children=[]
-id=81, political theorists, parents=[philosophy (id=46)], children=[]
-id=82, rhetoric theorists, parents=[philosophy (id=46)], children=[]
-id=83, social philosophy, parents=[social psychology (id=84)], children=[]
-id=84, social psychology, parents=[psychology (id=85)], children=[social theories (id=86), social philosophy (id=83)]
-id=85, psychology, parents=[], children=[social psychology (id=84)]
-id=86, social theories, parents=[social psychology (id=84)], children=[]
-id=87, symphonic poems, parents=[poetry (id=2)], children=[]
-id=88, virtue ethicists, parents=[people (id=13)], children=[]
-id=89, vowel letters, parents=[poetry (id=2)], children=[]
-id=90, women philosophers, parents=[philosophy (id=46)], children=[]
-id=91, women science fiction and fantasy writers, parents=[people (id=13)], children=[]
-id=158, academy awards, parents=[], children=[]
+id=0, anarchism, parents=[political theory (id=188)], children=[]
+id=1, political culture, parents=[philosophy (id=189)], children=[]
+id=2, political ideologies, parents=[philosophy (id=189)], children=[]
+id=3, social theories, parents=[social psychology (id=129)], children=[]
+id=4, anti-fascism, parents=[political theory (id=188)], children=[]
+id=21, vowel letters, parents=[poetry (id=182)], children=[]
+id=29, characters in the iliad, parents=[poems (id=190)], children=[]
+id=34, people of the trojan war, parents=[people (id=186)], children=[]
+id=36, 1809 births, parents=[births (id=183)], children=[]
+id=37, 1865 deaths, parents=[deaths (id=185)], children=[]
+id=38, abraham lincoln, parents=[people (id=186)], children=[]
+id=39, american people of english descent, parents=[people (id=186)], children=[]
+id=40, american people of welsh descent, parents=[people (id=186)], children=[]
+id=47, members of the illinois house of representatives, parents=[people (id=186)], children=[]
+id=48, members of the united states house of representatives from illinois, parents=[people (id=186)], children=[]
+id=55, people of illinois in the american civil war, parents=[people (id=186)], children=[]
+id=56, people of the black hawk war, parents=[people (id=186)], children=[]
+id=64, 384 bc births, parents=[births (id=183)], children=[]
+id=65, 322 bc deaths, parents=[deaths (id=185)], children=[]
+id=66, aristotle, parents=[people (id=186)], children=[]
+id=67, academic philosophers, parents=[people (id=186)], children=[]
+id=69, ancient greek mathematicians, parents=[people (id=186)], children=[]
+id=70, ancient greek philosophers, parents=[people (id=186)], children=[]
+id=71, ancient greek physicists, parents=[people (id=186)], children=[]
+id=72, ancient greeks in macedon, parents=[people (id=186)], children=[]
+id=82, history of logic, parents=[philosophy (id=189)], children=[]
+id=83, history of philosophy, parents=[philosophy (id=189)], children=[]
+id=86, philosophers of ancient chalcidice, parents=[people (id=186)], children=[]
+id=89, philosophers of language, parents=[people (id=186)], children=[]
+id=90, philosophers of law, parents=[people (id=186)], children=[]
+id=91, philosophers of mind, parents=[people (id=186)], children=[]
+id=92, political philosophers, parents=[philosophy (id=189)], children=[]
+id=93, rhetoric theorists, parents=[philosophy (id=189)], children=[]
+id=94, philosophers and tutors of alexander the great, parents=[people (id=186)], children=[]
+id=95, 4th-century bc philosophers, parents=[people (id=186)], children=[]
+id=96, metaphysicians, parents=[philosophy (id=189), political ideology (id=191)], children=[]
+id=98, virtue ethicists, parents=[people (id=186)], children=[]
+id=99, natural philosophers, parents=[philosophy (id=189)], children=[]
+id=101, symphonic poems, parents=[poetry (id=182)], children=[]
+id=105, academy awards, parents=[], children=[]
+id=107, american film awards, parents=[people (id=186)], children=[]
+id=116, children's picture books, parents=[books (id=180)], children=[]
+id=118, 1986 books, parents=[books (id=180)], children=[]
+id=122, altruism, parents=[philosphy (id=187)], children=[]
+id=128, social philosophy, parents=[social psychology (id=129)], children=[]
+id=129, social psychology, parents=[psychology (id=198)], children=[social theories (id=3), social philosophy (id=128)]
+id=131, 1905 births, parents=[births (id=183)], children=[]
+id=132, 1982 deaths, parents=[deaths (id=185)], children=[]
+id=133, 20th-century philosophers, parents=[people (id=186)], children=[]
+id=134, american anti-communists, parents=[people (id=186)], children=[]
+id=135, american atheists, parents=[people (id=186)], children=[]
+id=136, american dramatists and playwrights, parents=[people (id=186)], children=[]
+id=137, american essayists, parents=[people (id=186)], children=[]
+id=138, american libertarians, parents=[people (id=186)], children=[]
+id=139, american novelists, parents=[people (id=186), books (id=180)], children=[]
+id=140, american people of russian-jewish descent, parents=[people (id=186)], children=[]
+id=141, american philosophers, parents=[people (id=186)], children=[]
+id=142, american science fiction writers, parents=[people (id=186)], children=[]
+id=143, american screenwriters, parents=[people (id=186)], children=[]
+id=144, american writers of russian descent, parents=[people (id=186)], children=[]
+id=146, atheist philosophers, parents=[philosophy (id=189)], children=[]
+id=147, ayn rand, parents=[people (id=186)], children=[]
+id=152, ethicists, parents=[philosophy (id=189)], children=[]
+id=154, libertarian theorists, parents=[political ideology (id=191), philosophy (id=189)], children=[]
+id=156, political theorists, parents=[philosophy (id=189)], children=[]
+id=161, women philosophers, parents=[philosophy (id=189)], children=[]
+id=162, women science fiction and fantasy writers, parents=[people (id=186)], children=[]
+id=163, 1947 births, parents=[births (id=183)], children=[]
+id=165, 20th-century mathematicians, parents=[people (id=186)], children=[]
+id=166, members of the united states national academy of sciences, parents=[people (id=186)], children=[]
+id=167, 21st-century mathematicians, parents=[people (id=186)], children=[]
+id=176, members of the french academy of sciences, parents=[people (id=186)], children=[]
+id=177, members of the norwegian academy of science and letters, parents=[people (id=186)], children=[]
+id=178, members of the royal danish academy of sciences and letters, parents=[people (id=186)], children=[]
+id=180, books, parents=[literature (id=181)], children=[children's picture books (id=116), american novelists (id=139), 1986 books (id=118)]
+id=181, literature, parents=[], children=[poetry (id=182), books (id=180)]
+id=182, poetry, parents=[literature (id=181)], children=[vowel letters (id=21), symphonic poems (id=101)]
+id=183, births, parents=[life events (id=184)], children=[384 bc births (id=64), 1947 births (id=163), 1905 births (id=131), 1809 births (id=36)]
+id=184, life events, parents=[], children=[deaths (id=185), births (id=183)]
+id=185, deaths, parents=[life events (id=184)], children=[322 bc deaths (id=65), 1982 deaths (id=132), 1865 deaths (id=37)]
+id=186, people, parents=[], children=[women science fiction and fantasy writers (id=162), virtue ethicists (id=98), philosophers of mind (id=91), philosophers of mind (id=91), philosophers of law (id=90), philosophers of language (id=89), philosophers of ancient chalcidice (id=86), philosophers and tutors of alexander the great (id=94), people of the trojan war (id=34), people of the black hawk war (id=56), people of illinois in the american civil war (id=55), people murdered in washington (id=197), people from springfield (id=196), people from spencer county (id=195), people from macon county (id=194), people from larue county (id=193), people from coles county (id=192), members of the united states national academy of sciences (id=166), members of the united states house of representatives from illinois (id=48), members of the royal danish academy of sciences and letters (id=178), members of the norwegian academy of science and letters (id=177), members of the illinois house of representatives (id=47), members of the french academy of sciences (id=176), ayn rand (id=147), aristotle (id=66), ancient greeks in macedon (id=72), ancient greek physicists (id=71), ancient greek philosophers (id=70), ancient greek mathematicians (id=69), american writers of russian descent (id=144), american screenwriters (id=143), american science fiction writers (id=142), american philosophers (id=141), american people of welsh descent (id=40), american people of russian-jewish descent (id=140), american people of english descent (id=39), american novelists (id=139), american libertarians (id=138), american film awards (id=107), american essayists (id=137), american dramatists and playwrights (id=136), american atheists (id=135), american anti-communists (id=134), academic philosophers (id=67), abraham lincoln (id=38), 4th-century bc philosophers (id=95), 21st-century mathematicians (id=167), 20th-century philosophers (id=133), 20th-century mathematicians (id=165)]
+id=187, philosphy, parents=[], children=[altruism (id=122)]
+id=188, political theory, parents=[], children=[anti-fascism (id=4), anarchism (id=0)]
+id=189, philosophy, parents=[], children=[women philosophers (id=161), rhetoric theorists (id=93), political theorists (id=156), political philosophers (id=92), political ideologies (id=2), political culture (id=1), natural philosophers (id=99), metaphysicians (id=96), libertarian theorists (id=154), history of philosophy (id=83), history of logic (id=82), ethicists (id=152), atheist philosophers (id=146)]
+id=190, poems, parents=[], children=[characters in the iliad (id=29)]
+id=191, political ideology, parents=[], children=[metaphysicians (id=96), libertarian theorists (id=154)]
+id=192, people from coles county, parents=[people (id=186)], children=[]
+id=193, people from larue county, parents=[people (id=186)], children=[]
+id=194, people from macon county, parents=[people (id=186)], children=[]
+id=195, people from spencer county, parents=[people (id=186)], children=[]
+id=196, people from springfield, parents=[people (id=186)], children=[]
+id=197, people murdered in washington, parents=[people (id=186)], children=[]
+id=198, psychology, parents=[], children=[social psychology (id=129)]
 
 
 Page ranks of non-useful cats: 0.13907384145974913
 
 
 Page ranks of useful cats:
-0.  i=13, people=0.28837159071131013
-1.  i=46, philosophy=0.2094455313732447
-2.  i=4, life events=0.19448575729328485
-3.  i=1, literature=0.1849514774813461
-4.  i=3, births=0.17516753951515493
-5.  i=5, deaths=0.16881975994881998
-6.  i=85, psychology=0.1667217225793625
-7.  i=0, books=0.16526219891329208
-8.  i=2, poetry=0.1613638983604406
-9.  i=38, political theory=0.1613638983604406
-10.  i=84, social psychology=0.1613638983604406
-11.  i=22, philosphy=0.15208572252146596
-12.  i=49, poems=0.15208572252146596
-13.  i=55, political ideology=0.15208572252146596
-14.  i=6, 1809 births=0.13907384145974913
-15.  i=7, 1865 deaths=0.13907384145974913
-16.  i=8, 1905 births=0.13907384145974913
-17.  i=9, 1947 births=0.13907384145974913
-18.  i=10, 1982 deaths=0.13907384145974913
-19.  i=11, 1986 books=0.13907384145974913
-20.  i=12, 20th-century mathematicians=0.13907384145974913
-21.  i=14, 20th-century philosophers=0.13907384145974913
-22.  i=15, 21st-century mathematicians=0.13907384145974913
-23.  i=16, 322 bc deaths=0.13907384145974913
-24.  i=17, 384 bc births=0.13907384145974913
-25.  i=18, 4th-century bc philosophers=0.13907384145974913
-26.  i=19, abraham lincoln=0.13907384145974913
-27.  i=20, academic philosophers=0.13907384145974913
-28.  i=21, altruism=0.13907384145974913
-29.  i=23, american anti-communists=0.13907384145974913
-30.  i=24, american atheists=0.13907384145974913
-31.  i=25, american dramatists and playwrights=0.13907384145974913
-32.  i=26, american essayists=0.13907384145974913
-33.  i=27, american film awards=0.13907384145974913
-34.  i=28, american libertarians=0.13907384145974913
-35.  i=29, american novelists=0.13907384145974913
-36.  i=30, american people of english descent=0.13907384145974913
-37.  i=31, american people of russian-jewish descent=0.13907384145974913
-38.  i=32, american people of welsh descent=0.13907384145974913
-39.  i=33, american philosophers=0.13907384145974913
-40.  i=34, american science fiction writers=0.13907384145974913
-41.  i=35, american screenwriters=0.13907384145974913
-42.  i=36, american writers of russian descent=0.13907384145974913
-43.  i=37, anarchism=0.13907384145974913
-44.  i=39, ancient greek mathematicians=0.13907384145974913
-45.  i=40, ancient greek philosophers=0.13907384145974913
-46.  i=41, ancient greek physicists=0.13907384145974913
-47.  i=42, ancient greeks in macedon=0.13907384145974913
-48.  i=43, anti-fascism=0.13907384145974913
-49.  i=44, aristotle=0.13907384145974913
-50.  i=45, atheist philosophers=0.13907384145974913
-51.  i=47, ayn rand=0.13907384145974913
-52.  i=48, characters in the iliad=0.13907384145974913
-53.  i=50, children's picture books=0.13907384145974913
-54.  i=51, ethicists=0.13907384145974913
-55.  i=52, history of logic=0.13907384145974913
-56.  i=53, history of philosophy=0.13907384145974913
-57.  i=54, libertarian theorists=0.13907384145974913
-58.  i=56, members of the french academy of sciences=0.13907384145974913
-59.  i=57, members of the illinois house of representatives=0.13907384145974913
-60.  i=58, members of the norwegian academy of science and letters=0.13907384145974913
-61.  i=59, members of the royal danish academy of sciences and letters=0.13907384145974913
-62.  i=60, members of the united states house of representatives from illinois=0.13907384145974913
-63.  i=61, members of the united states national academy of sciences=0.13907384145974913
-64.  i=62, metaphysicians=0.13907384145974913
-65.  i=63, natural philosophers=0.13907384145974913
-66.  i=64, people from coles county=0.13907384145974913
-67.  i=65, people from larue county=0.13907384145974913
-68.  i=66, people from macon county=0.13907384145974913
-69.  i=67, people from spencer county=0.13907384145974913
-70.  i=68, people from springfield=0.13907384145974913
-71.  i=69, people murdered in washington=0.13907384145974913
-72.  i=70, people of illinois in the american civil war=0.13907384145974913
-73.  i=71, people of the black hawk war=0.13907384145974913
-74.  i=72, people of the trojan war=0.13907384145974913
-75.  i=73, philosophers and tutors of alexander the great=0.13907384145974913
-76.  i=74, philosophers of ancient chalcidice=0.13907384145974913
-77.  i=75, philosophers of language=0.13907384145974913
-78.  i=76, philosophers of law=0.13907384145974913
-79.  i=77, philosophers of mind=0.13907384145974913
-80.  i=78, political culture=0.13907384145974913
-81.  i=79, political ideologies=0.13907384145974913
-82.  i=80, political philosophers=0.13907384145974913
-83.  i=81, political theorists=0.13907384145974913
-84.  i=82, rhetoric theorists=0.13907384145974913
-85.  i=83, social philosophy=0.13907384145974913
-86.  i=86, social theories=0.13907384145974913
-87.  i=87, symphonic poems=0.13907384145974913
-88.  i=88, virtue ethicists=0.13907384145974913
-89.  i=89, vowel letters=0.13907384145974913
-90.  i=90, women philosophers=0.13907384145974913
-91.  i=91, women science fiction and fantasy writers=0.13907384145974913
-158.  i=158, academy awards=0.13907384145974913
+0.  i=186, people=0.28837159071131013
+1.  i=189, philosophy=0.2094455313732447
+2.  i=184, life events=0.19448575729328485
+3.  i=181, literature=0.1849514774813461
+4.  i=183, births=0.17516753951515493
+5.  i=185, deaths=0.16881975994881998
+6.  i=198, psychology=0.1667217225793625
+7.  i=180, books=0.16526219891329208
+8.  i=129, social psychology=0.1613638983604406
+9.  i=182, poetry=0.1613638983604406
+10.  i=188, political theory=0.1613638983604406
+11.  i=187, philosphy=0.15208572252146596
+12.  i=190, poems=0.15208572252146596
+13.  i=191, political ideology=0.15208572252146596
+14.  i=0, anarchism=0.13907384145974913
+15.  i=1, political culture=0.13907384145974913
+16.  i=2, political ideologies=0.13907384145974913
+17.  i=3, social theories=0.13907384145974913
+18.  i=4, anti-fascism=0.13907384145974913
+35.  i=21, vowel letters=0.13907384145974913
+43.  i=29, characters in the iliad=0.13907384145974913
+48.  i=34, people of the trojan war=0.13907384145974913
+50.  i=36, 1809 births=0.13907384145974913
+51.  i=37, 1865 deaths=0.13907384145974913
+52.  i=38, abraham lincoln=0.13907384145974913
+53.  i=39, american people of english descent=0.13907384145974913
+54.  i=40, american people of welsh descent=0.13907384145974913
+61.  i=47, members of the illinois house of representatives=0.13907384145974913
+62.  i=48, members of the united states house of representatives from illinois=0.13907384145974913
+69.  i=55, people of illinois in the american civil war=0.13907384145974913
+70.  i=56, people of the black hawk war=0.13907384145974913
+78.  i=64, 384 bc births=0.13907384145974913
+79.  i=65, 322 bc deaths=0.13907384145974913
+80.  i=66, aristotle=0.13907384145974913
+81.  i=67, academic philosophers=0.13907384145974913
+83.  i=69, ancient greek mathematicians=0.13907384145974913
+84.  i=70, ancient greek philosophers=0.13907384145974913
+85.  i=71, ancient greek physicists=0.13907384145974913
+86.  i=72, ancient greeks in macedon=0.13907384145974913
+96.  i=82, history of logic=0.13907384145974913
+97.  i=83, history of philosophy=0.13907384145974913
+100.  i=86, philosophers of ancient chalcidice=0.13907384145974913
+103.  i=89, philosophers of language=0.13907384145974913
+104.  i=90, philosophers of law=0.13907384145974913
+105.  i=91, philosophers of mind=0.13907384145974913
+106.  i=92, political philosophers=0.13907384145974913
+107.  i=93, rhetoric theorists=0.13907384145974913
+108.  i=94, philosophers and tutors of alexander the great=0.13907384145974913
+109.  i=95, 4th-century bc philosophers=0.13907384145974913
+110.  i=96, metaphysicians=0.13907384145974913
+112.  i=98, virtue ethicists=0.13907384145974913
+113.  i=99, natural philosophers=0.13907384145974913
+115.  i=101, symphonic poems=0.13907384145974913
+119.  i=105, academy awards=0.13907384145974913
+121.  i=107, american film awards=0.13907384145974913
+130.  i=116, children's picture books=0.13907384145974913
+132.  i=118, 1986 books=0.13907384145974913
+136.  i=122, altruism=0.13907384145974913
+142.  i=128, social philosophy=0.13907384145974913
+144.  i=131, 1905 births=0.13907384145974913
+145.  i=132, 1982 deaths=0.13907384145974913
+146.  i=133, 20th-century philosophers=0.13907384145974913
+147.  i=134, american anti-communists=0.13907384145974913
+148.  i=135, american atheists=0.13907384145974913
+149.  i=136, american dramatists and playwrights=0.13907384145974913
+150.  i=137, american essayists=0.13907384145974913
+151.  i=138, american libertarians=0.13907384145974913
+152.  i=139, american novelists=0.13907384145974913
+153.  i=140, american people of russian-jewish descent=0.13907384145974913
+154.  i=141, american philosophers=0.13907384145974913
+155.  i=142, american science fiction writers=0.13907384145974913
+156.  i=143, american screenwriters=0.13907384145974913
+157.  i=144, american writers of russian descent=0.13907384145974913
+159.  i=146, atheist philosophers=0.13907384145974913
+160.  i=147, ayn rand=0.13907384145974913
+165.  i=152, ethicists=0.13907384145974913
+167.  i=154, libertarian theorists=0.13907384145974913
+169.  i=156, political theorists=0.13907384145974913
+174.  i=161, women philosophers=0.13907384145974913
+175.  i=162, women science fiction and fantasy writers=0.13907384145974913
+176.  i=163, 1947 births=0.13907384145974913
+178.  i=165, 20th-century mathematicians=0.13907384145974913
+179.  i=166, members of the united states national academy of sciences=0.13907384145974913
+180.  i=167, 21st-century mathematicians=0.13907384145974913
+189.  i=176, members of the french academy of sciences=0.13907384145974913
+190.  i=177, members of the norwegian academy of science and letters=0.13907384145974913
+191.  i=178, members of the royal danish academy of sciences and letters=0.13907384145974913
+193.  i=192, people from coles county=0.13907384145974913
+194.  i=193, people from larue county=0.13907384145974913
+195.  i=194, people from macon county=0.13907384145974913
+196.  i=195, people from spencer county=0.13907384145974913
+197.  i=196, people from springfield=0.13907384145974913
+198.  i=197, people murdered in washington=0.13907384145974913
 
 
 Pages to non-orphaned categories
-Anarchism (id=12) : [anarchism (id=37), anti-fascism (id=43), political culture (id=78), political ideologies (id=79), social theories (id=86)]
-A (id=290) : [vowel letters (id=89)]
-Achilles (id=305) : [characters in the iliad (id=48), people of the trojan war (id=72)]
-Abraham Lincoln (id=307) : [1809 births (id=6), 1865 deaths (id=7), abraham lincoln (id=19), american people of english descent (id=30), american people of welsh descent (id=32), members of the illinois house of representatives (id=57), members of the united states house of representatives from illinois (id=60), people of illinois in the american civil war (id=70), people of the black hawk war (id=71)]
-Aristotle (id=308) : [322 bc deaths (id=16), 384 bc births (id=17), 4th-century bc philosophers (id=18), academic philosophers (id=20), ancient greek mathematicians (id=39), ancient greek philosophers (id=40), ancient greek physicists (id=41), ancient greeks in macedon (id=42), aristotle (id=44), history of logic (id=52), history of philosophy (id=53), metaphysicians (id=62), natural philosophers (id=63), philosophers and tutors of alexander the great (id=73), philosophers of ancient chalcidice (id=74), philosophers of language (id=75), philosophers of law (id=76), philosophers of mind (id=77), political philosophers (id=80), rhetoric theorists (id=82), virtue ethicists (id=88)]
-An American in Paris (id=309) : [symphonic poems (id=87)]
-Academy Award for Best Art Direction (id=316) : [academy awards (id=158)]
-Academy Award (id=324) : [american film awards (id=27), academy awards (id=158)]
-Animalia (book) (id=332) : [1986 books (id=11), children's picture books (id=50)]
-Altruism (id=336) : [altruism (id=21), social philosophy (id=83), social psychology (id=84)]
-Ayn Rand (id=339) : [1905 births (id=8), 1982 deaths (id=10), 20th-century philosophers (id=14), american anti-communists (id=23), american atheists (id=24), american dramatists and playwrights (id=25), american essayists (id=26), american libertarians (id=28), american novelists (id=29), american people of russian-jewish descent (id=31), american philosophers (id=33), american science fiction writers (id=34), american screenwriters (id=35), american writers of russian descent (id=36), atheist philosophers (id=45), ayn rand (id=47), ethicists (id=51), libertarian theorists (id=54), metaphysicians (id=62), philosophers of mind (id=77), political philosophers (id=80), political theorists (id=81), women philosophers (id=90), women science fiction and fantasy writers (id=91)]
-Alain Connes (id=340) : [1947 births (id=9), 20th-century mathematicians (id=12), 21st-century mathematicians (id=15), members of the french academy of sciences (id=56), members of the norwegian academy of science and letters (id=58), members of the royal danish academy of sciences and letters (id=59), members of the united states national academy of sciences (id=61)]
+Anarchism (id=12) : [anarchism (id=0), political culture (id=1), political ideologies (id=2), social theories (id=3), anti-fascism (id=4)]
+A (id=290) : [vowel letters (id=21)]
+Achilles (id=305) : [characters in the iliad (id=29), people of the trojan war (id=34)]
+Abraham Lincoln (id=307) : [1809 births (id=36), 1865 deaths (id=37), abraham lincoln (id=38), american people of english descent (id=39), american people of welsh descent (id=40), members of the illinois house of representatives (id=47), members of the united states house of representatives from illinois (id=48), people of illinois in the american civil war (id=55), people of the black hawk war (id=56)]
+Aristotle (id=308) : [384 bc births (id=64), 322 bc deaths (id=65), aristotle (id=66), academic philosophers (id=67), ancient greek mathematicians (id=69), ancient greek philosophers (id=70), ancient greek physicists (id=71), ancient greeks in macedon (id=72), history of logic (id=82), history of philosophy (id=83), philosophers of ancient chalcidice (id=86), philosophers of language (id=89), philosophers of law (id=90), philosophers of mind (id=91), political philosophers (id=92), rhetoric theorists (id=93), philosophers and tutors of alexander the great (id=94), 4th-century bc philosophers (id=95), metaphysicians (id=96), virtue ethicists (id=98), natural philosophers (id=99)]
+An American in Paris (id=309) : [symphonic poems (id=101)]
+Academy Award for Best Art Direction (id=316) : [academy awards (id=105)]
+Academy Award (id=324) : [academy awards (id=105), american film awards (id=107)]
+Animalia (book) (id=332) : [children's picture books (id=116), 1986 books (id=118)]
+Altruism (id=336) : [altruism (id=122), social philosophy (id=128), social psychology (id=129)]
+Ayn Rand (id=339) : [philosophers of mind (id=91), political philosophers (id=92), metaphysicians (id=96), 1905 births (id=131), 1982 deaths (id=132), 20th-century philosophers (id=133), american anti-communists (id=134), american atheists (id=135), american dramatists and playwrights (id=136), american essayists (id=137), american libertarians (id=138), american novelists (id=139), american people of russian-jewish descent (id=140), american philosophers (id=141), american science fiction writers (id=142), american screenwriters (id=143), american writers of russian descent (id=144), atheist philosophers (id=146), ayn rand (id=147), ethicists (id=152), libertarian theorists (id=154), political theorists (id=156), women philosophers (id=161), women science fiction and fantasy writers (id=162)]
+Alain Connes (id=340) : [1947 births (id=163), 20th-century mathematicians (id=165), members of the united states national academy of sciences (id=166), 21st-century mathematicians (id=167), members of the french academy of sciences (id=176), members of the norwegian academy of science and letters (id=177), members of the royal danish academy of sciences and letters (id=178)]

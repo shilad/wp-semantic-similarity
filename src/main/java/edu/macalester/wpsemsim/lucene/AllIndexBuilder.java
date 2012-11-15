@@ -68,22 +68,21 @@ public class AllIndexBuilder {
             FieldsIndexGenerator fg = new FieldsIndexGenerator(fields);
             if (params.containsKey("minLinks")) {
                 fg.setMinLinks(requireInteger(params, "minLinks"));
-                System.err.println("here 1");
             }
             if (params.containsKey("minWords")) {
                 fg.setMinWords(requireInteger(params, "minWords"));
-                System.err.println("here 2");
             }
             if (params.containsKey("titleMultiplier")) {
                 fg.setTitleMultiplier(requireInteger(params, "titleMultiplier"));
-                System.err.println("here 3");
             }
             if (params.containsKey("addInLinksToText")) {
                 fg.setAddInLinksToText(requireBoolean(params, "addInLinksToText"));
-                System.err.println("here 4");
+            }
+            if (params.containsKey("namespaces")) {
+                List<Integer> nss = requireListOfIntegers(params, "namespaces");
+                fg.setNamespaces(ArrayUtils.toPrimitive(nss.toArray(new Integer[0])));
             }
             if (params.containsKey("similarity")) {
-                System.err.println("here 5");
                 String sim = requireString(params, "similarity");
                 if (sim.equals("ESA")) {
                     fg.setSimilarity(new ESASimilarity.LuceneSimilarity());
@@ -92,7 +91,6 @@ public class AllIndexBuilder {
                 }
             }
             if (params.containsKey("analyzer")) {
-                System.err.println("here 6");
                 String analyzer = requireString(params, "analyzer");
                 if (analyzer.equals("ESA")) {
                     fg.setAnalyzer(new ESAAnalyzer());
@@ -101,7 +99,6 @@ public class AllIndexBuilder {
                 }
             }
             if (params.containsKey("booster")) {
-                System.err.println("here 7");
                 String booster = requireString(params, "booster");
                 if (booster.equals("ESA")) {
                     fg.setBooster(new ESASimilarity.ESABooster());

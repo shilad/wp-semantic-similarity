@@ -16,6 +16,7 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -47,14 +48,25 @@ public class IndexHelper {
     }
 
     public int[] getWpIds() throws IOException {
-        TIntList ids = new TIntArrayList();
-        TermsEnum terms = MultiFields.getTerms(reader, "id").iterator(null);
-        BytesRef ref;
-        while((ref = terms.next()) != null) {
-            ids.add(Integer.valueOf(ref.utf8ToString()));
+        if (hasField("type")) {
+            Query query = new TermQuery(new Term("type", "normal"));
+            ScoreDoc[] hits = searcher.search(query, null, Integer.MAX_VALUE).scoreDocs;
+            int wpIds[] = new int[hits.length];
+            Set<String> fields = new HashSet<String>(Arrays.asList("id"));
+            for (int i = 0; i < hits.length; i++) {
+                wpIds[i] = Integer.valueOf(reader.document(hits[i].doc, fields).get("id"));
+            }
+            return wpIds;
+        } else {
+            TIntList ids = new TIntArrayList();
+            TermsEnum terms = MultiFields.getTerms(reader, "id").iterator(null);
+            BytesRef ref;
+            while((ref = terms.next()) != null) {
+                ids.add(Integer.valueOf(ref.utf8ToString()));
+            }
+            ids.sort();
+            return ids.toArray();
         }
-        ids.sort();
-        return ids.toArray();
     }
 
     public String luceneIdToTitle(int luceneId) throws IOException {

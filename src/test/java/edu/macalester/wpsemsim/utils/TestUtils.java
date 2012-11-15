@@ -90,7 +90,7 @@ public class TestUtils {
 
     public static List<SimilarityMetric> buildAllModels() throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
         File index = buildIndexWithCategories();
-        File conf = new File(index, "conf.txt");
+        File conf = new File(index.getParent(), "conf.txt");
 
         SimilarityMetricConfigurator configurator =
                 new SimilarityMetricConfigurator(new ConfigurationFile(conf));

@@ -6,6 +6,8 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.Bits;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -46,7 +48,11 @@ public class CategoryGraph {
         LOG.info("loading categories...");
         this.catIndexes = new HashMap<String, Integer>();
         List<String> catList = new ArrayList<String>();
+        Bits live = MultiFields.getLiveDocs(reader);
         for (int i=0; i < reader.maxDoc(); i++) {
+            if (live != null && !live.get(i)) {
+                continue;
+            }
             Document d = reader.document(i);
             if (isCat(d)) {
                 String cat = cleanTitle(d);

@@ -23,9 +23,9 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
 
     // Include all fields below
     private String fields[];
-    private int minLinks;
-    private int minWords;
-    private int titleMultiplier;
+    private int minLinks = 0;
+    private int minWords = 0;
+    private int titleMultiplier = 0;
     private boolean addInLinksToText = false;
 
     private DocBooster booster;
@@ -139,7 +139,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     }
 
     private void updateDocs() throws IOException {
-        if (!doField(FIELD_INLINKS) && !doField(FIELD_LINKTEXT) && booster != null) {
+        if (!doField(FIELD_INLINKS) && !doField(FIELD_LINKTEXT) && booster == null) {
             return;
         }
         LOG.info("adding inlink counts and text to article text");

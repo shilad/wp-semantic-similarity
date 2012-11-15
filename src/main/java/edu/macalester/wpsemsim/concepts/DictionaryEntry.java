@@ -26,7 +26,7 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
         this.text = m.group(1);
         this.fraction = Float.valueOf(m.group(2));
         this.article = m.group(3);
-        this.flags = m.group(4).split(" ");
+        this.flags = m.group(4).trim().split(" ");
         this.numLinks = getNumberEnglishLinks();
 
         // Strip newline

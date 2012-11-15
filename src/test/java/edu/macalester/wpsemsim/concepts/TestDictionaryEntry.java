@@ -3,6 +3,8 @@ package edu.macalester.wpsemsim.concepts;
 import org.apache.commons.lang3.math.Fraction;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -11,6 +13,7 @@ public class TestDictionaryEntry {
     @Test
     public void testParser() {
         DictionaryEntry e1 = new DictionaryEntry(" band\t0 Pru_(Thai_band) KB RWB W08 W09 WDB f");
+        System.err.println("flags are: " + Arrays.toString(e1.getFlags()));
         assertEquals(e1.getText(), " band");
         assertEquals(e1.getFlags().length, 6);
         assertEquals(e1.getFlags()[1], "RWB");

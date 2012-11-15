@@ -25,7 +25,8 @@
         },
         "cats" : {
             "type" : "fields",
-            "fields" : ["cats", "id", "title"],
+            "fields" : ["cats", "id", "title", "ns"],
+            "namespaces" : [0, 14]
         },
         "esa" : {
             "type" : "fields",
