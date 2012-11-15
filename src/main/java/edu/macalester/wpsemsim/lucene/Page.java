@@ -66,6 +66,9 @@ public final class Page {
             for (String l : getAnchorLinks()) {
                 d.add(new StringField("links", l, Field.Store.YES));
             }
+            for (String l : getTextOfAnchors()) {
+                d.add(new StringField("linktext", l, Field.Store.YES));
+            }
             for (String c : getCategories()) {
                 d.add(new StringField("cats", c, Field.Store.YES));
             }

@@ -1,8 +1,10 @@
 package edu.macalester.wpsemsim.concepts;
 
 import com.sleepycat.je.*;
+import edu.macalester.wpsemsim.lucene.IndexHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.lucene.index.MultiFields;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,11 +18,16 @@ public class DictionaryDatabase implements ConceptMapper {
     private static final Logger LOG = Logger.getLogger(DictionaryDatabase.class.getName());
     private Environment env;
     private Database db;
+    private IndexHelper helper;
 
-    public DictionaryDatabase(File path) throws IOException, DatabaseException {
-        this(path, false);
+    public DictionaryDatabase(File path, IndexHelper helper) throws IOException, DatabaseException {
+        this(path, helper, false);
     }
-    public DictionaryDatabase(File path, boolean isNew) throws IOException, DatabaseException {
+    public DictionaryDatabase(File path, IndexHelper helper, boolean isNew) throws IOException, DatabaseException {
+        this.helper = helper;
+        if (helper == null || helper.hasField("redirect")) {
+            LOG.warning("Helper not specified for concept mapper; will not be able to resolve redirects.");
+        }
         if (isNew) {
             if (path.isDirectory()) {
                 FileUtils.deleteDirectory(path);
@@ -92,6 +99,12 @@ public class DictionaryDatabase implements ConceptMapper {
             long sum = 0;
             final Map<String, Float> s = new HashMap<String, Float>();
             for (DictionaryEntry e : get(text)) {
+                String title = e.getArticle();
+                try {
+                    title = helper.followRedirects(title);
+                } catch (IOException e1) {
+                    LOG.log(Level.SEVERE, "error while following redirects: ", e1);
+                }
                 sum += e.getNumberEnglishLinks();
                 if (s.containsKey(e.getArticle())) {
                     s.put(e.getArticle(), s.get(e.getArticle()) + e.getNumberEnglishLinks());
@@ -176,7 +189,7 @@ public class DictionaryDatabase implements ConceptMapper {
     }
 
     public static void main(String args[]) throws IOException, DatabaseException {
-        DictionaryDatabase db = new DictionaryDatabase(new File(args[0]), false);
+        DictionaryDatabase db = new DictionaryDatabase(new File(args[0]), null, false);
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         while (true) {
             System.out.print("Enter phrase: ");

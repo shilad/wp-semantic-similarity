@@ -1,6 +1,7 @@
 package edu.macalester.wpsemsim.sim;
 
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.map.hash.TIntDoubleHashMap;
@@ -24,7 +25,7 @@ public class TestTextSimilarity {
     static IndexHelper helper;
 
     @BeforeClass
-    public static void createIndex() throws IOException, InterruptedException {
+    public static void createIndex() throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
         indexPath = new File(TestUtils.buildIndex(), "text");
         helper = new IndexHelper(indexPath, true);
     }

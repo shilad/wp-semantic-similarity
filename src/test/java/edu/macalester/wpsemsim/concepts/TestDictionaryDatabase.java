@@ -19,7 +19,7 @@ public class TestDictionaryDatabase {
     public void setUp() throws IOException, DatabaseException {
         this.dbPath = File.createTempFile("concepts-db", null);
         dbPath.deleteOnExit();
-        db = new DictionaryDatabase(dbPath, true);
+        db = new DictionaryDatabase(dbPath, null, true);
         db.put(new DictionaryEntry("foo bar BLAH hi\t0.1 aa blah ah "), true);
         db.put(new DictionaryEntry(" Foo bar $$BLAH hi\t0.2 bbbb blah ah "), true);
         db.put(new DictionaryEntry(" Foo bar BLAH hi\t0.7 cc blah ah "), true);

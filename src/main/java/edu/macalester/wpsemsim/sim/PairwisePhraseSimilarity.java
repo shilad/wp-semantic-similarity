@@ -3,7 +3,6 @@ package edu.macalester.wpsemsim.sim;
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
-import edu.macalester.wpsemsim.lucene.DocBooster;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.map.hash.TIntDoubleHashMap;
@@ -25,8 +24,8 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMetric {
-    private static final Logger LOG = Logger.getLogger(ESASimilarity.class.getName());
+public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements SimilarityMetric {
+    private static final Logger LOG = Logger.getLogger(PairwisePhraseSimilarity.class.getName());
     public static final int DEFAULT_MAX_PERCENTAGE = 10;
     public static final int DEFAULT_MAX_QUERY_TERMS = 100;
     public static final int DEFAULT_MIN_TERM_FREQ = 2;
@@ -41,11 +40,11 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     private DirectoryReader reader;
     private Analyzer analyzer = new ESAAnalyzer();
 
-    public ESASimilarity(IndexHelper helper) {
+    public PairwisePhraseSimilarity(IndexHelper helper) {
         this(null, helper);
     }
 
-    public ESASimilarity(ConceptMapper mapper, IndexHelper helper) {
+    public PairwisePhraseSimilarity(ConceptMapper mapper, IndexHelper helper) {
         super(mapper, helper);
         this.helper = helper;
         this.reader = helper.getReader();
@@ -239,18 +238,6 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         this.minDocFreq = minDocFreq;
     }
 
-    public static class ESABooster implements DocBooster {
-        @Override
-        public String[] getBoostedFields() {
-            return new String[] { "text" };
-        }
-
-        @Override
-        public double getBoost(Document d) {
-            return Math.log(Math.log(d.getField("inlinks").numericValue().intValue()));
-        }
-    }
-
     private double getBoost(int luceneId) throws IOException {
 //        return 1.0;
         Document d = reader.document(luceneId, new HashSet<String>(Arrays.asList("inlinks")));
@@ -272,7 +259,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     public static void main(String args[]) throws IOException, InterruptedException, CompressorException, ParseException, DatabaseException {
         if (args.length != 4 && args.length != 5) {
             System.err.println("usage: java " +
-                    ESASimilarity.class.getName() +
+                    PairwisePhraseSimilarity.class.getName() +
                     " lucene-index-dir output-file num-results [num-threads]");
 
         }
@@ -285,7 +272,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
 //        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[3]));
         IndexHelper helper = new IndexHelper(new File("dat/lucene/esa"), true);
         ConceptMapper mapper = new DictionaryDatabase(new File("dat/dictionary.pruned"), null, false);
-        ESASimilarity sim = new ESASimilarity(mapper, helper);
+        PairwisePhraseSimilarity sim = new PairwisePhraseSimilarity(mapper, helper);
         sim.similarity("Wal-Mart supply chain goes real time", "Bing");
     }
 }

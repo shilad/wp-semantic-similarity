@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-public abstract class BaseIndexGenerator {
+public abstract class BaseIndexGenerator <T extends BaseIndexGenerator> {
     private Logger LOG = Logger.getLogger(BaseIndexGenerator.class.getName());
 
     protected AtomicInteger numDocs = new AtomicInteger();
@@ -37,14 +37,14 @@ public abstract class BaseIndexGenerator {
         return name;
     }
 
-    public BaseIndexGenerator setSimilarity(Similarity sim) {
+    public T setSimilarity(Similarity sim) {
         this.similarity = similarity;
-        return this;
+        return (T) this;
     }
 
-    public BaseIndexGenerator setAnalyzer(Analyzer analyzer) {
+    public T setAnalyzer(Analyzer analyzer) {
         this.analyzer = analyzer;
-        return this;
+        return (T) this;
     }
 
     public void openIndex(File indexDir, int bufferMB) throws IOException {
@@ -70,7 +70,7 @@ public abstract class BaseIndexGenerator {
         this.writer.close();
     }
 
-    public BaseIndexGenerator setName(String name) {
+    public BaseIndexGenerator<T> setName(String name) {
         this.name = name;
         return this;
     }

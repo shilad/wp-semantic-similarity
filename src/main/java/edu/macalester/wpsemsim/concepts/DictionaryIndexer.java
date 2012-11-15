@@ -17,7 +17,7 @@ public class DictionaryIndexer {
     private DictionaryDatabase db;
 
     public DictionaryIndexer(File path) throws IOException, DatabaseException {
-        this.db = new DictionaryDatabase(path, true);
+        this.db = new DictionaryDatabase(path, null, true);
     }
 
     public void prune(BufferedReader in) throws IOException, DatabaseException {

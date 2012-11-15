@@ -5,7 +5,7 @@ import org.apache.lucene.index.IndexableField;
 
 import java.io.IOException;
 
-public class MainIndexGenerator extends BaseIndexGenerator {
+public class MainIndexGenerator extends BaseIndexGenerator<MainIndexGenerator> {
 
     private static String fields[] = new String[] {
             "title", "id", "type", "dab", "redirect"

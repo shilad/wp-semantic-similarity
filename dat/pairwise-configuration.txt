@@ -1,0 +1,21 @@
+{
+    // The lucene index directory used to get Wikipedia ids and
+    // a mapping between ids and article titles
+    "index" : "dat/lucene/main",
+
+    // The concept mapper that maps phrases to articles
+    "concept-mapper" : {
+//        "lucene" : "dat/lucene/esa",
+        "dictionary" : "dat/dictionary.pruned"
+    },
+
+    // The similarity metrics
+    "metrics" : {
+        "pairwise-links" : {
+            "type" : "pairwise",
+            "matrix" : "dat/link-sims.matrix",
+            "basedOn" : "article-links",
+            "transpose" : "dat/link-sims.transpose.matrix",
+        },
+    }
+}

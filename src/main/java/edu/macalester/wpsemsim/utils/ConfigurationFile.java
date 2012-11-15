@@ -114,6 +114,23 @@ public class ConfigurationFile {
         }
         return f;
     }
+    public static List<String> requireListOfStrings(Map<String, Object> params, String key) throws ConfigurationException {
+        Object val = params.get(key);
+        if (val == null) {
+            throw new ConfigurationException("Missing configuration parameter " + key);
+        }
+        if (!(val instanceof List)) {
+            throw new ConfigurationException("expected " + key + " to be a list, was " + val.getClass().getName());
+        }
+        List lval = (List)val;
+        for (Object o : lval) {
+            if (!(o instanceof String)) {
+                throw new ConfigurationException("expected " + o + " to be a string, was " + o.getClass().getName());
+
+            }
+        }
+        return (List<String>)lval;
+    }
 
     public boolean isSimilarityMetric(String key) {
         if (!(conf.get(key) instanceof JSONObject)) {

@@ -89,7 +89,7 @@ public class SparseMatrixTransposer {
 
         for (int id : transposedBatch.keySet()) {
             if (colCounts.get(id) != transposedBatch.get(id).size()) {
-                throw new AssertionError("row size unexpected!");
+                throw new IllegalArgumentException("row size unexpected!");
             }
         }
 

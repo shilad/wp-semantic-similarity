@@ -71,11 +71,12 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
 
         double top1 = Double.NEGATIVE_INFINITY;
         double top2 = Double.NEGATIVE_INFINITY;
-        double bestScore = -1.0;
+        double bestScore = Double.NEGATIVE_INFINITY;
         double bestSim = Double.NaN;
         // for, now choose the first concepts
         for (String article1 : concept1s.keySet()) {
 //            System.err.println("article1 is " + article1);
+
             double score1 = concept1s.get(article1);
             top1 = Math.max(top1, score1);
 //            if (score1 < 0.1 * top1) {
@@ -86,6 +87,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 continue;
             }
             for (String article2 : concept2s.keySet()) {
+
 //                System.err.println("article2 is " + article2);
                 double score2 = concept2s.get(article2);
                 top2 = Math.max(top2, score2);
@@ -116,7 +118,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                     bestSim = sim;
                     bestScore = score;
                 }
-
             }
         }
         return bestSim;

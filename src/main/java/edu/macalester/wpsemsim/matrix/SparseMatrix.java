@@ -90,6 +90,9 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
     }
 
     public SparseMatrixRow getRow(int rowId) throws IOException {
+        if (!rowOffsets.containsKey(rowId)) {
+            return null;
+        }
         SparseMatrixRow row = null;
         long targetOffset = rowOffsets.get(rowId);
         for (int i = 0; i < buffers.size(); i++) {
@@ -101,7 +104,7 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
             }
         }
         if (row == null) {
-            throw new AssertionError("did not find row " + rowId + " with offset " + targetOffset);
+            throw new IllegalArgumentException("did not find row " + rowId + " with offset " + targetOffset);
         } else {
             return row;
         }
@@ -180,7 +183,6 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
     public File getPath() {
         return path;
     }
-
 
     private void info(String message) {
         LOG.log(Level.INFO, "sparse matrix " + path + ": " + message);

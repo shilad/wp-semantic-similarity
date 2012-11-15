@@ -28,25 +28,40 @@ public class TestUtils {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static File buildIndex() throws IOException, InterruptedException {
+    public static File buildIndex() throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
         return buildIndex(new ArrayList<Page>());
     }
-    public static File buildIndex(List<Page> additional) throws IOException, InterruptedException {
-        File outputDir = File.createTempFile("lucene", null);
+    public static File buildIndex(final List<Page> additional) throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
+        ConfigurationFile conf = makeSandboxConfiguration();
+        File outputDir = new File(ConfigurationFile.requireString(conf.get("indexes"), "outputDir"));
         if (outputDir.isFile()) { outputDir.delete(); }
-        if (!outputDir.mkdir()) {
-            throw new AssertionError("couldn't make directory " + outputDir);
+        if (!outputDir.mkdirs()) {
+            throw new IllegalArgumentException("couldn't make directory " + outputDir);
         }
-        AllIndexBuilder builder = new AllIndexBuilder(TEST_INPUT_FILE, outputDir);
-        builder.openIndex(10);
-        for (Page d : additional) {
-            builder.storePage(d);
+
+        try {
+            AllIndexBuilder builder = new AllIndexBuilder(conf, null) {
+                @Override
+                protected void process(int numThreads) throws InterruptedException {
+                    super.process(numThreads);
+                    for (Page d : additional) {
+                        try {
+                            this.storePage(d);
+                        } catch (IOException e) {
+                            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                        }
+                    }
+                }
+            };
+            builder.write(1, 100);
+        } catch (ConfigurationFile.ConfigurationException e) {
+            throw new IOException(e);
         }
-        builder.write(1);
+
         return outputDir;
     }
 
-    public static File buildIndexWithCategories() throws IOException, InterruptedException {
+    public static File buildIndexWithCategories() throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
         // Add fake documents for category structure
         List<Page> cats = new ArrayList<Page>();
         BufferedReader breader = new BufferedReader(new FileReader(TEST_CATEGORIES));
@@ -75,22 +90,26 @@ public class TestUtils {
 
     public static List<SimilarityMetric> buildAllModels() throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
         File index = buildIndexWithCategories();
-        File dat = File.createTempFile("wpsemsim-dat", null);
-        dat.delete();
-        dat.mkdirs();
-        File conf = File.createTempFile("wpsemsim-conf", null);
-        dat.deleteOnExit();
-        conf.deleteOnExit();
-
-        String content = FileUtils.readFileToString(TEST_CONF);
-        content = content.replaceAll("DAT", dat.getAbsolutePath());
-        content = content.replaceAll("LUCENE", index.getAbsolutePath());
-        FileUtils.writeStringToFile(conf, content, false);
+        File conf = new File(index, "conf.txt");
 
         SimilarityMetricConfigurator configurator =
                 new SimilarityMetricConfigurator(new ConfigurationFile(conf));
         configurator.build();
         return configurator.loadAllMetrics();
+    }
+
+    public static ConfigurationFile makeSandboxConfiguration() throws IOException, ConfigurationFile.ConfigurationException {
+        File dat = File.createTempFile("wpsemsim-dat", null);
+        dat.delete();
+        dat.mkdirs();
+        File confClone = new File(dat, "conf.txt");
+        dat.deleteOnExit();
+        confClone.deleteOnExit();
+        String content = FileUtils.readFileToString(TEST_CONF);
+        content = content.replaceAll("DAT", dat.getAbsolutePath());
+        FileUtils.writeStringToFile(confClone, content, false);
+        return new ConfigurationFile(confClone);
+
     }
 
     /**

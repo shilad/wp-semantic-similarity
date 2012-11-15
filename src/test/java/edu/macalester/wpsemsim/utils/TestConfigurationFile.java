@@ -15,7 +15,7 @@ public class TestConfigurationFile {
     @Test
     public void testTraversal() throws ConfigurationFile.ConfigurationException, IOException {
         ConfigurationFile conf = new ConfigurationFile(TestUtils.TEST_CONF);
-        assertEquals(2, conf.getKeys().size());
+        assertEquals(3, conf.getKeys().size());
         assertEquals(
                 new HashSet<String>(Arrays.asList("index", "metrics")),
                 conf.getKeys()

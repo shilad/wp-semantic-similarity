@@ -118,7 +118,7 @@ public class RegressionFitter {
                 exec.submit(new Runnable() {
                     public void run() {
                         try {
-                            if (finalI % 10 == 0) {
+                            if (finalI % 50 == 0) {
                                 LOG.info("calculating metric " + metric.getName() + " gold results for number " + finalI);
                             }
                             double sim = metric.similarity(ks.phrase1, ks.phrase2);
@@ -131,14 +131,16 @@ public class RegressionFitter {
                                 }
                             }
                         } catch (Exception e) {
+                            e.printStackTrace();
                             LOG.log(Level.SEVERE, "error processing similarity entry  " + ks, e);
                         }
                     }
                 });
             }
         } finally {
-            exec.shutdown();
             try {
+                Thread.sleep(5000);
+                exec.shutdown();
                 exec.awaitTermination(60, TimeUnit.HOURS);
             } catch (InterruptedException e) {
                 LOG.log(Level.WARNING, "error while awaiting termination:", e);

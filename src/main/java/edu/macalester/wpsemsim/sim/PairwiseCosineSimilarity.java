@@ -49,12 +49,12 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
     public double similarity(int wpId1, int wpId2) throws IOException {
         SparseMatrixRow row1 = matrix.getRow(wpId1);
         if (row1 == null) {
-            LOG.info("unknown wpId: " + wpId1);
+//            LOG.info("unknown wpId: " + wpId1);
             return 0;
         }
         SparseMatrixRow row2 = matrix.getRow(wpId2);
         if (row2 == null) {
-            LOG.info("unknown wpId: " + wpId2);
+//            LOG.info("unknown wpId: " + wpId2);
             return 0;
         }
         TIntFloatHashMap map1 = row1.asTroveMap();

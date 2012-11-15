@@ -80,7 +80,8 @@ public class SimilarityMetricConfigurator {
             File luceneDir = requireDirectory(params, "lucene");
             metric = new ESASimilarity(new IndexHelper(luceneDir, true));
         } else if (type.equals("pairwise")) {
-            SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"), false, PairwiseCosineSimilarity.PAGE_SIZE);
+//            SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"), false, PairwiseCosineSimilarity.PAGE_SIZE);
+            SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
             SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
             metric = new PairwiseCosineSimilarity(mapper, getHelper(), m, mt);
         } else {
@@ -101,9 +102,8 @@ public class SimilarityMetricConfigurator {
         if (mapper == null && configuration.get().containsKey("concept-mapper")) {
             if (configuration.get("concept-mapper").containsKey("dictionary")) {
                 mapper = new DictionaryDatabase(
-                        requireDirectory(
-                                configuration.get("concept-mapper"), "dictionary"
-                        ));
+                        requireDirectory(configuration.get("concept-mapper"), "dictionary"),
+                        getHelper());
             } else if (configuration.get("concept-mapper").containsKey("lucene")) {
                 IndexHelper helper = new IndexHelper(
                         requireDirectory(configuration.get("concept-mapper"), "lucene"), false);

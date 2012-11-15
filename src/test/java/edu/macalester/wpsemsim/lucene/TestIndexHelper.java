@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.lucene;
 
+import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.list.TIntList;
 import org.apache.commons.io.FileUtils;
@@ -23,7 +24,7 @@ public class TestIndexHelper {
     private IndexHelper linkHelper;
 
     @Before
-    public void createIndex() throws IOException, InterruptedException {
+    public void createIndex() throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
         this.indexPath = TestUtils.buildIndex();
         this.catHelper = new IndexHelper(new File(indexPath, "cats"), true);
         this.linkHelper = new IndexHelper(new File(indexPath, "links"), true);

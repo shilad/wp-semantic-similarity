@@ -2,6 +2,7 @@ package edu.macalester.wpsemsim.lucene;
 
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
@@ -184,6 +185,21 @@ public class IndexHelper {
                 return true;
             }
         }
+    }
+
+    public String followRedirects(String title) throws IOException {
+        for (int i = 0; i < 10; i++) {
+            Document d = titleToLuceneDoc(title);
+            if (d == null) {
+                return null;
+            }
+            String redirect = d.get("redirect");
+            if (StringUtils.isEmpty(redirect)) {
+                break;
+            }
+            title = redirect;
+        }
+        return title;
     }
 
     public IndexSearcher getSearcher() {

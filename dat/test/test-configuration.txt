@@ -8,6 +8,26 @@
 //        "dictionary" : "DAT/dictionary.pruned"
 //    },
 
+    "indexes" : {
+        "inputDir" : "dat/test/dump",
+        "outputDir" : "DAT/lucene",
+        "main" : {
+            "type" : "main",
+        },
+        "text" : {
+            "type" : "fields",
+            "fields" : ["text", "id", "title"],
+        },
+        "links" : {
+            "type" : "fields",
+            "fields" : ["links", "id", "title"],
+        },
+        "cats" : {
+            "type" : "fields",
+            "fields" : ["cats", "id", "title"],
+        },
+    }
+
     // similarity metrics
     "metrics" : {
         "article-cats" : {
