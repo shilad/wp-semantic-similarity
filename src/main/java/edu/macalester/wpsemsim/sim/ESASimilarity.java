@@ -105,7 +105,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
             }
         }
         QueryParser parser = new QueryParser(Version.LUCENE_40, "text", analyzer);
-        Filter filter = NumericRangeFilter.newIntRange("inlinks", 100, Integer.MAX_VALUE, true, false);
+        Filter filter = NumericRangeFilter.newIntRange("ninlinks", 100, Integer.MAX_VALUE, true, false);
         filter = null;
         TopDocs docs = null;
         try {
@@ -135,21 +135,18 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         if (docs.scoreDocs.length == 0) {
             return;
         }
-        for (ScoreDoc sd : docs.scoreDocs) {
-            sd.score *= getBoost(sd.doc);
-        }
-        Arrays.sort(docs.scoreDocs, new Comparator<ScoreDoc>() {
-            @Override
-            public int compare(ScoreDoc sd1, ScoreDoc sd2) {
-                if (sd1.score > sd2.score) {
-                    return -1;
-                } else if (sd1.score < sd2.score) {
-                    return +1;
-                } else {
-                    return sd1.doc - sd2.doc;
-                }
-            }
-        });
+//        Arrays.sort(docs.scoreDocs, new Comparator<ScoreDoc>() {
+//            @Override
+//            public int compare(ScoreDoc sd1, ScoreDoc sd2) {
+//                if (sd1.score > sd2.score) {
+//                    return -1;
+//                } else if (sd1.score < sd2.score) {
+//                    return +1;
+//                } else {
+//                    return sd1.doc - sd2.doc;
+//                }
+//            }
+//        });
         int cutoff = docs.scoreDocs.length;
         double threshold = 0.005 * docs.scoreDocs[0].score;
         for (int i = 0, j = 100; j < docs.scoreDocs.length; i++, j++) {
@@ -247,14 +244,8 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
 
         @Override
         public double getBoost(Document d) {
-            return Math.log(Math.log(d.getField("inlinks").numericValue().intValue()));
+            return Math.log(Math.log(d.getField("ninlinks").numericValue().intValue()));
         }
-    }
-
-    private double getBoost(int luceneId) throws IOException {
-//        return 1.0;
-        Document d = reader.document(luceneId, new HashSet<String>(Arrays.asList("inlinks")));
-        return Math.log(Math.log(d.getField("inlinks").numericValue().intValue()));
     }
 
     public static class LuceneSimilarity extends DefaultSimilarity {

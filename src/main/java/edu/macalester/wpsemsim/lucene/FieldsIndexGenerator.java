@@ -1,5 +1,7 @@
 package edu.macalester.wpsemsim.lucene;
 
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import org.apache.commons.lang3.ArrayUtils;
@@ -14,6 +16,7 @@ import java.util.logging.Logger;
 public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerator> {
     private static Logger LOG = Logger.getLogger(BaseIndexGenerator.class.getName());
     public static final String FIELD_LINKTEXT = "linktext";
+    public static final String FIELD_NINLINKS = "ninlinks";
     public static final String FIELD_INLINKS = "inlinks";
     public static final String FIELD_TEXT = "text";
     public static final String FIELD_TITLE = "title";
@@ -30,6 +33,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
 
     private DocBooster booster;
     TLongObjectHashMap<StringBuffer> inLinkText = new TLongObjectHashMap<StringBuffer>();
+    TLongObjectHashMap<TIntList> inLinks = new TLongObjectHashMap<TIntList>();
     private TLongIntHashMap numInLinks = new TLongIntHashMap();
 
     public FieldsIndexGenerator(String ... fields) {
@@ -95,12 +99,8 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
         Document pruned = new Document();
 
         for (String fieldName : fields) {
-            if (fieldName.toLowerCase().equals(FIELD_INLINKS)) {
-                // do it later
-            } else {
-                for (IndexableField f : source.getFields(fieldName)) {
-                    pruned.add(f);
-                }
+            for (IndexableField f : source.getFields(fieldName)) {
+                pruned.add(f);
             }
         }
 
@@ -138,55 +138,12 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
         super.close();
     }
 
-    private void updateDocs() throws IOException {
-        if (!doField(FIELD_INLINKS) && !doField(FIELD_LINKTEXT) && booster == null) {
-            return;
-        }
-        LOG.info("adding inlink counts and text to article text");
-        IndexReader reader = DirectoryReader.open(writer, false);
-        Bits live = MultiFields.getLiveDocs(reader);
-        int n = 0;
-        for (int i = 0; i < reader.numDocs(); i++) {
-            if (live != null && !live.get(i)) {
-                // already deleted
-            } else {
-                n++;
-                Document d = reader.document(i);
-                long hash = titleHash(d.get(FIELD_TITLE));
-                if (doField(FIELD_LINKTEXT)) {
-                    if (inLinkText.containsKey(hash)) {
-                        String text = d.get(FIELD_TEXT) + inLinkText.get(hash);
-                        d.removeFields(FIELD_TEXT);
-                        d.add(new TextField(FIELD_TEXT, text, Field.Store.YES));
-                    }
-                    if (addInLinksToText && !ArrayUtils.contains(fields, FIELD_LINKTEXT)) {
-                        d.removeFields(FIELD_LINKTEXT);
-                    }
-                }
-                if (doField(FieldsIndexGenerator.FIELD_INLINKS)) {
-                    int l = getInLinks(hash);
-                    d.add(new IntField(FieldsIndexGenerator.FIELD_INLINKS, l, Field.Store.YES));
-                }
-                if (booster != null) {
-                    double boost = booster.getBoost(d);
-                    for (String f : booster.getBoostedFields()) {
-                        ((Field)d.getField(f)).setBoost((float)boost);
-                    }
-                }
-                writer.updateDocument(new Term("id", d.get("id")), d);
-            }
-        }
-        LOG.info("finished adding inlinks text to " + n + " docs");
-        writer.commit();
-        reader.close();
-    }
 
     private void prune() throws IOException {
         // the only post hoc pruning we do is minLinks pruning
         if (minLinks == 0) {
             return;
         }
-
         IndexReader reader = DirectoryReader.open(writer, false);
         LOG.info(getName() + " had " + writer.numDocs() + " docs before inlink pruning");
         Bits live = MultiFields.getLiveDocs(reader);
@@ -206,11 +163,11 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     }
 
     private void accumulate() throws IOException {
-        if (!addInLinksToText) {
+        if (!addInLinksToText && ! doField(FIELD_INLINKS)) {
             return; // nothing else to accumulate for now.
         }
 
-        LOG.info("collecting inlinks");
+        LOG.info("accumulating document info");
         IndexReader reader = DirectoryReader.open(writer, false);
         Bits live = MultiFields.getLiveDocs(reader);
         for (int i = 0; i < reader.numDocs(); i++) {
@@ -220,24 +177,86 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
             Document d = reader.document(i);
             IndexableField[] links = d.getFields("links");
             IndexableField[] texts = d.getFields(FIELD_LINKTEXT);
-            if (links.length != texts.length) {
+            if ((addInLinksToText || doField(FIELD_LINKTEXT)) && (links.length != texts.length)) {
                 LOG.info("lengths of links and text off by " + (links.length - texts.length));
                 continue;
             }
             for (int j = 0; j < links.length; j++) {
-                String linkText = links[j].stringValue();
-                long hash = titleHash(linkText);
+                String link = links[j].stringValue();
+                long hash = titleHash(link);
                 if (minLinks > 0 && getInLinks(hash) < minLinks) {
                     continue;
                 }
-                if (!inLinkText.containsKey(hash)) {
-                    inLinkText.put(hash, new StringBuffer());
+                if (doField(FIELD_LINKTEXT) || addInLinksToText) {
+                    if (!inLinkText.containsKey(hash)) {
+                        inLinkText.put(hash, new StringBuffer());
+                    }
+                    inLinkText.get(hash).append("\n" + texts[j].stringValue());
                 }
-                inLinkText.get(hash).append("\n" + texts[j].stringValue());
+                if (doField(FIELD_INLINKS)) {
+                    if (!inLinks.containsKey(hash)) {
+                        inLinks.put(hash, new TIntArrayList());
+                    }
+                    inLinks.get(hash).add(Integer.valueOf(d.get("id")));
+                }
             }
         }
         reader.close();
         writer.commit();
+    }
+
+    private void updateDocs() throws IOException {
+        if (!doField(FIELD_NINLINKS)
+        &&  !doField(FIELD_INLINKS)
+        &&  !doField(FIELD_LINKTEXT)
+        &&  booster == null) {
+            return;
+        }
+        LOG.info("adding inlink counts and text to article text");
+        IndexReader reader = DirectoryReader.open(writer, false);
+        Bits live = MultiFields.getLiveDocs(reader);
+        int n = 0;
+        for (int i = 0; i < reader.numDocs(); i++) {
+            if (live != null && !live.get(i)) {
+                continue;
+            }
+            n++;
+            Document d = reader.document(i);
+            long hash = titleHash(d.get(FIELD_TITLE));
+            if (doField(FIELD_LINKTEXT)) {
+                if (inLinkText.containsKey(hash)) {
+                    String text = d.get(FIELD_TEXT) + inLinkText.get(hash);
+                    d.removeFields(FIELD_TEXT);
+                    d.add(new TextField(FIELD_TEXT, text, Field.Store.YES));
+                }
+                if (addInLinksToText && !ArrayUtils.contains(fields, FIELD_LINKTEXT)) {
+                    d.removeFields(FIELD_LINKTEXT);
+                }
+            }
+            if (doField(FIELD_NINLINKS)) {
+                int l = getInLinks(hash);
+                d.add(new IntField(FieldsIndexGenerator.FIELD_NINLINKS, l, Field.Store.YES));
+            }
+            if (doField(FIELD_INLINKS) && inLinks.containsKey(hash)) {
+                for (int wpId : inLinks.get(hash).toArray()) {
+                    d.add(new StringField(FIELD_INLINKS, ""+wpId, Field.Store.YES));
+                }
+            }
+            if (booster != null) {
+                double boost = booster.getBoost(d);
+                for (String f : booster.getBoostedFields()) {
+                    ((Field)d.getField(f)).setBoost((float)boost);
+                }
+            }
+            writer.updateDocument(new Term("id", d.get("id")), d);
+        }
+        LOG.info("finished updating fields in " + n + " docs");
+        writer.commit();
+        reader.close();
+    }
+
+    private boolean needInLinkText() {
+        return addInLinksToText || doField(FIELD_LINKTEXT);
     }
 
     private static long titleHash(String string) {

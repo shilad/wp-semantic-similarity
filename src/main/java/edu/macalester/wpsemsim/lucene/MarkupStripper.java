@@ -19,8 +19,7 @@
 
 package edu.macalester.wpsemsim.lucene;
 
-import java.util.HashSet;
-import java.util.Vector;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -301,9 +300,23 @@ public class MarkupStripper {
 	 * @param markup the markup to be stripped
 	 * @return the stripped markup
 	 */
+    static Map<String, Pattern> SECTION_FINDERS = new HashMap<String, Pattern>();
+    static Map<String, Pattern> SECTION_END_FINDERS = new HashMap<String, Pattern>();
+    static {
+        for (String section : new String[] {"see also", "references", "further reading", "external links"}) {
+            SECTION_FINDERS.put(section,
+                    Pattern.compile("(={2,})\\s*" + section + "\\s*\\1.*?([^=]\\1[^=])",
+                            Pattern.CASE_INSENSITIVE + Pattern.DOTALL));
+            SECTION_END_FINDERS.put(section,
+                    Pattern.compile("(={2,})\\s*" + section + "\\s*\\1\\W*.*?\n\n",
+                            Pattern.CASE_INSENSITIVE + Pattern.DOTALL));
+        }
+        SECTION_FINDERS = Collections.unmodifiableMap(SECTION_FINDERS);
+        SECTION_END_FINDERS = Collections.unmodifiableMap(SECTION_END_FINDERS);
+    }
 	public static String stripSection(String markup, String sectionName) {
 		
-		Pattern p = Pattern.compile("(={2,})\\s*" + sectionName + "\\s*\\1.*?([^=]\\1[^=])", Pattern.CASE_INSENSITIVE + Pattern.DOTALL) ;
+		Pattern p = SECTION_FINDERS.get(sectionName);
 		Matcher m = p.matcher(markup) ;
 		
 		StringBuffer sb = new StringBuffer() ;
@@ -321,7 +334,7 @@ public class MarkupStripper {
 		//if this was the last section in the doc, then it won't be discarded because we can't tell where it ends.
 		//best we can do is delete the title and the paragraph below it.
 		
-		p = Pattern.compile("(={2,})\\s*" + sectionName + "\\s*\\1\\W*.*?\n\n", Pattern.CASE_INSENSITIVE + Pattern.DOTALL) ;
+		p = SECTION_END_FINDERS.get(sectionName);
 		m = p.matcher(markup) ;
 		
 		sb = new StringBuffer() ;
@@ -441,13 +454,16 @@ public class MarkupStripper {
 	 * @param markup the text to be stripped
 	 * @return the stripped text
 	 */
+    static Pattern STRIP_REFS[] = {
+            Pattern.compile("<ref\\\\>"),
+            Pattern.compile("(?s)<ref>(.*?)</ref>"),
+            Pattern.compile("(?s)<ref\\s(.*?)>(.*?)</ref>"),
+    };
 	public static String stripRefs(String markup) {
-		
-		String strippedMarkup = markup.replaceAll("<ref\\\\>", "") ;					//remove simple ref tags
-		strippedMarkup = strippedMarkup.replaceAll("(?s)<ref>(.*?)</ref>", "") ;			//remove ref tags and all content between them. 
-		strippedMarkup = strippedMarkup.replaceAll("(?s)<ref\\s(.*?)>(.*?)</ref>", "") ; 	//remove ref tags and all content between them (with attributes).
-	    
-		return strippedMarkup ;
+        for (Pattern p : STRIP_REFS) {
+            markup = p.matcher(markup).replaceAll("");
+        }
+		return markup;
 	}
 	
 	/**

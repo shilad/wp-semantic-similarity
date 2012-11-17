@@ -67,8 +67,8 @@ public class LuceneMapper implements ConceptMapper {
 
 
     private double getBoost(int luceneId) throws IOException {
-        Document d = helper.getReader().document(luceneId, new HashSet<String>(Arrays.asList("inlinks")));
-        return Math.log(d.getField("inlinks").numericValue().intValue());
+        Document d = helper.getReader().document(luceneId, new HashSet<String>(Arrays.asList("ninlinks")));
+        return Math.log(d.getField("ninlinks").numericValue().intValue());
     }
 
     public static void main(String args[]) throws IOException, DatabaseException {

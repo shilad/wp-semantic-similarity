@@ -19,9 +19,7 @@ import static edu.macalester.wpsemsim.utils.ConfigurationFile.*;
 /*
 * TODO: share resources when possible; move to a true dependency injection framework
 *
-* For format, see:
-* <a href="https://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/PropertyLists/OldStylePlists/OldStylePLists.html">The Mac documentation</a>
-* And look at dat/example.conf
+* For format, see JSON spec and dat/example-configuration.conf
 */
 public class SimilarityMetricConfigurator {
     private static final Logger LOG = Logger.getLogger(SimilarityMetricConfigurator.class.getName());
@@ -80,10 +78,13 @@ public class SimilarityMetricConfigurator {
             File luceneDir = requireDirectory(params, "lucene");
             metric = new ESASimilarity(new IndexHelper(luceneDir, true));
         } else if (type.equals("pairwise")) {
-//            SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"), false, PairwiseCosineSimilarity.PAGE_SIZE);
             SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
             SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
             metric = new PairwiseCosineSimilarity(mapper, getHelper(), m, mt);
+        } else if (type.equals("pairwise-phrase")) {
+            File luceneDir = requireDirectory(params, "lucene");
+            SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
+            metric = new PairwisePhraseSimilarity(new IndexHelper(luceneDir, true), m);
         } else {
             throw new ConfigurationException("Unknown metric type: " + type);
         }

@@ -12,18 +12,24 @@
     "metrics" : {
 
 //        "esa" : {
-//            "type" : "esa",
-//            "lucene" : "dat/lucene/esa",
+//          "type" : "esa",
+//          "lucene" : "dat/lucene/esa",
 //        },
 
-        "article-text" : {
-            "type" : "text",
-            "field" : "text",
-            "maxPercentage" : 10,
-            "minTermFreq" : 2,
-            "minDocFreq" : 6,
-            "lucene" : "dat/lucene/text",
+        "pairwise-phrase" : {
+            "type" : "pairwise-phrase",
+            "matrix" : "dat/text-sims.matrix",
+            "lucene" : "dat/lucene/esa",
         },
+
+//        "article-text" : {
+//            "type" : "text",
+//            "field" : "text",
+//            "maxPercentage" : 10,
+//            "minTermFreq" : 2,
+//            "minDocFreq" : 6,
+//            "lucene" : "dat/lucene/text",
+//        },
 //        "article-links" : {
 //            "type" : "text",
 //            "field" : "links",

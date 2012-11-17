@@ -188,7 +188,7 @@ public class AllIndexBuilder {
             if (numDocs.incrementAndGet() % 1000 == 0) {
                 LOG.info("read doc " + numDocs + " from " + path + ": " + p.getTitle());
             }
-//            if (numDocs.get() > 10000) {
+//            if (numDocs.get() > 100000) {
 //                break;
 //            }
         }

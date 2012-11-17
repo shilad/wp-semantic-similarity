@@ -21,7 +21,7 @@
         },
         "links" : {
             "type" : "fields",
-            "fields" : ["links", "id", "title"],
+            "fields" : ["links", "id", "title", "inlinks"],
         },
         "cats" : {
             "type" : "fields",

@@ -4,6 +4,8 @@ import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.matrix.SparseMatrix;
+import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -39,18 +41,16 @@ public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements Si
     private IndexHelper helper;
     private DirectoryReader reader;
     private Analyzer analyzer = new ESAAnalyzer();
+    private SparseMatrix pairwise;
 
-    public PairwisePhraseSimilarity(IndexHelper helper) {
-        this(null, helper);
-    }
-
-    public PairwisePhraseSimilarity(ConceptMapper mapper, IndexHelper helper) {
-        super(mapper, helper);
+    public PairwisePhraseSimilarity(IndexHelper helper, SparseMatrix pairwise) {
+        super(null, helper);
         this.helper = helper;
         this.reader = helper.getReader();
         this.searcher = helper.getSearcher();
         searcher.setSimilarity(new LuceneSimilarity());
-        this.setName("esa-similarity");
+        this.pairwise = pairwise;
+        this.setName("pairwise-phrase-similarity");
     }
 
     private MoreLikeThis getMoreLikeThis() {
@@ -104,11 +104,10 @@ public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements Si
             }
         }
         QueryParser parser = new QueryParser(Version.LUCENE_40, "text", analyzer);
-        Filter filter = NumericRangeFilter.newIntRange("inlinks", 100, Integer.MAX_VALUE, true, false);
-        filter = null;
+//        Filter filter = NumericRangeFilter.newIntRange("ninlinks", 100, Integer.MAX_VALUE, true, false);
         TopDocs docs = null;
         try {
-            docs = searcher.search(parser.parse(phrase), filter, 5000);
+            docs = searcher.search(parser.parse(phrase), null, 5000);
         } catch (org.apache.lucene.queryparser.classic.ParseException e) {
             LOG.log(Level.WARNING, "parsing of phrase " + phrase + " failed", e);
             return null;
@@ -119,36 +118,12 @@ public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements Si
             phraseCache.put(phrase, result);
         }
         return result;
-//        System.out.println("top docs for " + phrase + " are:");
-//        for (int i = 0; i < 50 && i < docs.scoreDocs.length; i++) {
-//            ScoreDoc sd = docs.scoreDocs[i];
-//            Document d = reader.document(sd.doc);
-//
-//            System.out.println("\t" + sd.score + ": " +
-//                    d.get("title") + ", " + d.get("text").split("\\s+").length +
-//                    ", " + d.get("inlinks"));
-//        }
     }
 
     private void pruneSimilar(TopDocs docs) throws IOException {
         if (docs.scoreDocs.length == 0) {
             return;
         }
-        for (ScoreDoc sd : docs.scoreDocs) {
-            sd.score *= getBoost(sd.doc);
-        }
-        Arrays.sort(docs.scoreDocs, new Comparator<ScoreDoc>() {
-            @Override
-            public int compare(ScoreDoc sd1, ScoreDoc sd2) {
-                if (sd1.score > sd2.score) {
-                    return -1;
-                } else if (sd1.score < sd2.score) {
-                    return +1;
-                } else {
-                    return sd1.doc - sd2.doc;
-                }
-            }
-        });
         int cutoff = docs.scoreDocs.length;
         double threshold = 0.005 * docs.scoreDocs[0].score;
         for (int i = 0, j = 100; j < docs.scoreDocs.length; i++, j++) {
@@ -159,7 +134,6 @@ public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements Si
             }
         }
         if (cutoff < docs.scoreDocs.length) {
-//            LOG.info("pruned results from " + docs.scoreDocs.length + " to " + cutoff);
             docs.scoreDocs = ArrayUtils.subarray(docs.scoreDocs, 0, cutoff);
         }
     }
@@ -167,21 +141,28 @@ public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements Si
     private TIntDoubleHashMap expandScores(ScoreDoc scores[]) throws IOException {
         TIntDoubleHashMap expanded = new TIntDoubleHashMap();
         for (ScoreDoc sd : scores) {
-            expanded.adjustOrPutValue(sd.doc, sd.score, sd.score);
+            int wpId = helper.luceneIdToWpId(sd.doc);
+            if (wpId < 0) {
+                continue;
+            }
+            expanded.adjustOrPutValue(wpId, sd.score, sd.score);
         }
+
         double alpha = 0.5;
-//        for (ScoreDoc sd : scores) {
-//            int n1 = reader.document(sd.doc).getField("inlinks").numericValue().intValue();
-//            for (int luceneId : helper.getLinkedLuceneIdsForLuceneId(sd.doc).toArray()) {
-//                if (expanded.containsKey(luceneId)) {
-//                    int n2 = reader.document(luceneId).getField("inlinks").numericValue().intValue();
-////                    System.out.println("comparing " + n1 + " and " + n2);
-//                    if (n1 * 10 > n2) {
-//                        expanded.adjustOrPutValue(luceneId, alpha*sd.score, alpha*sd.score);
-//                    }
-//                }
-//            }
-//        }
+        for (ScoreDoc sd : scores) {
+            int wpId = helper.luceneIdToWpId(sd.doc);
+            if (wpId < 0) {
+                continue;
+            }
+            SparseMatrixRow row = pairwise.getRow(wpId);
+            for (int i = 0; i < row.getNumCols(); i++) {
+                int wpId2 = row.getColIndex(i);
+                if (expanded.contains(wpId2)) {
+                    float val = row.getColValue(i);
+                    expanded.adjustOrPutValue(wpId2, alpha * sd.score * val, alpha * sd.score * val);
+                }
+            }
+        }
         return expanded;
     }
 
@@ -197,12 +178,6 @@ public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements Si
                     helper.luceneIdToWpId(sd.doc),
                     similarDocs.scoreDocs[i].score);
         }
-//        System.err.println(
-//                "wpId=" + wpId +
-//                " links=" + reader.document(luceneId).get(field) +
-//                " luceneId=" + luceneId +
-//                " maxResults=" + maxResults +
-//                " results=" + similarDocs.scoreDocs.length);
         return scores;
     }
 
@@ -238,12 +213,6 @@ public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements Si
         this.minDocFreq = minDocFreq;
     }
 
-    private double getBoost(int luceneId) throws IOException {
-//        return 1.0;
-        Document d = reader.document(luceneId, new HashSet<String>(Arrays.asList("inlinks")));
-        return Math.log(Math.log(d.getField("inlinks").numericValue().intValue()));
-    }
-
     public static class LuceneSimilarity extends DefaultSimilarity {
         @Override
         public float idf(long docFreq, long numDocs) {
@@ -270,9 +239,9 @@ public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements Si
 //                : Runtime.getRuntime().availableProcessors();
 //        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(sim, new File(args[2]));
 //        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[3]));
-        IndexHelper helper = new IndexHelper(new File("dat/lucene/esa"), true);
-        ConceptMapper mapper = new DictionaryDatabase(new File("dat/dictionary.pruned"), null, false);
-        PairwisePhraseSimilarity sim = new PairwisePhraseSimilarity(mapper, helper);
-        sim.similarity("Wal-Mart supply chain goes real time", "Bing");
+//        IndexHelper helper = new IndexHelper(new File("dat/lucene/esa"), true);
+//        ConceptMapper mapper = new DictionaryDatabase(new File("dat/dictionary.pruned"), null, false);
+//        PairwisePhraseSimilarity sim = new PairwisePhraseSimilarity(null, helper);
+//        sim.similarity("Wal-Mart supply chain goes real time", "Bing");
     }
 }
