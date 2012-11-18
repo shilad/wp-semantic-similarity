@@ -1,19 +1,20 @@
 package edu.macalester.wpsemsim.lucene;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexableField;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class Page {
+    public static final String FIELD_LINKTEXT = "linktext";
+    public static final String FIELD_NINLINKS = "ninlinks";
+    public static final String FIELD_INLINKS = "inlinks";
+    public static final String FIELD_TEXT = "text";
+    public static final String FIELD_TITLE = "title";
     private int id;
     private String title;
     private String text;
@@ -47,6 +48,12 @@ public final class Page {
         return ns;
     }
 
+    public boolean isList() {
+        String words[] = title.toLowerCase().split("[^a-zA-Z0-9]+");
+        return (Collections.indexOfSubList(
+                Arrays.asList(words), Arrays.asList("list", "of")) >= 0);
+    }
+
     public boolean isRedirect() {
         return redirect != null;
     }
@@ -62,7 +69,6 @@ public final class Page {
             d.add(new StringField("id", ""+id, Field.Store.YES));
             d.add(new StringField("ns", ""+ns, Field.Store.YES));
             d.add(new TextField("text", text, Field.Store.YES));
-//            d.add(new TextField("text", strippedText, Field.Store.YES));
             for (String l : getAnchorLinks()) {
                 d.add(new StringField("links", l, Field.Store.YES));
             }
@@ -81,6 +87,8 @@ public final class Page {
                 for (String l : getDisambiguationLinks()) {
                     d.add(new StringField("dab", l, Field.Store.YES));
                 }
+            } else if (isList()) {
+                type = "list";
             } else {
                 type = "normal";
             }
@@ -89,6 +97,25 @@ public final class Page {
         }
         return this.luceneDoc   ;
     }
+
+
+
+    public static Document correctMetadata(Document d) {
+        Document d2 = new Document();
+        for (IndexableField f : d.getFields()) {
+            IndexableField f2;
+            if (f.name().equals(Page.FIELD_TEXT)) {
+                f2 = new TextField(f.name(), f.stringValue(), Field.Store.YES);
+            } else if (f.name().equals(Page.FIELD_NINLINKS)) {
+                f2 = new IntField(f.name(), f.numericValue().intValue(), Field.Store.YES);
+            } else {
+                f2 = new StringField(f.name(), f.stringValue(), Field.Store.YES);
+            }
+            d2.add(f2);
+        }
+        return d2;
+    }
+
     public static List<String> removeFragments(List<String> links) {
         List<String> result = new ArrayList<String>();
         for (String link : links) {

@@ -23,7 +23,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (mapper == null) {
             LOG.warning("ConceptMapper is null. Will not be able to resolve phrases to concepts.");
         }
-        if (this.helper == null) {
+        if (helper == null) {
             LOG.warning("IndexHelper is null. Will not be able to resolve phrases to concepts.");
         }
     }
@@ -75,8 +75,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         double bestSim = Double.NaN;
         // for, now choose the first concepts
         for (String article1 : concept1s.keySet()) {
-//            System.err.println("article1 is " + article1);
-
             double score1 = concept1s.get(article1);
             top1 = Math.max(top1, score1);
 //            if (score1 < 0.1 * top1) {
@@ -138,5 +136,9 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
 
     @Override
     public abstract DocScoreList mostSimilar(int wpId1, int maxResults) throws IOException;
+
+    public IndexHelper getHelper() {
+        return this.helper;
+    }
 
 }

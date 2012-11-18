@@ -5,9 +5,7 @@ import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.list.TIntList;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,20 +14,20 @@ import static org.junit.Assert.assertEquals;
 
 public class TestIndexHelper {
 
-    private File indexPath;
-    private DirectoryReader catReader;
-    private IndexHelper catHelper;
+    private static File indexPath;
+    private static DirectoryReader catReader;
+    private static IndexHelper catHelper;
 
-    private DirectoryReader linkReader;
-    private IndexHelper linkHelper;
+    private static DirectoryReader linkReader;
+    private static IndexHelper linkHelper;
 
-    @Before
-    public void createIndex() throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
-        this.indexPath = TestUtils.buildIndex();
-        this.catHelper = new IndexHelper(new File(indexPath, "cats"), true);
-        this.linkHelper = new IndexHelper(new File(indexPath, "links"), true);
-        this.catReader = this.catHelper.getReader();
-        this.linkReader = this.linkHelper.getReader();
+    @BeforeClass
+    public static void createIndex() throws IOException, InterruptedException, ConfigurationFile.ConfigurationException {
+        indexPath = TestUtils.buildIndex();
+        catHelper = new IndexHelper(new File(indexPath, "cats"), true);
+        linkHelper = new IndexHelper(new File(indexPath, "links"), true);
+        catReader = catHelper.getReader();
+        linkReader = linkHelper.getReader();
     }
 
     @Test
@@ -49,6 +47,12 @@ public class TestIndexHelper {
         assertEquals(catHelper.wpIdToTitle(12), "Anarchism");
         assertEquals(catHelper.wpIdToTitle(25), "Autism");
     }
+    @Test
+    public void testTitleToWpId() throws IOException {
+        assertEquals(linkHelper.titleToWpId("Anarchism"), 12);
+        assertEquals(linkHelper.titleToWpId("Autism"), 25);
+        assertEquals(linkHelper.titleToWpId("Ayn Rand"), 339);
+    }
 
     @Test
     public void testGetLinkedLuceneIds() throws IOException {
@@ -63,9 +67,9 @@ public class TestIndexHelper {
 
     }
 
-    @After
-    public void deleteIndex() throws IOException {
-        FileUtils.deleteDirectory(this.indexPath);
+    @AfterClass
+    public static void deleteIndex() throws IOException {
+        FileUtils.deleteDirectory(indexPath);
     }
 
 }

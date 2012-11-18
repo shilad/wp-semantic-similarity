@@ -25,7 +25,7 @@ public class DictionaryDatabase implements ConceptMapper {
     }
     public DictionaryDatabase(File path, IndexHelper helper, boolean isNew) throws IOException, DatabaseException {
         this.helper = helper;
-        if (helper == null || helper.hasField("redirect")) {
+        if (helper == null || !helper.hasField("redirect")) {
             LOG.warning("Helper not specified for concept mapper; will not be able to resolve redirects.");
         }
         if (isNew) {
@@ -106,10 +106,13 @@ public class DictionaryDatabase implements ConceptMapper {
                     LOG.log(Level.SEVERE, "error while following redirects: ", e1);
                 }
                 sum += e.getNumberEnglishLinks();
-                if (s.containsKey(e.getArticle())) {
-                    s.put(e.getArticle(), s.get(e.getArticle()) + e.getNumberEnglishLinks());
+                if (title == null) {
+                    continue;   // no article with that title found
+                }
+                if (s.containsKey(title)) {
+                    s.put(title, s.get(title) + e.getNumberEnglishLinks());
                 } else {
-                    s.put(e.getArticle(), 1.0f * e.getNumberEnglishLinks());
+                    s.put(title, 1.0f * e.getNumberEnglishLinks());
                 }
             }
 

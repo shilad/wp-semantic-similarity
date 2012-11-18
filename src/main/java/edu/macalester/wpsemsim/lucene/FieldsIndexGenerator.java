@@ -15,11 +15,6 @@ import java.util.logging.Logger;
 
 public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerator> {
     private static Logger LOG = Logger.getLogger(BaseIndexGenerator.class.getName());
-    public static final String FIELD_LINKTEXT = "linktext";
-    public static final String FIELD_NINLINKS = "ninlinks";
-    public static final String FIELD_INLINKS = "inlinks";
-    public static final String FIELD_TEXT = "text";
-    public static final String FIELD_TITLE = "title";
 
     // By default only include main namespace
     private int namespaces[] = new int[] { 0 };
@@ -69,7 +64,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     public boolean shouldInclude(Page p) {
         if (!ArrayUtils.contains(namespaces, p.getNs())) {
             return false;
-        } else if (p.isRedirect() || p.isDisambiguation()) {
+        } else if (p.isList() || p.isRedirect() || p.isDisambiguation()) {
             return false;
         } else if (minWords > 0 && p.getNumUniqueWordsInText() < minWords) {
             return false;
@@ -105,19 +100,19 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
         }
 
         // do we still need to add the linktext?
-        if (addInLinksToText && !doField(FIELD_LINKTEXT)) {
-            for (IndexableField f : source.getFields(FIELD_LINKTEXT)) {
+        if (addInLinksToText && !doField(Page.FIELD_LINKTEXT)) {
+            for (IndexableField f : source.getFields(Page.FIELD_LINKTEXT)) {
                 pruned.add(f);
             }
         }
 
         if (titleMultiplier > 0) {
-            String text = pruned.get(FIELD_TEXT);
+            String text = pruned.get(Page.FIELD_TEXT);
             for (int i = 0; i < titleMultiplier; i++) {
-                text += "\n" + source.get(FIELD_TITLE);
+                text += "\n" + source.get(Page.FIELD_TITLE);
             }
-            pruned.removeFields(FIELD_TEXT);
-            pruned.add(new TextField(FIELD_TEXT, text, Field.Store.YES));
+            pruned.removeFields(Page.FIELD_TEXT);
+            pruned.add(new TextField(Page.FIELD_TEXT, text, Field.Store.YES));
         }
 
         addDocument(pruned);
@@ -152,7 +147,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
                 continue;
             }
             Document d = reader.document(i);
-            if (getInLinks(d.get(FIELD_TITLE)) < minLinks) {
+            if (getInLinks(d.get(Page.FIELD_TITLE)) < minLinks) {
                 writer.deleteDocuments(new Term("id", d.get("id")));
             }
         }
@@ -163,7 +158,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     }
 
     private void accumulate() throws IOException {
-        if (!addInLinksToText && ! doField(FIELD_INLINKS)) {
+        if (!addInLinksToText && ! doField(Page.FIELD_INLINKS)) {
             return; // nothing else to accumulate for now.
         }
 
@@ -176,8 +171,8 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
             }
             Document d = reader.document(i);
             IndexableField[] links = d.getFields("links");
-            IndexableField[] texts = d.getFields(FIELD_LINKTEXT);
-            if ((addInLinksToText || doField(FIELD_LINKTEXT)) && (links.length != texts.length)) {
+            IndexableField[] texts = d.getFields(Page.FIELD_LINKTEXT);
+            if ((addInLinksToText || doField(Page.FIELD_LINKTEXT)) && (links.length != texts.length)) {
                 LOG.info("lengths of links and text off by " + (links.length - texts.length));
                 continue;
             }
@@ -187,13 +182,13 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
                 if (minLinks > 0 && getInLinks(hash) < minLinks) {
                     continue;
                 }
-                if (doField(FIELD_LINKTEXT) || addInLinksToText) {
+                if (doField(Page.FIELD_LINKTEXT) || addInLinksToText) {
                     if (!inLinkText.containsKey(hash)) {
                         inLinkText.put(hash, new StringBuffer());
                     }
                     inLinkText.get(hash).append("\n" + texts[j].stringValue());
                 }
-                if (doField(FIELD_INLINKS)) {
+                if (doField(Page.FIELD_INLINKS)) {
                     if (!inLinks.containsKey(hash)) {
                         inLinks.put(hash, new TIntArrayList());
                     }
@@ -206,9 +201,9 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     }
 
     private void updateDocs() throws IOException {
-        if (!doField(FIELD_NINLINKS)
-        &&  !doField(FIELD_INLINKS)
-        &&  !doField(FIELD_LINKTEXT)
+        if (!doField(Page.FIELD_NINLINKS)
+        &&  !doField(Page.FIELD_INLINKS)
+        &&  !doField(Page.FIELD_LINKTEXT)
         &&  booster == null) {
             return;
         }
@@ -222,24 +217,24 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
             }
             n++;
             Document d = reader.document(i);
-            long hash = titleHash(d.get(FIELD_TITLE));
-            if (doField(FIELD_LINKTEXT)) {
+            long hash = titleHash(d.get(Page.FIELD_TITLE));
+            if (doField(Page.FIELD_LINKTEXT)) {
                 if (inLinkText.containsKey(hash)) {
-                    String text = d.get(FIELD_TEXT) + inLinkText.get(hash);
-                    d.removeFields(FIELD_TEXT);
-                    d.add(new TextField(FIELD_TEXT, text, Field.Store.YES));
+                    String text = d.get(Page.FIELD_TEXT) + inLinkText.get(hash);
+                    d.removeFields(Page.FIELD_TEXT);
+                    d.add(new TextField(Page.FIELD_TEXT, text, Field.Store.YES));
                 }
-                if (addInLinksToText && !ArrayUtils.contains(fields, FIELD_LINKTEXT)) {
-                    d.removeFields(FIELD_LINKTEXT);
+                if (addInLinksToText && !ArrayUtils.contains(fields, Page.FIELD_LINKTEXT)) {
+                    d.removeFields(Page.FIELD_LINKTEXT);
                 }
             }
-            if (doField(FIELD_NINLINKS)) {
+            if (doField(Page.FIELD_NINLINKS)) {
                 int l = getInLinks(hash);
-                d.add(new IntField(FieldsIndexGenerator.FIELD_NINLINKS, l, Field.Store.YES));
+                d.add(new IntField(Page.FIELD_NINLINKS, l, Field.Store.YES));
             }
-            if (doField(FIELD_INLINKS) && inLinks.containsKey(hash)) {
+            if (doField(Page.FIELD_INLINKS) && inLinks.containsKey(hash)) {
                 for (int wpId : inLinks.get(hash).toArray()) {
-                    d.add(new StringField(FIELD_INLINKS, ""+wpId, Field.Store.YES));
+                    d.add(new StringField(Page.FIELD_INLINKS, ""+wpId, Field.Store.YES));
                 }
             }
             if (booster != null) {
@@ -248,7 +243,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
                     ((Field)d.getField(f)).setBoost((float)boost);
                 }
             }
-            writer.updateDocument(new Term("id", d.get("id")), d);
+            writer.updateDocument(new Term("id", d.get("id")), Page.correctMetadata(d));
         }
         LOG.info("finished updating fields in " + n + " docs");
         writer.commit();
@@ -256,7 +251,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     }
 
     private boolean needInLinkText() {
-        return addInLinksToText || doField(FIELD_LINKTEXT);
+        return addInLinksToText || doField(Page.FIELD_LINKTEXT);
     }
 
     private static long titleHash(String string) {

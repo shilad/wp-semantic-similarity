@@ -32,23 +32,7 @@ public class LuceneMapper implements ConceptMapper {
     public LinkedHashMap<String, Float> map(String text, int maxConcepts) {
         QueryParser qp = new QueryParser(Version.LUCENE_40, "text", new ESAAnalyzer());
         try {
-            TopDocs docs = helper.getSearcher().search(qp.parse(text), 200);
-            for (ScoreDoc d : docs.scoreDocs) {
-                d.score *= getBoost(d.doc);
-            }
-            Arrays.sort(docs.scoreDocs, new Comparator<ScoreDoc>() {
-                @Override
-                public int compare(ScoreDoc sd1, ScoreDoc sd2) {
-                    if (sd1.score > sd2.score) {
-                        return -1;
-                    } else if (sd1.score < sd2.score) {
-                        return +1;
-                    } else {
-                        return sd1.doc - sd2.doc;
-                    }
-                }
-            });
-
+            TopDocs docs = helper.getSearcher().search(qp.parse(text), maxConcepts);
             LinkedHashMap<String, Float> result = new LinkedHashMap<String, Float>();
             for (int i = 0; i < docs.scoreDocs.length && i < maxConcepts; i++) {
                 result.put(
@@ -63,12 +47,6 @@ public class LuceneMapper implements ConceptMapper {
             LOG.log(Level.WARNING, "parsing of phrase " + text + " failed", e);
         }
         return null;
-    }
-
-
-    private double getBoost(int luceneId) throws IOException {
-        Document d = helper.getReader().document(luceneId, new HashSet<String>(Arrays.asList("ninlinks")));
-        return Math.log(d.getField("ninlinks").numericValue().intValue());
     }
 
     public static void main(String args[]) throws IOException, DatabaseException {

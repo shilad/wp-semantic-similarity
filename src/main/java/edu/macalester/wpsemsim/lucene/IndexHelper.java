@@ -4,6 +4,7 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -120,6 +121,15 @@ public class IndexHelper {
         }
     }
 
+    public Document wpIdToLuceneDoc(int wpId) throws IOException {
+        int docId = wpIdToLuceneId(wpId);
+        if (docId >= 0) {
+            return reader.document(docId);
+        } else {
+            return null;
+        }
+    }
+
     public Document titleToLuceneDoc(String title) throws IOException {
         int docId = titleToLuceneId(title);
         if (docId >= 0) {
@@ -197,6 +207,17 @@ public class IndexHelper {
                 return true;
             }
         }
+    }
+
+    public long getDocFreq(String field, String term) throws IOException {
+        final Terms terms = MultiFields.getTerms(reader, field);
+        if (terms != null) {
+            final TermsEnum termsEnum = terms.iterator(null);
+            if (termsEnum.seekExact(new BytesRef(term), true)) {
+                return termsEnum.docFreq();
+            }
+        }
+        return 0;
     }
 
     public String followRedirects(String title) throws IOException {

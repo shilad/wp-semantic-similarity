@@ -145,9 +145,14 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
     public double similarity(int wpId1, int wpId2) throws IOException {
         int doc1 = helper.wpIdToLuceneId(wpId1);
         int doc2 = helper.wpIdToLuceneId(wpId2);
+        if (doc1 < 0 || doc2 < 0) {
+            System.out.println("missing docs!");
+            return Double.NaN;
+        }
 
         MoreLikeThis mlt = getMoreLikeThis();
         TopDocs similarDocs = searcher.search(mlt.like(doc1), new FieldCacheTermsFilter("id", "" + wpId2), 1);
+        System.out.println("length is " + similarDocs.scoreDocs.length);
         if (similarDocs.scoreDocs.length == 0) {
             return 0;
         } else {

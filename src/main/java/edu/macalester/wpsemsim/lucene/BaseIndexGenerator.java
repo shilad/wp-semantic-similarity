@@ -4,10 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -28,6 +25,7 @@ public abstract class BaseIndexGenerator <T extends BaseIndexGenerator> {
     protected String name;
     protected Similarity similarity;
     private Analyzer analyzer;
+    protected File indexDir;
 
     public BaseIndexGenerator(String name) {
         this.name = name;
@@ -38,7 +36,7 @@ public abstract class BaseIndexGenerator <T extends BaseIndexGenerator> {
     }
 
     public T setSimilarity(Similarity sim) {
-        this.similarity = similarity;
+        this.similarity = sim;
         return (T) this;
     }
 
@@ -48,6 +46,7 @@ public abstract class BaseIndexGenerator <T extends BaseIndexGenerator> {
     }
 
     public void openIndex(File indexDir, int bufferMB) throws IOException {
+        this.indexDir = indexDir;
         FileUtils.deleteDirectory(indexDir);
         indexDir.mkdirs();
         this.dir = FSDirectory.open(indexDir);
