@@ -56,8 +56,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
-        LinkedHashMap<String, Float> concept1s = mapper.map(phrase1, 10);
-        LinkedHashMap<String, Float> concept2s= mapper.map(phrase2, 10);
+        LinkedHashMap<String, Float> concept1s = mapper.map(phrase1, 1);
+        LinkedHashMap<String, Float> concept2s= mapper.map(phrase2, 1);
 
         if (concept1s.isEmpty()) {
             LOG.info("no concepts for phrase " + phrase1);
@@ -76,22 +76,18 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         // for, now choose the first concepts
         for (String article1 : concept1s.keySet()) {
             double score1 = concept1s.get(article1);
-            top1 = Math.max(top1, score1);
-//            if (score1 < 0.1 * top1) {
-//                break;
-//            }
+            if (score1 < 0.01) {
+                break;
+            }
             int wpId1 = helper.titleToWpId(article1);
             if (wpId1 < 0) {
                 continue;
             }
             for (String article2 : concept2s.keySet()) {
-
-//                System.err.println("article2 is " + article2);
                 double score2 = concept2s.get(article2);
-                top2 = Math.max(top2, score2);
-//                if (score2 < 0.1 * top2) {
-//                    break;
-//                }
+                if (score2 < 0.01) {
+                    break;
+                }
                 int wpId2 = helper.titleToWpId(article2);
                 if (wpId2 < 0) {
                     continue;
@@ -102,7 +98,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 } else {
                     sim = similarity(wpId1, wpId2);
                     if (Double.isInfinite(sim) || Double.isNaN(sim)) {
-                        LOG.info("sim between '" + article1 + "' and '" + article2 + "' is NAN or INF");
+//                        LOG.info("sim between '" + article1 + "' and '" + article2 + "' is NAN or INF");
                         continue;
                     }
                 }

@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
 import edu.macalester.wpsemsim.lucene.DocBooster;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -214,12 +215,12 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     public static class ESABooster implements DocBooster {
         @Override
         public String[] getBoostedFields() {
-            return new String[] { "text" };
+            return new String[] { Page.FIELD_TEXT };
         }
 
         @Override
         public double getBoost(Document d) {
-            return Math.log(Math.log(d.getField("ninlinks").numericValue().intValue()));
+            return Math.log(Math.log(d.getField(Page.FIELD_NINLINKS).numericValue().intValue()));
         }
     }
 

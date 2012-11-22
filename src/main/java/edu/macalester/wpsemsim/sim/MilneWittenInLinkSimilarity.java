@@ -32,12 +32,13 @@ public class MilneWittenInLinkSimilarity extends BaseSimilarityMetric{
         TIntSet I = new TIntHashSet(A); I.retainAll(B); // intersection
         int numArticles = linkHelper.getReader().numDocs();
 
+//        System.out.println("sizes are A=" + A.size() + ", B=" + B.size() + " I=" + I.size());
         if (I.size() == 0) {
             return 0;
         }
 
-        return (
-            (Math.log(Math.max(A.size(), B.size()))) - Math.log(I.size())
+        return 1.0 - (
+            (Math.log(Math.max(A.size(), B.size())) - Math.log(I.size()))
         /   (Math.log(numArticles) - Math.log(Math.min(A.size(), B.size()))));
     }
 

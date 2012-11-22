@@ -109,6 +109,7 @@ public class RegressionFitter {
         final double allX[] = new double[gold.size()];
         Arrays.fill(allX, Double.NaN);
         ExecutorService exec = Executors.newFixedThreadPool(
+//                1);
                 Runtime.getRuntime().availableProcessors());
 //        SimpleRegression reg = new SimpleRegression();
         try {

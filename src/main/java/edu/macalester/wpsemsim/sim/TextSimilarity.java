@@ -152,7 +152,6 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
 
         MoreLikeThis mlt = getMoreLikeThis();
         TopDocs similarDocs = searcher.search(mlt.like(doc1), new FieldCacheTermsFilter("id", "" + wpId2), 1);
-        System.out.println("length is " + similarDocs.scoreDocs.length);
         if (similarDocs.scoreDocs.length == 0) {
             return 0;
         } else {

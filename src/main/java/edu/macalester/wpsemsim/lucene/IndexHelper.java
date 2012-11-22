@@ -2,6 +2,7 @@ package edu.macalester.wpsemsim.lucene;
 
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.hash.TIntLongHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
@@ -165,7 +166,7 @@ public class IndexHelper {
      * @throws IOException
      */
     public TIntList getLinkedLuceneIdsForWpId(int wpId) throws IOException {
-        if (!hasField("links")) {
+        if (!hasField(Page.FIELD_LINKS)) {
             throw new UnsupportedOperationException("index does not have a field called 'links'");
         }
 
@@ -179,18 +180,18 @@ public class IndexHelper {
 
     public TIntList getLinkedLuceneIdsForLuceneId(int luceneId) throws IOException {
         TIntArrayList result = new TIntArrayList();
-        Set<String> finished = new HashSet<String>();
-        for (IndexableField f : reader.document(luceneId).getFields("links")) {
-            String title = f.stringValue();
-            if (finished.contains(title)) { continue; }
-            int luceneId2 = titleToLuceneId(f.stringValue());
+        Set<Integer> finished = new HashSet<Integer>();
+        for (IndexableField f : reader.document(luceneId).getFields(Page.FIELD_LINKS)) {
+            int wpId = Integer.valueOf(f.stringValue());
+            if (finished.contains(wpId)) { continue; }
+            int luceneId2 = wpIdToLuceneId(wpId);
             if (luceneId2 < 0) {
 //                LOG.info("no lucene id associated with link title " + f.stringValue());
             } else {
 //                System.out.println("id of " + f.stringValue() + " is " + luceneId2);
                 result.add(luceneId2);
             }
-            finished.add(title);
+            finished.add(wpId);
         }
 //        System.err.println("mapped " + wpId + " to " + result);
         return result;
@@ -198,26 +199,16 @@ public class IndexHelper {
 
     public boolean hasField(String field) throws IOException {
         Iterator<String> fields = MultiFields.getFields(reader).iterator();
-        while (true) {
-            String f = fields.next();
-            if (f == null) {
-                return false;
-            }
-            if (f.equals(field)) {
+        while (fields.hasNext()) {
+            if (fields.next().equals(field)) {
                 return true;
             }
         }
+        return false;
     }
 
     public long getDocFreq(String field, String term) throws IOException {
-        final Terms terms = MultiFields.getTerms(reader, field);
-        if (terms != null) {
-            final TermsEnum termsEnum = terms.iterator(null);
-            if (termsEnum.seekExact(new BytesRef(term), true)) {
-                return termsEnum.docFreq();
-            }
-        }
-        return 0;
+        return reader.docFreq(new Term(field, term));
     }
 
     public String followRedirects(String title) throws IOException {

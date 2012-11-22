@@ -30,8 +30,8 @@
         },
         "esa" : {
             "type" : "fields",
-            "fields" : ["links", "text", "id", "title", "inlinks"],
-            "minLinks" : 15,
+            "fields" : ["links", "text", "id", "title", "inlinks", "ninlinks"],
+            "minLinks" : 10,
             "minWords" : 300,
             "titleMultiplier" : 4,
             "addInLinksToText" : true,
@@ -67,6 +67,10 @@
             "maxPercentage" : 10,
             "minTermFreq" : 1,
             "minDocFreq" : 2,
+            "lucene" : "dat/lucene/links",
+        },
+        "mwinlinks" : {
+            "type" : "mwinlinks",
             "lucene" : "dat/lucene/links",
         },
         "pairwise-text" : {

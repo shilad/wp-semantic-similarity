@@ -5,6 +5,10 @@ import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.list.TIntList;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
 import org.junit.*;
 
 import java.io.File;
@@ -65,6 +69,12 @@ public class TestIndexHelper {
         assertEquals(linkHelper.luceneIdToTitle(otherIds.get(0)), "Ayn Rand");
         assertEquals(linkHelper.luceneIdToTitle(otherIds.get(1)), "Alain Connes");
 
+    }
+
+    @Test
+    public void testGetTermFreq() throws IOException {
+        int wpId = linkHelper.titleToWpId("Academy Award");
+        assertEquals(linkHelper.getDocFreq(Page.FIELD_LINKS, ""+wpId), 2);
     }
 
     @AfterClass

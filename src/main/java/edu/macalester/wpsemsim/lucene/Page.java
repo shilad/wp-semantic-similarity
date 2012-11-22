@@ -13,6 +13,7 @@ public final class Page {
     public static final String FIELD_LINKTEXT = "linktext";
     public static final String FIELD_NINLINKS = "ninlinks";
     public static final String FIELD_INLINKS = "inlinks";
+    public static final String FIELD_LINKS = "links";
     public static final String FIELD_TEXT = "text";
     public static final String FIELD_TITLE = "title";
     private int id;

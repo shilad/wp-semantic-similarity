@@ -79,7 +79,8 @@ public class SimilarityMetricConfigurator {
             metric = new ESASimilarity(new IndexHelper(luceneDir, true));
         } else if (type.equals("mwinlinks")) {
             File luceneDir = requireDirectory(params, "lucene");
-            metric = new MilneWittenInLinkSimilarity(mapper, new IndexHelper(luceneDir, true), getHelper());
+            metric = new LinkSimilarity(mapper, new IndexHelper(luceneDir, true), getHelper());
+//            metric = new MilneWittenInLinkSimilarity(mapper, new IndexHelper(luceneDir, true), getHelper());
         } else if (type.equals("pairwise")) {
             SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
             SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));

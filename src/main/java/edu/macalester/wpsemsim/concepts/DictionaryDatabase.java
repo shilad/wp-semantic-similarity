@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.lucene.IndexHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.index.MultiFields;
+import org.tartarus.snowball.ext.SpanishStemmer;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -192,7 +193,8 @@ public class DictionaryDatabase implements ConceptMapper {
     }
 
     public static void main(String args[]) throws IOException, DatabaseException {
-        DictionaryDatabase db = new DictionaryDatabase(new File(args[0]), null, false);
+        IndexHelper helper = new IndexHelper(new File(args[1]), true);
+        DictionaryDatabase db = new DictionaryDatabase(new File(args[0]), helper, false);
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         while (true) {
             System.out.print("Enter phrase: ");
@@ -201,10 +203,28 @@ public class DictionaryDatabase implements ConceptMapper {
                 break;
             }
             line = line.trim();
+
+            Map<String, List<DictionaryEntry>> articlesToEntries = new HashMap<String, List<DictionaryEntry>>();
+            for (DictionaryEntry entry : db.get(line)) {
+                String article = entry.getArticle();
+                String canonical = helper.followRedirects(article);
+                if (!articlesToEntries.containsKey(canonical)) {
+                    articlesToEntries.put(canonical, new ArrayList<DictionaryEntry>());
+                }
+                articlesToEntries.get(canonical).add(entry);
+            }
+
             System.out.println("results for '" + line + "'");
             Map<String, Float> mapping = db.map(line, 500);
-            for (DictionaryEntry entry : db.get(line)) {
-                System.out.println("\t" + mapping.get(entry.getArticle()) +  ": " + entry.toString());
+            System.out.println("top articles for '" + line + "'");
+            for (String article : mapping.keySet()) {
+                System.out.println("\t" + mapping.get(article) + ": " + article);
+                List<DictionaryEntry> entries = articlesToEntries.get(article);
+                Collections.sort(entries);
+                Collections.reverse(entries);
+                for (DictionaryEntry entry : entries) {
+                    System.out.println("\t\t" + entry.toString());
+                }
             }
         }
     }
