@@ -135,7 +135,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
 
 
     private void accumulate() throws IOException {
-        if (!addInLinksToText && ! doField(Page.FIELD_INLINKS) && !doField(Page.FIELD_LINKS)) {
+        if (!(addInLinksToText || doField(Page.FIELD_INLINKS) || doField(Page.FIELD_LINKS))) {
             return; // nothing else to accumulate for now.
         }
 
@@ -190,7 +190,6 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
             int wpId = Integer.valueOf(d.get("id"));
             if (numInLinks.get(d.get(Page.FIELD_TITLE)) < minLinks) {
                 writer.deleteDocuments(new Term("id", ""+wpId));
-            } else {
             }
         }
         reader.close();

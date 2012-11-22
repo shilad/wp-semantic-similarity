@@ -58,7 +58,7 @@ public class TitleMap<V> {
             return (imap.containsKey(h));
         } else {
             assert(omap != null);
-            return (!omap.containsKey(h));
+            return (omap.containsKey(h));
         }
     }
 
