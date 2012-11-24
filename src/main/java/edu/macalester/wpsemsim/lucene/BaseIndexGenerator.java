@@ -26,8 +26,10 @@ public abstract class BaseIndexGenerator <T extends BaseIndexGenerator> {
     protected Similarity similarity;
     private Analyzer analyzer;
     protected File indexDir;
+    protected PageInfo info;
 
-    public BaseIndexGenerator(String name) {
+    public BaseIndexGenerator(PageInfo info, String name) {
+        this.info = info;
         this.name = name;
     }
 

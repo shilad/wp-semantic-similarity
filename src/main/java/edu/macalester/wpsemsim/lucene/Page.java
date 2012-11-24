@@ -21,7 +21,7 @@ public final class Page {
     private String text;
     private int ns = 0;
     private String redirect = null;
-    private String strippedText;
+    private String strippedText = null;
     private Document luceneDoc;
 
     public Page(int ns, int id, String redirect, String title, String text) {
@@ -30,11 +30,17 @@ public final class Page {
         this.title = title;
         this.redirect = redirect;
         this.text = text;
-        this.strippedText = MarkupStripper.stripEverything(text);
     }
 
     public int getId() {
         return id;
+    }
+
+    public synchronized String getStrippedText() {
+        if (this.strippedText == null) {
+            this.strippedText = MarkupStripper.stripEverything(text);
+        }
+        return this.strippedText;
     }
 
     public String getTitle() {

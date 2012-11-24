@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
@@ -47,11 +48,13 @@ public class RegressionFitter {
         for (SimilarityMetric metric : metrics) {
             Object[] r = calculateCorrelation(metric);
             Double pearson = (Double) r[0];
-            Double coverage = (Double) r[1];
-            double X[] = (double[]) r[2];
+            Double spearman = (Double) r[1];
+            Double coverage = (Double) r[2];
+            double X[] = (double[]) r[3];
             writer.write("analyzing metric: " + metric.getName() + "\n");
             writer.write("\tcoverage=" + coverage + "%\n");
             writer.write("\tpearson=" + pearson + "\n");
+            writer.write("\tspearman=" + spearman + "\n");
             simMatrix.setColumn(i++, X);
         }
 
@@ -88,13 +91,19 @@ public class RegressionFitter {
         for (int i = 0; i < metrics.size(); i++) {
             System.out.println("coefficient for " + metrics.get(i).getName() + " is " + beta[i]);
             System.out.println("pearson is " + pearson(covered.getColumn(i), Y));
+            System.out.println("spearman is " + spearman(covered.getColumn(i), Y));
         }
         System.out.println("R-squared is " + ols.calculateRSquared());
         System.out.println("Pearson is " + pearson(Y, ols.getPredictions()));
+        System.out.println("Spearman is " + spearman(Y, ols.getPredictions()));
     }
 
     private double pearson(double X[], double Y[]) {
         return new PearsonsCorrelation().correlation(X, Y);
+    }
+
+    private double spearman(double X[], double Y[]) {
+        return new SpearmansCorrelation().correlation(X, Y);
     }
 
     /**
@@ -150,8 +159,9 @@ public class RegressionFitter {
 
 //        System.err.println("rsquared for fit is " + reg.getRSquare());
         double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
-        LOG.info("correlation for " + metric.getName() + " is " + pearson);
-        return new Object[] { pearson, 1.0 * X.size() / gold.size(), allX };
+        double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
+//        LOG.info("correlation for " + metric.getName() + " is " + pearson);
+        return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX };
     }
 
     private List<KnownSim> readGoldStandard(File path) throws IOException {

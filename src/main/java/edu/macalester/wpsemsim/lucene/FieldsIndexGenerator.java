@@ -1,7 +1,6 @@
 package edu.macalester.wpsemsim.lucene;
 
 import edu.macalester.wpsemsim.utils.TitleMap;
-import gnu.trove.list.array.TIntArrayList;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -27,12 +26,9 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     private DocBooster booster;
 
     TitleMap<StringBuffer> inLinkText = new TitleMap<StringBuffer>(StringBuffer.class);
-    TitleMap<TIntArrayList> inLinks = new TitleMap<TIntArrayList>(TIntArrayList.class);
-    TitleMap<Integer> numInLinks = new TitleMap<Integer>(Integer.class);
-    TitleMap<Integer> pageIds = new TitleMap<Integer>(Integer.class);
 
-    public FieldsIndexGenerator(String ... fields) {
-        super(fields[0]);
+    public FieldsIndexGenerator(PageInfo info, String ... fields) {
+        super(info, fields[0]);
         this.fields = fields;
     }
 
@@ -84,11 +80,6 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     public void storePage(Page p) throws IOException {
         if (!shouldInclude(p)) {
             return;
-        }
-        if (minLinks > 0) {
-            for (String l : new HashSet<String>(p.getAnchorLinks())) {
-                numInLinks.increment(l);
-            }
         }
         Document source = p.toLuceneDoc();
         Document pruned = new Document();
@@ -154,19 +145,13 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
                 LOG.info("lengths of links and text off by " + (links.length - texts.length));
                 continue;
             }
-            if (doField(Page.FIELD_LINKS)) {
-                pageIds.put(d.get("title"), wpId);
-            }
             for (int j = 0; j < links.length; j++) {
                 String link = links[j].stringValue();
-                if (minLinks > 0 && numInLinks.get(link) < minLinks) {
+                if (minLinks > 0 && info.getInLinks(link).size() < minLinks) {
                     continue;
                 }
                 if (doField(Page.FIELD_LINKTEXT) || addInLinksToText) {
                     inLinkText.get(link).append("\n" + texts[j].stringValue());
-                }
-                if (doField(Page.FIELD_INLINKS)) {
-                    inLinks.get(link).add(wpId);
                 }
             }
         }
@@ -188,7 +173,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
             }
             Document d = reader.document(i);
             int wpId = Integer.valueOf(d.get("id"));
-            if (numInLinks.get(d.get(Page.FIELD_TITLE)) < minLinks) {
+            if (info.getInLinks(d.get(Page.FIELD_TITLE)).size() < minLinks) {
                 writer.deleteDocuments(new Term("id", ""+wpId));
             }
         }
@@ -228,11 +213,11 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
                 }
             }
             if (doField(Page.FIELD_NINLINKS)) {
-                int l = numInLinks.get(title);
+                int l = info.getInLinks(title).size();
                 d.add(new IntField(Page.FIELD_NINLINKS, l, Field.Store.YES));
             }
-            if (doField(Page.FIELD_INLINKS) && inLinks.containsKey(title)) {
-                for (int wpId : inLinks.get(title).toArray()) {
+            if (doField(Page.FIELD_INLINKS)) {
+                for (int wpId : info.getInLinks(title).toArray()) {
                     d.add(new StringField(Page.FIELD_INLINKS, ""+wpId, Field.Store.YES));
                 }
             }
@@ -240,7 +225,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
                 IndexableField links[] = d.getFields(Page.FIELD_LINKS);
                 d.removeFields(Page.FIELD_LINKS);
                 for (IndexableField l : links) {
-                    int wpId = pageIds.get(l.stringValue());
+                    int wpId = info.getPageId(l.stringValue());
                     if (wpId > 0) {
                         d.add(new StringField(Page.FIELD_LINKS, ""+wpId, Field.Store.YES));
                     }

@@ -5,10 +5,9 @@
 
     // The concept mapper that maps phrases to articles
     "concept-mapper" : {
-        "dictionary" : "dat/dictionary.pruned"
-//        "lucene" : "dat/lucene/esa"
+//        "dictionary" : "dat/dictionary.pruned"
+        "lucene" : "dat/lucene/esa"
     },
-
 
     "indexes" : {
         "main" : {
@@ -21,15 +20,17 @@
     },
     "metrics" : {
         "mwinlinks" : {
-            "type" : "mwinlinks",
+            "type" : "links",
+            "field" : "inlinks",
+            "similarity" : "logodds",
+            "minDocFreq" : 2,
             "lucene" : "dat/lucene/links",
         },
-//        "article-links" : {
-//            "type" : "text",
+//        "mwoutlinks" : {
+//            "type" : "links",
 //            "field" : "links",
-//            "maxPercentage" : 10,
-//            "minTermFreq" : 1,
-//            "minDocFreq" : 3,
+//            "similarity" : "tfidf",
+//            "minDocFreq" : 2,
 //            "lucene" : "dat/lucene/links",
 //        },
     }

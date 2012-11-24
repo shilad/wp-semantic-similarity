@@ -77,10 +77,26 @@ public class SimilarityMetricConfigurator {
         } else if (type.equals("esa")) {
             File luceneDir = requireDirectory(params, "lucene");
             metric = new ESASimilarity(new IndexHelper(luceneDir, true));
-        } else if (type.equals("mwinlinks")) {
+        } else if (type.equals("links")) {
             File luceneDir = requireDirectory(params, "lucene");
-            metric = new LinkSimilarity(mapper, new IndexHelper(luceneDir, true), getHelper());
-//            metric = new MilneWittenInLinkSimilarity(mapper, new IndexHelper(luceneDir, true), getHelper());
+            String field = requireString(params, "field");
+            LinkSimilarity lmetric = new LinkSimilarity(mapper, new IndexHelper(luceneDir, true), getHelper(), field);
+            if (params.containsKey("similarity")) {
+                String sim = requireString(params, "similarity");
+                if (sim.equals("tfidf")) {
+                    lmetric.setSimilarity(LinkSimilarity.SimFn.TFIDF);
+                } else if (sim.equals("google")) {
+                    lmetric.setSimilarity(LinkSimilarity.SimFn.GOOGLE);
+                } else if (sim.equals("logodds")) {
+                    lmetric.setSimilarity(LinkSimilarity.SimFn.LOGODDS);
+                } else if (sim.equals("jacard")) {
+                    lmetric.setSimilarity(LinkSimilarity.SimFn.JACARD);
+                }
+            }
+            if (params.containsKey("minDocFreq")) {
+                lmetric.setMinDocFreq(requireInteger(params, "minDocFreq"));
+            }
+            metric = lmetric;
         } else if (type.equals("pairwise")) {
             SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
             SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));

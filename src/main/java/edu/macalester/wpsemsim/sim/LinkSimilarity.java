@@ -10,6 +10,8 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Terms;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
@@ -18,24 +20,22 @@ import java.io.IOException;
  * }
  */
 public class LinkSimilarity extends BaseSimilarityMetric{
-    private static enum SimFn {
+    private String field;
+
+    public static enum SimFn {
         TFIDF,
         GOOGLE,
         LOGODDS,
+        JACARD
     };
 
-    private static enum LinkDirection {
-        INLINKS,
-        OUTLINKS,
-    }
-
     private IndexHelper linkHelper;
-    private int minDocFreq = 2;
+    private int minDocFreq = 0;
     private SimFn similarity = SimFn.GOOGLE;
-    private LinkDirection direction = LinkDirection.OUTLINKS;
 
-    public LinkSimilarity(ConceptMapper mapper, IndexHelper linkHelper, IndexHelper mainHelper) {
+    public LinkSimilarity(ConceptMapper mapper, IndexHelper linkHelper, IndexHelper mainHelper, String field) {
         super(mapper, mainHelper);
+        this.field = field;
         this.linkHelper = linkHelper;
     }
 
@@ -45,10 +45,6 @@ public class LinkSimilarity extends BaseSimilarityMetric{
 
     public void setSimilarity(SimFn fn) {
         this.similarity = fn;
-    }
-
-    public void setDirection(LinkDirection direction) {
-        this.direction = direction;
     }
 
     @Override
@@ -71,16 +67,21 @@ public class LinkSimilarity extends BaseSimilarityMetric{
             val = tfidf(A, B, I);
         } else if (similarity == SimFn.LOGODDS) {
             val = logOdds(A, B, I);
+        } else if (similarity == SimFn.JACARD) {
+            val = jacard(A, B, I, U);
         } else {
             throw new IllegalStateException("" + similarity);
         }
 
+//        System.err.println("val is " + val);
         return val;
     }
 
+    private double jacard(TIntSet A, TIntSet B, TIntSet I, TIntSet U) {
+        return 1.0 * I.size() / (U.size() + 1);
+    }
     private double googleDistance(TIntSet A, TIntSet B, TIntSet I) throws IOException {
         int numArticles = linkHelper.getReader().numDocs();
-//        System.out.println("n=" + numArticles + ", A=" + A.size() + " B=" + B.size() + " I=" + I.size());
         double distance = (Math.log(Math.max(A.size(), B.size())) - Math.log(I.size()))
                 /   (Math.log(numArticles) - Math.log(Math.min(A.size(), B.size())));
         if (distance > 0.5) {
@@ -88,21 +89,20 @@ public class LinkSimilarity extends BaseSimilarityMetric{
             distance = 1.0 / (1 + Math.exp(-x)); // sigmoid
         }
         return 1 - distance;
-
     }
 
     private double logOdds(TIntSet A, TIntSet B, TIntSet I) throws IOException {
-        int n = getHelper().getReader().numDocs();
+        long n = linkHelper.getReader().numDocs();
         double val = 0.0;
         for (int id : I.toArray()) {
             long d = getDocFreq(id);
             double pz = (1.0 * d / n);
             double px = (1.0 / A.size());
             double py = (1.0 / B.size());
-            val += (Math.log(px) + Math.log(py)) / (2 * Math.log(pz));
+            val += Math.log(px) + Math.log(py) - 2 * Math.log(pz);
         }
         val = Math.log(1 + val);
-        return 2 + val;
+        return Math.min(1.0, val / 7.0);
     }
 
     private double tfidf(TIntSet A, TIntSet B, TIntSet I) throws IOException {
@@ -110,7 +110,7 @@ public class LinkSimilarity extends BaseSimilarityMetric{
         for (int id : I.toArray()) {
             dot += Math.pow(getIdf(id), 2.0);   // all other elements are 0
         }
-        return 10 + Math.log(dot / Math.sqrt(norm(A) * norm(B)));
+        return (10 + Math.log(dot / Math.sqrt(norm(A) * norm(B)))) / 10.0;
     }
 
     TIntLongMap docFreqCache = new TIntLongHashMap();
@@ -120,7 +120,7 @@ public class LinkSimilarity extends BaseSimilarityMetric{
                 return docFreqCache.get(wpId);
             }
         }
-        long freq = linkHelper.getDocFreq(Page.FIELD_INLINKS, "" + wpId);
+        long freq = linkHelper.getDocFreq(field, "" + wpId);
         synchronized (docFreqCache) {
             docFreqCache.put(wpId, freq);
         }
@@ -128,7 +128,7 @@ public class LinkSimilarity extends BaseSimilarityMetric{
     }
 
     private double getIdf(int wpId) throws IOException {
-        return Math.log(Math.max(1, getDocFreq(wpId)));
+        return 1.0 / Math.sqrt(Math.max(2, getDocFreq(wpId)));
     }
 
     private double norm(TIntSet X) throws IOException {
@@ -145,10 +145,12 @@ public class LinkSimilarity extends BaseSimilarityMetric{
             return null;
         }
         TIntSet links = new TIntHashSet();
-        for (IndexableField f : d.getFields(Page.FIELD_INLINKS)) {
+        for (IndexableField f : d.getFields(field)) {
             int wpId2 = Integer.valueOf(f.stringValue());
             if (getDocFreq(wpId2) >= minDocFreq) {
                 links.add(wpId2);
+            } else {
+//                System.out.println("skipping " + wpId2);
             }
         }
         return links;

@@ -1,21 +1,11 @@
 package edu.macalester.wpsemsim.lucene;
 
-import com.sleepycat.je.DatabaseException;
-import edu.macalester.wpsemsim.concepts.ConceptMapper;
-import edu.macalester.wpsemsim.sim.*;
+import edu.macalester.wpsemsim.sim.ESAAnalyzer;
+import edu.macalester.wpsemsim.sim.ESASimilarity;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 import org.json.simple.JSONObject;
 
 import java.io.File;
@@ -23,7 +13,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,6 +28,7 @@ public class AllIndexBuilder {
     private File inputPath;
     private ConfigurationFile conf;
     private List<BaseIndexGenerator> generators = new ArrayList<BaseIndexGenerator>();
+    private PageInfo info = new PageInfo();
 
     public AllIndexBuilder(ConfigurationFile conf, List<String> keys) throws ConfigurationException {
         this.inputPath = requireDirectory(conf.get("indexes"), "inputDir");
@@ -62,10 +52,10 @@ public class AllIndexBuilder {
 
         BaseIndexGenerator g;
         if (type.equals("main")) {
-            g = new MainIndexGenerator();
+            g = new MainIndexGenerator(info);
         } else if (type.equals("fields")) {
             String fields[] = requireListOfStrings(params, "fields").toArray(new String[0]);
-            FieldsIndexGenerator fg = new FieldsIndexGenerator(fields);
+            FieldsIndexGenerator fg = new FieldsIndexGenerator(info, fields);
             if (params.containsKey("minLinks")) {
                 fg.setMinLinks(requireInteger(params, "minLinks"));
             }
@@ -185,7 +175,7 @@ public class AllIndexBuilder {
         LOG.info("reading input file " + path);
         for (Page p : new PageReader(path)) {
             storePage(p);
-            if (numDocs.incrementAndGet() % 1000 == 0) {
+            if (numDocs.incrementAndGet() % 10000 == 0) {
                 LOG.info("read doc " + numDocs + " from " + path + ": " + p.getTitle());
             }
 //            if (numDocs.get() > 5000) {
@@ -195,6 +185,7 @@ public class AllIndexBuilder {
     }
 
     public void storePage(Page p) throws IOException {
+        info.update(p);
         for (BaseIndexGenerator g : generators) {
             g.storePage(p);
         }

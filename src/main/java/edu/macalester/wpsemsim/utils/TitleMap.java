@@ -27,8 +27,11 @@ public class TitleMap<V> {
         }
     }
 
-    public synchronized V get(String title) {
-        long h = titleHash(title);
+    public V get(String title) {
+        return get(titleHash(title));
+    }
+
+    public synchronized V get(long h) {
         if (imap != null) {
             if (imap.containsKey(h)) {
                 return (V)new Integer(imap.get(h));
@@ -82,7 +85,7 @@ public class TitleMap<V> {
         return imap.adjustOrPutValue(h, amount, amount);
     }
 
-    private long titleHash(String string) {
+    public long titleHash(String string) {
         string = string.replaceAll("_", " ");
         if (foldCase)
             string = string.toLowerCase();

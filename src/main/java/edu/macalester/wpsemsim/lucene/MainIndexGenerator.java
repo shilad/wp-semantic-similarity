@@ -11,8 +11,8 @@ public class MainIndexGenerator extends BaseIndexGenerator<MainIndexGenerator> {
             "title", "id", "type", "dab", "redirect"
     };
 
-    public MainIndexGenerator() {
-        super("main");
+    public MainIndexGenerator(PageInfo info) {
+        super(info, "main");
     }
 
     public boolean shouldInclude(Page p) {

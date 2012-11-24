@@ -56,8 +56,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
-        LinkedHashMap<String, Float> concept1s = mapper.map(phrase1, 1);
-        LinkedHashMap<String, Float> concept2s= mapper.map(phrase2, 1);
+        LinkedHashMap<String, Float> concept1s = mapper.map(phrase1, 5);
+        LinkedHashMap<String, Float> concept2s= mapper.map(phrase2, 5);
 
         if (concept1s.isEmpty()) {
             LOG.info("no concepts for phrase " + phrase1);
@@ -73,21 +73,25 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         double top2 = Double.NEGATIVE_INFINITY;
         double bestScore = Double.NEGATIVE_INFINITY;
         double bestSim = Double.NaN;
-        // for, now choose the first concepts
+        String bestPair = null;
+
         for (String article1 : concept1s.keySet()) {
             double score1 = concept1s.get(article1);
-            if (score1 < 0.01) {
-                break;
-            }
+//            if (score1 < 0.01) {
+//                break;
+//            }
             int wpId1 = helper.titleToWpId(article1);
             if (wpId1 < 0) {
                 continue;
             }
             for (String article2 : concept2s.keySet()) {
+//                if (!article1.equals("Life") || !article2.equals("Stock")) {
+//                    continue;
+//                }
                 double score2 = concept2s.get(article2);
-                if (score2 < 0.01) {
-                    break;
-                }
+//                if (score2 < 0.01) {
+//                    break;
+//                }
                 int wpId2 = helper.titleToWpId(article2);
                 if (wpId2 < 0) {
                     continue;
@@ -111,9 +115,12 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 if (score > bestScore) {
                     bestSim = sim;
                     bestScore = score;
+                    bestPair = article1 + ", " + article2;
                 }
             }
         }
+        System.out.println("for " + phrase1 + ", " + phrase2 + " best is " +
+                bestPair + ": " + bestSim);
         return bestSim;
     }
 
