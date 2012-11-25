@@ -21,7 +21,7 @@ public class EnsembleMapper implements ConceptMapper {
                 scores.adjustOrPutValue(e.getKey(), e.getValue(), e.getValue());
             }
         }
-        String articles[] = (String[]) scores.keys();
+        String articles[] = scores.keys(new String[0]);
         Arrays.sort(articles, new Comparator<String>() {
             @Override
             public int compare(String a1, String a2) {
