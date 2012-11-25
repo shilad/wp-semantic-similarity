@@ -8,6 +8,9 @@ fi
 conf=$1
 mb=$2
 cache_mb=$(($mb * 1 / 2))
+if [ $cache_mb -gt 2000 ]; then
+    cache_mb=2000
+fi
 
 shift 2
 

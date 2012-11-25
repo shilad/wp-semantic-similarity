@@ -111,18 +111,6 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         if (docs.scoreDocs.length == 0) {
             return;
         }
-//        Arrays.sort(docs.scoreDocs, new Comparator<ScoreDoc>() {
-//            @Override
-//            public int compare(ScoreDoc sd1, ScoreDoc sd2) {
-//                if (sd1.score > sd2.score) {
-//                    return -1;
-//                } else if (sd1.score < sd2.score) {
-//                    return +1;
-//                } else {
-//                    return sd1.doc - sd2.doc;
-//                }
-//            }
-//        });
         int cutoff = docs.scoreDocs.length;
         double threshold = 0.005 * docs.scoreDocs[0].score;
         for (int i = 0, j = 100; j < docs.scoreDocs.length; i++, j++) {
@@ -143,19 +131,6 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         for (ScoreDoc sd : scores) {
             expanded.adjustOrPutValue(sd.doc, sd.score, sd.score);
         }
-        double alpha = 0.5;
-//        for (ScoreDoc sd : scores) {
-//            int n1 = reader.document(sd.doc).getField("inlinks").numericValue().intValue();
-//            for (int luceneId : helper.getLinkedLuceneIdsForLuceneId(sd.doc).toArray()) {
-//                if (expanded.containsKey(luceneId)) {
-//                    int n2 = reader.document(luceneId).getField("inlinks").numericValue().intValue();
-////                    System.out.println("comparing " + n1 + " and " + n2);
-//                    if (n1 * 10 > n2) {
-//                        expanded.adjustOrPutValue(luceneId, alpha*sd.score, alpha*sd.score);
-//                    }
-//                }
-//            }
-//        }
         return expanded;
     }
 
@@ -164,6 +139,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = helper.wpIdToLuceneId(wpId);
         TopDocs similarDocs = searcher.search(mlt.like(luceneId), maxResults);
+        pruneSimilar(similarDocs);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
         for (int i = 0; i < similarDocs.scoreDocs.length; i++) {
             ScoreDoc sd = similarDocs.scoreDocs[i];
@@ -171,12 +147,6 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
                     helper.luceneIdToWpId(sd.doc),
                     similarDocs.scoreDocs[i].score);
         }
-//        System.err.println(
-//                "wpId=" + wpId +
-//                " links=" + reader.document(luceneId).get(field) +
-//                " luceneId=" + luceneId +
-//                " maxResults=" + maxResults +
-//                " results=" + similarDocs.scoreDocs.length);
         return scores;
     }
 
@@ -236,23 +206,22 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         }
     }
 
-    public static void main(String args[]) throws IOException, InterruptedException, CompressorException, ParseException, DatabaseException {
+    public static void main(String args[]) throws IOException, InterruptedException, CompressorException {
         if (args.length != 4 && args.length != 5) {
             System.err.println("usage: java " +
-                    ESASimilarity.class.getName() +
-                    " lucene-index-dir output-file num-results [num-threads]");
+                    TextSimilarity.class.getName() +
+                    " field lucene-text-index-dir output-file num-results [num-threads]");
 
         }
-//        IndexHelper helper = new IndexHelper(new File(args[0]), true);
-//        ESASimilarity sim = new ESASimilarity(helper);
-//        int cores = (args.length == 5)
-//                ? Integer.valueOf(args[4])
-//                : Runtime.getRuntime().availableProcessors();
-//        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(sim, new File(args[2]));
-//        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[3]));
-        IndexHelper helper = new IndexHelper(new File("dat/lucene/esa"), true);
-        ConceptMapper mapper = new DictionaryDatabase(new File("dat/dictionary.pruned"), null, false);
-        ESASimilarity sim = new ESASimilarity(mapper, helper);
-        sim.similarity("Wal-Mart supply chain goes real time", "Bing");
+        IndexHelper helper = new IndexHelper(new File(args[1]), true);
+        ESASimilarity sim = new ESASimilarity(null, helper);
+        if (args[0].equals("links")) {
+            sim.setMinTermFreq(1);  // HACK!
+        }
+        int cores = (args.length == 5)
+                ? Integer.valueOf(args[4])
+                : Runtime.getRuntime().availableProcessors();
+        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(sim, new File(args[2]));
+        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[3]));
     }
 }

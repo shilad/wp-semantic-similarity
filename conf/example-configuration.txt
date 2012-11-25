@@ -30,7 +30,7 @@
         },
         "esa" : {
             "type" : "fields",
-            "fields" : ["links", "text", "id", "title", "inlinks", "ninlinks"],
+            "fields" : ["text", "id", "title", "links", "ninlinks"],
             "minLinks" : 10,
             "minWords" : 300,
             "titleMultiplier" : 4,
