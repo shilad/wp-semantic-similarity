@@ -3,6 +3,7 @@ package edu.macalester.wpsemsim.sim;
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
+import edu.macalester.wpsemsim.concepts.EnsembleMapper;
 import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
@@ -121,19 +122,36 @@ public class SimilarityMetricConfigurator {
 
     public synchronized  ConceptMapper getMapper() throws ConfigurationException, IOException, DatabaseException {
         if (mapper == null && configuration.get().containsKey("concept-mapper")) {
-            if (configuration.get("concept-mapper").containsKey("dictionary")) {
-                mapper = new DictionaryDatabase(
-                        requireDirectory(configuration.get("concept-mapper"), "dictionary"),
-                        getHelper());
+            if (configuration.get("concept-mapper").containsKey("ensemble")) {
+                mapper = getEnsembleMapper();
+            } else if (configuration.get("concept-mapper").containsKey("dictionary")) {
+                mapper = getDictionaryMapper();
             } else if (configuration.get("concept-mapper").containsKey("lucene")) {
-                IndexHelper helper = new IndexHelper(
-                        requireDirectory(configuration.get("concept-mapper"), "lucene"), false);
-                mapper = new LuceneMapper(helper);
+                mapper = getLuceneMapper();
             } else {
                 throw new IllegalArgumentException("unrecognized concept mapper");
             }
         }
         return mapper;
+    }
+
+    private ConceptMapper getEnsembleMapper() throws IOException, ConfigurationException, DatabaseException {
+        return new EnsembleMapper(
+                getDictionaryMapper(),
+                getLuceneMapper()
+            );
+    }
+
+    private ConceptMapper getLuceneMapper() throws IOException, ConfigurationException {
+        IndexHelper helper = new IndexHelper(
+                requireDirectory(configuration.get("concept-mapper"), "lucene"), false);
+        return new LuceneMapper(helper);
+    }
+
+    private ConceptMapper getDictionaryMapper() throws IOException, DatabaseException, ConfigurationException {
+        return new DictionaryDatabase(
+                requireDirectory(configuration.get("concept-mapper"), "dictionary"),
+                getHelper());
     }
 
     public void build() throws IOException, ConfigurationException, InterruptedException {
@@ -157,7 +175,6 @@ public class SimilarityMetricConfigurator {
                 metrics.add(buildPairwise(key, params, metrics, wpIds));
             }
         }
-
     }
 
     protected SimilarityMetric buildPairwise(String name, JSONObject params, List<SimilarityMetric> metrics, int[] wpIds) throws ConfigurationException, IOException, InterruptedException {

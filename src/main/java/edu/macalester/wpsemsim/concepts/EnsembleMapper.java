@@ -1,6 +1,5 @@
 package edu.macalester.wpsemsim.concepts;
 
-import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
 
 import java.util.Arrays;
@@ -26,7 +25,7 @@ public class EnsembleMapper implements ConceptMapper {
         Arrays.sort(articles, new Comparator<String>() {
             @Override
             public int compare(String a1, String a2) {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
+                return -1 * new Double(scores.get(a1)).compareTo(scores.get(a2));
             }
         });
         LinkedHashMap<String, Float> result = new LinkedHashMap<String, Float>();

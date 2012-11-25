@@ -150,7 +150,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
                 if (minLinks > 0 && info.getInLinks(link).size() < minLinks) {
                     continue;
                 }
-                if (doField(Page.FIELD_LINKTEXT) || addInLinksToText) {
+                if (addInLinksToText) {
                     inLinkText.get(link).append("\n" + texts[j].stringValue());
                 }
             }

@@ -5,11 +5,17 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntLongHashMap;
 
+import java.util.HashSet;
+
 public class PageInfo {
-    TitleMap<TIntArrayList> inLinks = new TitleMap<TIntArrayList>(TIntArrayList.class);
+    TitleMap<TIntArrayList> inLinks= new TitleMap<TIntArrayList>(TIntArrayList.class);
     TitleMap<Integer> pageIds = new TitleMap<Integer>(Integer.class);
     TIntLongHashMap wpIdsToHashes = new TIntLongHashMap();
+
     TIntLongHashMap redirects = new TIntLongHashMap();
+
+    public PageInfo() {
+    }
 
     public void update(Page p) {
         synchronized (pageIds) {
@@ -18,7 +24,7 @@ public class PageInfo {
         synchronized (wpIdsToHashes) {
             wpIdsToHashes.put(p.getId(), getTitleHash(p.getTitle()));
         }
-        for (String link : p.getAnchorLinks()) {
+        for (String link : new HashSet<String>(p.getAnchorLinks())) {
             synchronized (inLinks) {
                 inLinks.get(link).add(p.getId());
             }
