@@ -7,8 +7,16 @@ import gnu.trove.map.TIntLongMap;
 import gnu.trove.map.hash.TIntLongHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.queries.mlt.MoreLikeThis;
+import org.apache.lucene.search.FieldCacheTermsFilter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.*;
+import org.apache.lucene.util.Version;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
@@ -18,12 +26,14 @@ import java.io.IOException;
  */
 public class LinkSimilarity extends BaseSimilarityMetric{
     private String field;
+    private IndexSearcher searcher;
 
     public static enum SimFn {
         TFIDF,
         GOOGLE,
         LOGODDS,
-        JACARD
+        JACARD,
+        LUCENE
     };
 
     private IndexHelper linkHelper;
@@ -34,6 +44,14 @@ public class LinkSimilarity extends BaseSimilarityMetric{
         super(mapper, mainHelper);
         this.field = field;
         this.linkHelper = linkHelper;
+        this.searcher = new IndexSearcher(linkHelper.getReader());
+        this.searcher.setSimilarity(
+                new DFRSimilarity(
+                        new BasicModelIne(),
+                        new AfterEffectL(),
+                        new NormalizationH3()
+                )
+        );
     }
 
     public void setMinDocFreq(int n) {
@@ -66,12 +84,53 @@ public class LinkSimilarity extends BaseSimilarityMetric{
             val = logOdds(A, B, I);
         } else if (similarity == SimFn.JACARD) {
             val = jacard(A, B, I, U);
+        } else if (similarity == SimFn.LUCENE) {
+            val = lucene(wpId1, wpId2);
         } else {
             throw new IllegalStateException("" + similarity);
         }
 
 //        System.err.println("val is " + val);
         return val;
+    }
+
+    /**
+     * TODO: Extremely fragile! Simplify, or automatically tune this.
+     * @param wpId1
+     * @param wpId2
+     * @return
+     * @throws IOException
+     */
+    private double lucene(int wpId1, int wpId2) throws IOException {
+        int doc1 = linkHelper.wpIdToLuceneId(wpId1);
+        int doc2 = linkHelper.wpIdToLuceneId(wpId2);
+        if (doc1 < 0 || doc2 < 0) {
+            return 0.0;
+        }
+        MoreLikeThis mlt = getMoreLikeThis();
+
+        TopDocs similarDocs = searcher.search(
+                mlt.like(doc1),
+                new FieldCacheTermsFilter("id", "" + wpId2),
+            1);
+        if (similarDocs.scoreDocs.length == 0) {
+            return 0;
+        } else {
+            assert(similarDocs.scoreDocs.length == 1);
+            assert(similarDocs.scoreDocs[0].doc == doc2);
+            return (Math.log(similarDocs.scoreDocs[0].score) - 1) / 5.0;
+        }
+    }
+
+    private MoreLikeThis getMoreLikeThis() {
+        MoreLikeThis mlt = new MoreLikeThis(linkHelper.getReader());
+        mlt.setMaxDocFreqPct(20);
+        mlt.setMaxQueryTerms(100);
+        mlt.setMinDocFreq(minDocFreq);
+        mlt.setMinTermFreq(1);
+        mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_40));
+        mlt.setFieldNames(new String[]{field}); // specify the fields for similiarity
+        return mlt;
     }
 
     private double jacard(TIntSet A, TIntSet B, TIntSet I, TIntSet U) {
@@ -154,7 +213,17 @@ public class LinkSimilarity extends BaseSimilarityMetric{
     }
 
     @Override
-    public DocScoreList mostSimilar(int wpId1, int maxResults) throws IOException {
-        throw new NotImplementedException();
+    public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
+        MoreLikeThis mlt = getMoreLikeThis();
+        int luceneId = linkHelper.wpIdToLuceneId(wpId);
+        TopDocs similarDocs = searcher.search(mlt.like(luceneId), maxResults);
+        DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
+        for (int i = 0; i < similarDocs.scoreDocs.length; i++) {
+            ScoreDoc sd = similarDocs.scoreDocs[i];
+            scores.set(i,
+                    linkHelper.luceneIdToWpId(sd.doc),
+                    similarDocs.scoreDocs[i].score);
+        }
+        return scores;
     }
 }

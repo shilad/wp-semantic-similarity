@@ -68,7 +68,6 @@ public class TestIndexHelper {
 
         assertEquals(linkHelper.luceneIdToTitle(otherIds.get(0)), "Ayn Rand");
         assertEquals(linkHelper.luceneIdToTitle(otherIds.get(1)), "Alain Connes");
-
     }
 
     @Test

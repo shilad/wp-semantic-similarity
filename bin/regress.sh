@@ -12,4 +12,4 @@ out=/dev/null
 
 export MAVEN_OPTS="-Xmx${mb}M -ea -server"
 mvn compile
-mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.sim.RegressionFitter" -D exec.classpathScope=runtime  -D exec.args="$conf $gold $out"
+mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.sim.SimilarityAnalyzer" -D exec.classpathScope=runtime  -D exec.args="$conf $gold $out"

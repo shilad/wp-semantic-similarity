@@ -4,8 +4,9 @@ import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
+import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.list.array.TDoubleArrayList;
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
@@ -25,17 +26,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class RegressionFitter {
-    private static final Logger LOG = Logger.getLogger(RegressionFitter.class.getName());
+public class SimilarityAnalyzer {
+    private static final Logger LOG = Logger.getLogger(SimilarityAnalyzer.class.getName());
 
     private List<KnownSim> gold;
     private ConceptMapper mapper;
     private IndexHelper helper;
 
-    public RegressionFitter(File goldStandard, ConceptMapper mapper, IndexHelper helper) throws IOException {
+    public SimilarityAnalyzer(File goldStandard, ConceptMapper mapper, IndexHelper helper) throws IOException {
         this.mapper = mapper;
         this.helper = helper;
-        this.gold = readGoldStandard(goldStandard);
+        this.gold = KnownSim.read(goldStandard);
     }
 
     public void analyzeMetrics(List<SimilarityMetric> metrics, BufferedWriter writer) throws IOException, ParseException {
@@ -164,49 +165,6 @@ public class RegressionFitter {
         return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX };
     }
 
-    private List<KnownSim> readGoldStandard(File path) throws IOException {
-        List<KnownSim> result = new ArrayList<KnownSim>();
-        BufferedReader reader = new BufferedReader(new FileReader(path));
-        while (true) {
-            String line = reader.readLine();
-            if (line == null)
-                break;
-            String tokens[] = line.split("\t");
-            if (tokens.length == 3) {
-                result.add(new KnownSim(
-                        tokens[0],
-                        tokens[1],
-                        Double.valueOf(tokens[2])
-                ));
-            } else {
-                LOG.info("invalid line in gold standard file " + path + ": " +
-                        "'" + StringEscapeUtils.escapeJava(line) + "'");
-            }
-        }
-        return result;
-    }
-
-    class KnownSim {
-        String phrase1;
-        String phrase2;
-        double similarity;
-
-        KnownSim(String phrase1, String phrase2, double similarity) {
-            this.phrase1 = phrase1;
-            this.phrase2 = phrase2;
-            this.similarity = similarity;
-        }
-
-        @Override
-        public String toString() {
-            return "KnownSim{" +
-                    "phrase1='" + phrase1 + '\'' +
-                    ", phrase2='" + phrase2 + '\'' +
-                    ", similarity=" + similarity +
-                    '}';
-        }
-    }
-
     public class MyOLS extends OLSMultipleLinearRegression {
         public double[] getPredictions() {
             return this.getX().operate(this.calculateBeta()).toArray();
@@ -214,24 +172,33 @@ public class RegressionFitter {
     }
 
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException {
-        if (args.length != 3) {
+        if (args.length < 3) {
             System.err.println(
-                    "usage: java " + RegressionFitter.class.toString() +
+                    "usage: java " + SimilarityAnalyzer.class.toString() +
                     " path/to/sim/metric/conf.txt" +
                     " path/to/gold/standard.txt" +
-                    " path/to/reg/model_output.txt"
+                    " path/to/reg/model_output.txt" +
+                    " [sim1 sim2 ...]"
             );
             System.exit(1);
         }
         SimilarityMetricConfigurator conf = new SimilarityMetricConfigurator(
                 new ConfigurationFile(new File(args[0])));
-        RegressionFitter fitter = new RegressionFitter(
+        SimilarityAnalyzer fitter = new SimilarityAnalyzer(
                 new File(args[1]),
                 conf.getMapper(),
                 conf.getHelper()
         );
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
-        fitter.analyzeMetrics(conf.loadAllMetrics(), writer);
+        List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
+        if (args.length == 3) {
+            metrics = conf.loadAllMetrics();
+        } else {
+            for (String name : ArrayUtils.subarray(args, 3, args.length)) {
+                metrics.add(conf.loadMetric(name));
+            }
+        }
+        fitter.analyzeMetrics(metrics, writer);
         writer.close();
     }
 }

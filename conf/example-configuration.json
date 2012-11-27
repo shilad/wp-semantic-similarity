@@ -5,10 +5,10 @@
 
     // The concept mapper that maps phrases to articles
     "concept-mapper" : {
-        "ensemble" : true,
+//        "ensemble" : true,
         "dictionary" : "dat/dictionary.pruned",
-        "lucene" : "dat/lucene/esa",
-    },
+//        "lucene" : "dat/lucene/esa",
+    }
 
     "indexes" : {
         "inputDir" : "dat/wikipedia",
@@ -40,7 +40,6 @@
             "analyzer" : "ESA",
             "booster" : "ESA"
         }
-
     }
 
     // The similarity metrics
@@ -48,7 +47,6 @@
         "article-cats" : {
             "type" : "category",
             "lucene" : "dat/lucene/cats",
-            "test-list" : ["foo", "bar"],
         },
         "esa" : {
             "type" : "esa",
@@ -74,13 +72,13 @@
             "type" : "links",
             "field" : "links",
             "lucene" : "dat/lucene/links",
-            "similarity" : "tfidf"
+            "similarity" : "lucene"
         },
         "inlinks" : {
             "type" : "links",
             "field" : "inlinks",
             "lucene" : "dat/lucene/links",
-            "similarity" : "tfidf"
+            "similarity" : "lucene"
         },
 //        "pairwise-text" : {
 //            "type" : "pairwise",

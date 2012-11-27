@@ -1,8 +1,6 @@
 package edu.macalester.wpsemsim.sim;
 
-import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
-import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
 import edu.macalester.wpsemsim.lucene.DocBooster;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.lucene.Page;
@@ -22,6 +20,7 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,7 +37,8 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     private int minTermFreq = DEFAULT_MIN_TERM_FREQ;
     private int minDocFreq = DEFAULT_MIN_DOC_FREQ;
     private IndexSearcher searcher;
-    private IndexHelper helper;
+    private IndexHelper esaHelper;
+    private IndexHelper textHelper;
     private DirectoryReader reader;
     private Analyzer analyzer = new ESAAnalyzer();
 
@@ -48,11 +48,15 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
 
     public ESASimilarity(ConceptMapper mapper, IndexHelper helper) {
         super(mapper, helper);
-        this.helper = helper;
+        this.esaHelper = helper;
         this.reader = helper.getReader();
         this.searcher = helper.getSearcher();
         searcher.setSimilarity(new LuceneSimilarity());
         this.setName("esa-similarity");
+    }
+
+    public void setTextHelper(IndexHelper textHelper) {
+        this.textHelper = textHelper;
     }
 
     private MoreLikeThis getMoreLikeThis() {
@@ -81,11 +85,9 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
             }
         }
         QueryParser parser = new QueryParser(Version.LUCENE_40, "text", analyzer);
-        Filter filter = NumericRangeFilter.newIntRange("ninlinks", 100, Integer.MAX_VALUE, true, false);
-        filter = null;
         TopDocs docs = null;
         try {
-            docs = searcher.search(parser.parse(phrase), filter, 5000);
+            docs = searcher.search(parser.parse(phrase), null, 5000);
         } catch (org.apache.lucene.queryparser.classic.ParseException e) {
             LOG.log(Level.WARNING, "parsing of phrase " + phrase + " failed", e);
             return null;
@@ -137,14 +139,24 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
         MoreLikeThis mlt = getMoreLikeThis();
-        int luceneId = helper.wpIdToLuceneId(wpId);
+        int luceneId = esaHelper.wpIdToLuceneId(wpId);
+        Query query;
+        if (luceneId >= 0) {
+            query = mlt.like(luceneId);
+        } else if (textHelper != null && textHelper.wpIdToLuceneId(wpId) >= 0) {
+            Document d = textHelper.wpIdToLuceneDoc(wpId);
+            String text = d.get(Page.FIELD_TEXT);
+            query = mlt.like(new StringReader(text), Page.FIELD_TEXT);
+        } else {
+            return null;
+        }
         TopDocs similarDocs = searcher.search(mlt.like(luceneId), maxResults);
         pruneSimilar(similarDocs);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
         for (int i = 0; i < similarDocs.scoreDocs.length; i++) {
             ScoreDoc sd = similarDocs.scoreDocs[i];
             scores.set(i,
-                    helper.luceneIdToWpId(sd.doc),
+                    esaHelper.luceneIdToWpId(sd.doc),
                     similarDocs.scoreDocs[i].score);
         }
         return scores;
@@ -152,8 +164,8 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
 
     @Override
     public double similarity(int wpId1, int wpId2) throws IOException {
-        int doc1 = helper.wpIdToLuceneId(wpId1);
-        int doc2 = helper.wpIdToLuceneId(wpId2);
+        int doc1 = esaHelper.wpIdToLuceneId(wpId1);
+        int doc2 = esaHelper.wpIdToLuceneId(wpId2);
 
         MoreLikeThis mlt = getMoreLikeThis();
         TopDocs similarDocs = searcher.search(mlt.like(doc1), new FieldCacheTermsFilter("id", "" + wpId2), 1);

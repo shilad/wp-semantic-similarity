@@ -37,9 +37,13 @@ public class SimilarityMetricConfigurator {
         info("loading metrics");
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
         for (String key : configuration.getKeys("metrics")) {
-            metrics.add(loadMetric(key, configuration.get("metrics", key)));
+            metrics.add(loadMetric(key));
         }
         return metrics;
+    }
+
+    public SimilarityMetric loadMetric(String name) throws IOException, ConfigurationException {
+        return loadMetric(name, configuration.get("metrics", name));
     }
 
     protected SimilarityMetric loadMetric(String name, JSONObject params) throws ConfigurationException, IOException {
@@ -92,6 +96,10 @@ public class SimilarityMetricConfigurator {
                     lmetric.setSimilarity(LinkSimilarity.SimFn.LOGODDS);
                 } else if (sim.equals("jacard")) {
                     lmetric.setSimilarity(LinkSimilarity.SimFn.JACARD);
+                } else if (sim.equals("lucene")) {
+                    lmetric.setSimilarity(LinkSimilarity.SimFn.LUCENE);
+                } else {
+                    throw new IllegalArgumentException("unknown similarity: " + sim);
                 }
             }
             if (params.containsKey("minDocFreq")) {

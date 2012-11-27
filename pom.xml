@@ -5,7 +5,6 @@
     <version>0.1</version>
     <packaging>jar</packaging>
 
-
     <build>
       <plugins>
         <plugin>
@@ -103,6 +102,12 @@
             <groupId>berkeleydb</groupId>
             <artifactId>je</artifactId>
             <version>3.2.76</version>
+        </dependency>
+
+        <dependency>
+            <groupId>tw.edu.ntu.csie</groupId>
+            <artifactId>libsvm</artifactId>
+            <version>3.1</version>
         </dependency>
     </dependencies>
 </project>

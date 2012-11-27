@@ -34,21 +34,21 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
-        LinkedHashMap<String, Float> concepts = mapper.map(phrase, maxResults);
+        LinkedHashMap<String, Float> concepts = mapper.map(phrase, 5);
         if (concepts.isEmpty()) {
             LOG.info("no concepts for phrase " + phrase);
             return new DocScoreList(0);
         }
 
-        String article = concepts.keySet().iterator().next();
-
-        int wpId = helper.titleToWpId(article);
-        if (wpId < 0) {
-            LOG.info("couldn't find article with title '" + article + "'");
-            return new DocScoreList(0);
+        for (String article : concepts.keySet()) {
+            int wpId = helper.titleToWpId(article);
+            if (wpId < 0) {
+                LOG.info("couldn't find article with title '" + article + "'");
+            } else {
+                return mostSimilar(wpId, maxResults);
+            }
         }
-
-        return mostSimilar(wpId, maxResults);
+        return null;
     }
 
     @Override
