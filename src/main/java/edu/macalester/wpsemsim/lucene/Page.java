@@ -16,6 +16,8 @@ public final class Page {
     public static final String FIELD_LINKS = "links";
     public static final String FIELD_TEXT = "text";
     public static final String FIELD_TITLE = "title";
+    public static final String FIELD_TYPE = "type";
+    public static final String FIELD_WPID = "id";
     private int id;
     private String title;
     private String text;

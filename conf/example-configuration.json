@@ -40,7 +40,7 @@
             "analyzer" : "ESA",
             "booster" : "ESA"
         }
-    }
+    },
 
     // The similarity metrics
     "metrics" : {
@@ -98,5 +98,9 @@
 //            "basedOn" : "article-cats",
 //            "transpose" : "dat/cat-sims.transpose.matrix",
 //        },
+        "ensemble" : {
+            "model" : "dat/model.out",
+            "components" : ["all"]
+        },
     }
 }

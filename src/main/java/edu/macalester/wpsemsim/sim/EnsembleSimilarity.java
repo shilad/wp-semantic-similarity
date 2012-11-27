@@ -4,6 +4,7 @@ import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.SupervisedSimilarityMetric;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.DocScoreList;
@@ -13,6 +14,8 @@ import gnu.trove.map.hash.TIntDoubleHashMap;
 import libsvm.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.*;
@@ -28,7 +31,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     private static final double RESCALED_MIN = -1.0f;
     private static final double RESCALED_MAX = +1.0f;
     private static final double P_EPSIONS[] = { 1.0, 0.5, 0.1, 0.01, 0.001 };
-    private static final double P_CS[] = { 8, 4, 2, 1, 0.5, 0.2, 0.1 };
+    private static final double P_CS[] = { 16, 8, 4, 2, 1, 0.5, 0.2, 0.1 };
 
     private int numThreads;
     private ConceptMapper mapper;
@@ -97,12 +100,12 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         this.components = components;
     }
 
-    public void train(List<KnownSim> gold) {
-        train(gold, -1);
+    public void trainSimilarity(List<KnownSim> gold) {
+        trainMostSimilar(gold, -1);
     }
 
     @Override
-    public void train(List<KnownSim> gold, int numResults) {
+    public void trainMostSimilar(List<KnownSim> gold, int numResults) {
         svm_problem prob = makeProblem(gold, numResults);
         train(prob);
     }
@@ -164,11 +167,23 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                 new FileOutputStream(new File(directory, "maxs.libsvm")));
         out.writeObject(componentMaxs);
         out.close();
+
+        String names = StringUtils.join(getComponentNames(), ", ");
+        FileUtils.write(new File(directory, "component_names.txt"), names);
     }
 
     public void read(File directory) throws IOException, ClassNotFoundException {
         if (!directory.isDirectory()) {
             throw new FileNotFoundException(directory.toString());
+        }
+
+        String expected = StringUtils.join(getComponentNames(), ", ");
+        String actual = FileUtils.readFileToString(new File(directory, "component_names.txt"));
+        if (!expected.equals(actual)) {
+            new IOException(
+                    "Unexpected component similarity metrics: " +
+                    "Expected '" + expected + "', found '" + actual + "'"
+            );
         }
 
         ObjectInputStream in = new ObjectInputStream(
@@ -190,6 +205,14 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                 new FileInputStream(new File(directory, "maxs.libsvm")));
         componentMaxs = (double[]) in.readObject();
         in.close();
+    }
+
+    protected List<String> getComponentNames() {
+        List<String> names = new ArrayList<String>();
+        for (SimilarityMetric m : components) {
+            names.add(m.getName());
+        }
+        return names;
     }
 
     public svm_problem makeProblem(final List<KnownSim> gold) {
@@ -277,13 +300,14 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
             SimilarityMetric m = components.get(i);
             double sim = Double.NaN;
             if (numResults <= 0) {
+                sim = m.similarity(phrase1, phrase2);
+            } else {
                 double s1 = getSimilarity(m, phrase1, phrase2, numResults);
                 double s2 = getSimilarity(m, phrase2, phrase1, numResults);
                 s1 = Double.isNaN(s1) ? 0.0 : s1;
                 s2 = Double.isNaN(s2) ? 0.0 : s2;
+                System.out.println("values are " + s1 +", " + s2);
                 sim = (s1 + s2) / 2.0;
-            } else {
-                sim = m.similarity(phrase1, phrase2);
             }
             if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
                 svm_node n = new svm_node();
@@ -307,14 +331,18 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     protected double getSimilarity(SimilarityMetric metric, String phrase1, String phrase2, int numResults) throws IOException {
         TIntDoubleHashMap concepts = new TIntDoubleHashMap();
         for (Map.Entry<String, Float> entry : mapper.map(phrase2, 10).entrySet()) {
-            int wpId = helper.titleToWpId(entry.getKey());
-            if (wpId >= 0) {
+            Document d = helper.titleToLuceneDoc(entry.getKey());
+            if (d == null || d.getFields(Page.FIELD_TYPE).length == 0 || d.get(Page.FIELD_TYPE).equals("normal")) {
+                int wpId = Integer.valueOf(d.get(Page.FIELD_WPID));
                 concepts.put(wpId, entry.getValue());
             }
         }
+        DocScoreList top =  metric.mostSimilar(phrase1, numResults);
+        if (top == null) {
+            return Double.NaN;
+        }
         double bestScore = -Double.MAX_VALUE;
         double bestSim = Double.NaN;
-        DocScoreList top =  metric.mostSimilar(phrase1, numResults);
         for (DocScore ds : top) {
             if (concepts.containsKey(ds.getId())) {
                 double score = ds.getScore() * concepts.get(ds.getId());
@@ -397,7 +425,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         return pearson;
     }
 
-    public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException {
+    public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException, ClassNotFoundException {
         if (args.length < 4) {
             System.err.println(
                     "usage: java " + EnsembleSimilarity.class.toString() +
@@ -424,7 +452,10 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
             }
         }
         ensemble.setComponents(metrics);
-        ensemble.train(KnownSim.read(new File(args[1])), Integer.valueOf(args[3]));
+        ensemble.trainMostSimilar(KnownSim.read(new File(args[1])), Integer.valueOf(args[3]));
         ensemble.write(new File(args[2]));
+
+        // test it!
+        ensemble.read(new File(args[2]));
     }
 }

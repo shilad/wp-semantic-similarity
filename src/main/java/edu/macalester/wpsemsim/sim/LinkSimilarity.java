@@ -17,7 +17,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.*;
 import org.apache.lucene.util.Version;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 
@@ -112,14 +111,18 @@ public class LinkSimilarity extends BaseSimilarityMetric{
         TopDocs similarDocs = searcher.search(
                 mlt.like(doc1),
                 new FieldCacheTermsFilter("id", "" + wpId2),
-            1);
+                1);
         if (similarDocs.scoreDocs.length == 0) {
             return 0;
         } else {
             assert(similarDocs.scoreDocs.length == 1);
             assert(similarDocs.scoreDocs[0].doc == doc2);
-            return (Math.log(similarDocs.scoreDocs[0].score) - 1) / 5.0;
+            return transformLuceneScore(similarDocs.scoreDocs[0].score);
         }
+    }
+
+    private double transformLuceneScore(float score) {
+        return (Math.log(score) - 1) / 5.0;
     }
 
     private MoreLikeThis getMoreLikeThis() {
@@ -216,13 +219,16 @@ public class LinkSimilarity extends BaseSimilarityMetric{
     public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
         MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = linkHelper.wpIdToLuceneId(wpId);
+        if (luceneId < 0) {
+            return null;
+        }
         TopDocs similarDocs = searcher.search(mlt.like(luceneId), maxResults);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
         for (int i = 0; i < similarDocs.scoreDocs.length; i++) {
             ScoreDoc sd = similarDocs.scoreDocs[i];
             scores.set(i,
                     linkHelper.luceneIdToWpId(sd.doc),
-                    similarDocs.scoreDocs[i].score);
+                    transformLuceneScore(similarDocs.scoreDocs[i].score));
         }
         return scores;
     }
