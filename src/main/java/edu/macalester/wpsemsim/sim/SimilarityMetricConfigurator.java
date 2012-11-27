@@ -35,11 +35,32 @@ public class SimilarityMetricConfigurator {
 
     public List<SimilarityMetric> loadAllMetrics() throws IOException, ConfigurationException {
         info("loading metrics");
+        Set<String> ensembleKeys = new HashSet<String>();
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
         for (String key : configuration.getKeys("metrics")) {
-            metrics.add(loadMetric(key));
+            String type = requireString(configuration.get("metrics", key), "type");
+            if (type.equals("ensemble")) {
+                ensembleKeys.add(key);
+            } else {
+                metrics.add(loadMetric(key));
+            }
+        }
+        for (String key : ensembleKeys) {
+            metrics.add(loadEnsembleMetric(key, metrics));
         }
         return metrics;
+    }
+
+    private SimilarityMetric loadEnsembleMetric(String key, List<SimilarityMetric> metrics) throws IOException, ConfigurationException {
+        try {
+            Map<String, Object> params = (Map<String, Object>) configuration.get("metrics").get(key);
+            EnsembleSimilarity similarity = new EnsembleSimilarity(getMapper(), getHelper());
+            similarity.setComponents(metrics);
+            similarity.read(requireDirectory(params, "model"));
+            return similarity;
+        } catch (DatabaseException e) {
+            throw new ConfigurationException(e.toString());
+        }
     }
 
     public SimilarityMetric loadMetric(String name) throws IOException, ConfigurationException {
@@ -57,67 +78,97 @@ public class SimilarityMetricConfigurator {
             throw new ConfigurationException(e.getMessage());
         }
         if (type.equals("category")) {
-            File luceneDir = requireDirectory(params, "lucene");
-            IndexHelper helper = new IndexHelper(luceneDir, true);
-            CategoryGraph graph = new CategoryGraph(helper);
-            graph.init();
-            metric = new CatSimilarity(mapper, graph, helper);
+            metric = createCategorySimilarity(params, mapper);
         } else if (type.equals("text")) {
-            File luceneDir = requireDirectory(params, "lucene");
-            IndexHelper helper = new IndexHelper(luceneDir, true);
-            String field = requireString(params, "field");
-            metric = new TextSimilarity(mapper, helper, field);
-            if (params.containsKey("maxPercentage")) {
-                ((TextSimilarity)metric).setMaxPercentage(requireInteger(params, "maxPercentage"));
-            }
-            if (params.containsKey("minTermFreq")) {
-                ((TextSimilarity)metric).setMinTermFreq(requireInteger(params, "minTermFreq"));
-            }
-            if (params.containsKey("minDocFreq")) {
-                ((TextSimilarity)metric).setMinDocFreq(requireInteger(params, "minDocFreq"));
-            }
-            if (params.containsKey("useInternalMapper")) {
-                ((TextSimilarity)metric).setUseInternalMapper(requireBoolean(params, "useInternalMapper"));
-            }
+            metric = createTextSimilarity(params, mapper);
         } else if (type.equals("esa")) {
-            File luceneDir = requireDirectory(params, "lucene");
-            metric = new ESASimilarity(new IndexHelper(luceneDir, true));
+            metric = createEsaSimilarity(params, mapper);
         } else if (type.equals("links")) {
-            File luceneDir = requireDirectory(params, "lucene");
-            String field = requireString(params, "field");
-            LinkSimilarity lmetric = new LinkSimilarity(mapper, new IndexHelper(luceneDir, true), getHelper(), field);
-            if (params.containsKey("similarity")) {
-                String sim = requireString(params, "similarity");
-                if (sim.equals("tfidf")) {
-                    lmetric.setSimilarity(LinkSimilarity.SimFn.TFIDF);
-                } else if (sim.equals("google")) {
-                    lmetric.setSimilarity(LinkSimilarity.SimFn.GOOGLE);
-                } else if (sim.equals("logodds")) {
-                    lmetric.setSimilarity(LinkSimilarity.SimFn.LOGODDS);
-                } else if (sim.equals("jacard")) {
-                    lmetric.setSimilarity(LinkSimilarity.SimFn.JACARD);
-                } else if (sim.equals("lucene")) {
-                    lmetric.setSimilarity(LinkSimilarity.SimFn.LUCENE);
-                } else {
-                    throw new IllegalArgumentException("unknown similarity: " + sim);
-                }
-            }
-            if (params.containsKey("minDocFreq")) {
-                lmetric.setMinDocFreq(requireInteger(params, "minDocFreq"));
-            }
-            metric = lmetric;
+            metric = createLinkSimilarity(params, mapper);
         } else if (type.equals("pairwise")) {
-            SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
-            SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
-            metric = new PairwiseCosineSimilarity(mapper, getHelper(), m, mt);
+            metric = createPairwiseSimilarity(params, mapper);
         } else if (type.equals("pairwise-phrase")) {
-            File luceneDir = requireDirectory(params, "lucene");
-            SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
-            metric = new PairwisePhraseSimilarity(new IndexHelper(luceneDir, true), m);
+            metric = createPairwisePhraseSimilarity(params);
         } else {
             throw new ConfigurationException("Unknown metric type: " + type);
         }
         metric.setName(name);
+        return metric;
+    }
+
+    private SimilarityMetric createPairwisePhraseSimilarity(JSONObject params) throws ConfigurationException, IOException {
+        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
+        SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
+        metric = new PairwisePhraseSimilarity(new IndexHelper(luceneDir, true), m);
+        return metric;
+    }
+
+    private SimilarityMetric createPairwiseSimilarity(JSONObject params, ConceptMapper mapper) throws IOException, ConfigurationException {
+        SimilarityMetric metric;SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
+        SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
+        metric = new PairwiseCosineSimilarity(mapper, getHelper(), m, mt);
+        return metric;
+    }
+
+    private SimilarityMetric createLinkSimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
+        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
+        String field = requireString(params, "field");
+        LinkSimilarity lmetric = new LinkSimilarity(mapper, new IndexHelper(luceneDir, true), getHelper(), field);
+        if (params.containsKey("similarity")) {
+            String sim = requireString(params, "similarity");
+            if (sim.equals("tfidf")) {
+                lmetric.setSimilarity(LinkSimilarity.SimFn.TFIDF);
+            } else if (sim.equals("google")) {
+                lmetric.setSimilarity(LinkSimilarity.SimFn.GOOGLE);
+            } else if (sim.equals("logodds")) {
+                lmetric.setSimilarity(LinkSimilarity.SimFn.LOGODDS);
+            } else if (sim.equals("jacard")) {
+                lmetric.setSimilarity(LinkSimilarity.SimFn.JACARD);
+            } else if (sim.equals("lucene")) {
+                lmetric.setSimilarity(LinkSimilarity.SimFn.LUCENE);
+            } else {
+                throw new IllegalArgumentException("unknown similarity: " + sim);
+            }
+        }
+        if (params.containsKey("minDocFreq")) {
+            lmetric.setMinDocFreq(requireInteger(params, "minDocFreq"));
+        }
+        metric = lmetric;
+        return metric;
+    }
+
+    private SimilarityMetric createEsaSimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
+        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
+        metric = new ESASimilarity(mapper, new IndexHelper(luceneDir, true));
+        return metric;
+    }
+
+    private SimilarityMetric createTextSimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
+        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
+        IndexHelper helper = new IndexHelper(luceneDir, true);
+        String field = requireString(params, "field");
+        metric = new TextSimilarity(mapper, helper, field);
+        if (params.containsKey("maxPercentage")) {
+            ((TextSimilarity)metric).setMaxPercentage(requireInteger(params, "maxPercentage"));
+        }
+        if (params.containsKey("minTermFreq")) {
+            ((TextSimilarity)metric).setMinTermFreq(requireInteger(params, "minTermFreq"));
+        }
+        if (params.containsKey("minDocFreq")) {
+            ((TextSimilarity)metric).setMinDocFreq(requireInteger(params, "minDocFreq"));
+        }
+        if (params.containsKey("useInternalMapper")) {
+            ((TextSimilarity)metric).setUseInternalMapper(requireBoolean(params, "useInternalMapper"));
+        }
+        return metric;
+    }
+
+    private SimilarityMetric createCategorySimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
+        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
+        IndexHelper helper = new IndexHelper(luceneDir, true);
+        CategoryGraph graph = new CategoryGraph(helper);
+        graph.init();
+        metric = new CatSimilarity(mapper, graph, helper);
         return metric;
     }
 

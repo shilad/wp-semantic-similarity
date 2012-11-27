@@ -8,7 +8,7 @@
 //        "ensemble" : true,
         "dictionary" : "dat/dictionary.pruned",
 //        "lucene" : "dat/lucene/esa",
-    }
+    },
 
     "indexes" : {
         "inputDir" : "dat/wikipedia",
@@ -44,10 +44,10 @@
 
     // The similarity metrics
     "metrics" : {
-        "article-cats" : {
-            "type" : "category",
-            "lucene" : "dat/lucene/cats",
-        },
+//        "article-cats" : {
+//            "type" : "category",
+//            "lucene" : "dat/lucene/cats",
+//        },
         "esa" : {
             "type" : "esa",
             "lucene" : "dat/lucene/esa",
@@ -100,7 +100,7 @@
 //        },
         "ensemble" : {
             "model" : "dat/model.out",
-            "components" : ["all"]
+            "type" : "ensemble"
         },
     }
 }

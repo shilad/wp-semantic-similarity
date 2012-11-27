@@ -20,9 +20,9 @@ tail +2 $DL/wordsim353/combined.csv > $SRC/wordsim353.csv ||
 
 # MTurk, Radinsky et al, 2011
 # see http://www.technion.ac.il/~kirar/Datasets.html
-#wget -P $DL http://www.technion.ac.il/~kirar/files/Mtruk.csv &&
-#cp -p $DL/Mtruk.csv $SRC/radinsky.csv || 
-#{ echo "ERROR: preparing radinsky dataset failed" >&2; exit 1;}
+wget -P $DL http://www.technion.ac.il/~kirar/files/Mtruk.csv &&
+cp -p $DL/Mtruk.csv $SRC/radinsky.csv || 
+{ echo "ERROR: preparing radinsky dataset failed" >&2; exit 1;}
 
 # Concept sim, Miller et al, 1991
 # http://www.seas.upenn.edu/~hansens/conceptSim/
@@ -34,15 +34,15 @@ tail +2 $DL/wordsim353/combined.csv > $SRC/wordsim353.csv ||
 
 # Atlasify: Hecht et al, 2012
 #
-#wget -P $DL http://www.cs.northwestern.edu/~ddowney/data/atlasify240.csv &&
-#cp -p $DL/atlasify240.csv $SRC/atlasify240.csv ||
-#{ echo "ERROR: preparing atlasify dataset failed" >&2; exit 1;}
+wget -P $DL http://www.cs.northwestern.edu/~ddowney/data/atlasify240.csv &&
+cp -p $DL/atlasify240.csv $SRC/atlasify240.csv ||
+{ echo "ERROR: preparing atlasify dataset failed" >&2; exit 1;}
 
 # WikiSimi
 #
-#wget -P $DL http://sigwp.org/wikisimi/WikiSimi3000_1.csv &&
-#cp -p $DL/WikiSimi3000_1.csv  $SRC/WikiSimi3000.tab ||
-#{ echo "ERROR: preparing wikisimi dataset failed" >&2; exit 1;}
+wget -P $DL http://sigwp.org/wikisimi/WikiSimi3000_1.csv &&
+cp -p $DL/WikiSimi3000_1.csv  $SRC/WikiSimi3000.tab ||
+{ echo "ERROR: preparing wikisimi dataset failed" >&2; exit 1;}
 
 python src/main/python/combine_gold.py $SRC/*.* >dat/gold/combined.tab.txt || 
 { echo "ERROR: combining datasets failed" >&2; exit 1;}

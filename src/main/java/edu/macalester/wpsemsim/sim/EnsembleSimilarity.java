@@ -172,7 +172,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         FileUtils.write(new File(directory, "component_names.txt"), names);
     }
 
-    public void read(File directory) throws IOException, ClassNotFoundException {
+    public void read(File directory) throws IOException {
         if (!directory.isDirectory()) {
             throw new FileNotFoundException(directory.toString());
         }
@@ -186,25 +186,29 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
             );
         }
 
-        ObjectInputStream in = new ObjectInputStream(
-                new FileInputStream(new File(directory, "model.libsvm")));
-        model = (svm_model) in.readObject();
-        in.close();
+        try {
+            ObjectInputStream in = new ObjectInputStream(
+                    new FileInputStream(new File(directory, "model.libsvm")));
+            model = (svm_model) in.readObject();
+            in.close();
 
-        in = new ObjectInputStream(
-                new FileInputStream(new File(directory, "params.libsvm")));
-        param = (svm_parameter) in.readObject();
-        in.close();
+            in = new ObjectInputStream(
+                    new FileInputStream(new File(directory, "params.libsvm")));
+            param = (svm_parameter) in.readObject();
+            in.close();
 
-        in = new ObjectInputStream(
-                new FileInputStream(new File(directory, "mins.libsvm")));
-        componentMins = (double[]) in.readObject();
-        in.close();
+            in = new ObjectInputStream(
+                    new FileInputStream(new File(directory, "mins.libsvm")));
+            componentMins = (double[]) in.readObject();
+            in.close();
 
-        in = new ObjectInputStream(
-                new FileInputStream(new File(directory, "maxs.libsvm")));
-        componentMaxs = (double[]) in.readObject();
-        in.close();
+            in = new ObjectInputStream(
+                    new FileInputStream(new File(directory, "maxs.libsvm")));
+            componentMaxs = (double[]) in.readObject();
+            in.close();
+        } catch (ClassNotFoundException e) {
+            throw new IOException(e);
+        }
     }
 
     protected List<String> getComponentNames() {
@@ -306,7 +310,6 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                 double s2 = getSimilarity(m, phrase2, phrase1, numResults);
                 s1 = Double.isNaN(s1) ? 0.0 : s1;
                 s2 = Double.isNaN(s2) ? 0.0 : s2;
-                System.out.println("values are " + s1 +", " + s2);
                 sim = (s1 + s2) / 2.0;
             }
             if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
