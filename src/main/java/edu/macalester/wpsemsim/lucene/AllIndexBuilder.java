@@ -180,9 +180,9 @@ public class AllIndexBuilder {
             if (numDocs.incrementAndGet() % 10000 == 0) {
                 LOG.info("read doc " + numDocs + " from " + path + ": " + p.getTitle());
             }
-            if (numDocs.get() > 5000) {
-                break;
-            }
+//            if (numDocs.get() > 5000) {
+//                break;
+//            }
         }
     }
 
