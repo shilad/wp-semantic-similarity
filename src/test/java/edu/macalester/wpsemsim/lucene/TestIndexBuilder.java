@@ -24,7 +24,7 @@ public class TestIndexBuilder {
         File dir = TestUtils.buildIndex();
         File conf = new File(dir.getParent(), "conf.txt");
         AllIndexBuilder builder = new AllIndexBuilder(new ConfigurationFile(conf), null);
-        for (BaseIndexGenerator g : builder.getGenerators()) {
+        for (IndexGenerator g : builder.getGenerators()) {
             DirectoryReader reader = TestUtils.openReader(dir, g.getName());
             int count = 0;
             for (int j = 0; j < reader.maxDoc(); j++) {

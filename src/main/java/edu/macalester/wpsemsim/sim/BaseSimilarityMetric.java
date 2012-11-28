@@ -45,7 +45,11 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
             if (wpId < 0) {
                 LOG.info("couldn't find article with title '" + article + "'");
             } else {
-                return mostSimilar(wpId, maxResults);
+//                System.out.println("calling mostSimilar of " + article + " (" + wpId + ")");
+                DocScoreList top = mostSimilar(wpId, maxResults);
+                if (top != null) {
+                    return top;
+                }
             }
         }
         return null;
@@ -119,8 +123,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 }
             }
         }
-        System.out.println("for " + phrase1 + ", " + phrase2 + " best is " +
-                bestPair + ": " + bestSim);
+//        System.out.println("for " + phrase1 + ", " + phrase2 + " best is " +
+//                bestPair + ": " + bestSim);
         return bestSim;
     }
 

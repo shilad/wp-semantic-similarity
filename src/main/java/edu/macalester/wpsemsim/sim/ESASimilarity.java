@@ -194,18 +194,6 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         this.minDocFreq = minDocFreq;
     }
 
-    public static class ESABooster implements DocBooster {
-        @Override
-        public String[] getBoostedFields() {
-            return new String[] { Page.FIELD_TEXT };
-        }
-
-        @Override
-        public double getBoost(Document d) {
-            return Math.log(Math.log(d.getField(Page.FIELD_NINLINKS).numericValue().intValue()));
-        }
-    }
-
     public static class LuceneSimilarity extends DefaultSimilarity {
         @Override
         public float idf(long docFreq, long numDocs) {

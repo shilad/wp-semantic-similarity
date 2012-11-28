@@ -18,6 +18,8 @@ public final class Page {
     public static final String FIELD_TITLE = "title";
     public static final String FIELD_TYPE = "type";
     public static final String FIELD_WPID = "id";
+    public static final String FIELD_DAB = "dab";
+    public static final String FIELD_REDIRECT = "redirect";
     private int id;
     private String title;
     private String text;
@@ -79,7 +81,7 @@ public final class Page {
             d.add(new StringField("ns", ""+ns, Field.Store.YES));
             d.add(new TextField("text", text, Field.Store.YES));
             for (String l : getAnchorLinks()) {
-                d.add(new StringField("links", l, Field.Store.YES));
+                d.add(new NormedStringField("links", l, Field.Store.YES));
             }
             for (String l : getTextOfAnchors()) {
                 d.add(new StringField("linktext", l, Field.Store.YES));
@@ -117,6 +119,8 @@ public final class Page {
                 f2 = new TextField(f.name(), f.stringValue(), Field.Store.YES);
             } else if (f.name().equals(Page.FIELD_NINLINKS)) {
                 f2 = new IntField(f.name(), f.numericValue().intValue(), Field.Store.YES);
+            } else if (f.name().equals(Page.FIELD_INLINKS) || f.name().equals(Page.FIELD_LINKS)) {
+                f2 = new NormedStringField(f.name(), f.stringValue(), Field.Store.YES);
             } else {
                 f2 = new StringField(f.name(), f.stringValue(), Field.Store.YES);
             }

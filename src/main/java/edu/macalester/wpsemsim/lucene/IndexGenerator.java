@@ -1,17 +1,26 @@
 package edu.macalester.wpsemsim.lucene;
 
 import edu.macalester.wpsemsim.utils.TitleMap;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Version;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerator> {
-    private static Logger LOG = Logger.getLogger(BaseIndexGenerator.class.getName());
+public class IndexGenerator {
+    private static Logger LOG = Logger.getLogger(IndexGenerator.class.getName());
 
     // By default only include main namespace
     private int namespaces[] = new int[] { 0 };
@@ -21,38 +30,59 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     private int minLinks = 0;
     private int minWords = 0;
     private int titleMultiplier = 0;
+    private boolean skipDabs = true;
+    private boolean skipRedirects = true;
+    private boolean skipLists = true;
+
     private boolean addInLinksToText = false;
+
+    protected AtomicInteger numDocs = new AtomicInteger();
+    protected IndexWriter writer;
+    protected Directory dir;
+    protected String name;
+    protected Similarity similarity;
+    private Analyzer analyzer;
+    protected File indexDir;
+    protected PageInfo info;
+
 
     private DocBooster booster;
 
     TitleMap<StringBuffer> inLinkText = new TitleMap<StringBuffer>(StringBuffer.class);
 
-    public FieldsIndexGenerator(PageInfo info, String ... fields) {
-        super(info, fields[0]);
+    public IndexGenerator(PageInfo info, String... fields) {
+        this.info = info;
+        this.name = fields[0];
         this.fields = fields;
+        if (doField(Page.FIELD_REDIRECT)) {
+            skipRedirects = false;
+        }
+        if (doField(Page.FIELD_DAB)) {
+            skipDabs = false;
+        }
     }
 
-    public FieldsIndexGenerator setMinLinks(int minLinks) {
+    public IndexGenerator setMinLinks(int minLinks) {
         this.minLinks = minLinks;
         return this;
     }
 
-    public FieldsIndexGenerator setMinWords(int minWords) {
+    public IndexGenerator setMinWords(int minWords) {
         this.minWords = minWords;
         return this;
     }
 
-    public FieldsIndexGenerator setBooster(DocBooster booster) {
+    public IndexGenerator setBooster(DocBooster booster) {
         this.booster = booster;
         return this;
     }
 
-    public FieldsIndexGenerator setAddInLinksToText(boolean b) {
+    public IndexGenerator setAddInLinksToText(boolean b) {
         this.addInLinksToText = b;
         return this;
     }
 
-    public FieldsIndexGenerator setTitleMultiplier(int multiplier) {
+    public IndexGenerator setTitleMultiplier(int multiplier) {
         this.titleMultiplier = multiplier;
         return this;
     }
@@ -60,7 +90,11 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
     public boolean shouldInclude(Page p) {
         if (!ArrayUtils.contains(namespaces, p.getNs())) {
             return false;
-        } else if (p.isList() || p.isRedirect() || p.isDisambiguation()) {
+        } else if (skipLists && p.isList()) {
+            return false;
+        } else if (skipRedirects && p.isRedirect()) {
+            return false;
+        } else if (skipDabs && p.isDisambiguation()) {
             return false;
         } else if (minWords > 0 && p.getNumUniqueWordsInText() < minWords) {
             return false;
@@ -71,12 +105,11 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
         }
     }
 
-    public FieldsIndexGenerator setNamespaces(int ...namespaces) {
+    public IndexGenerator setNamespaces(int ...namespaces) {
         this.namespaces = namespaces;
         return this;
     }
 
-    @Override
     public void storePage(Page p) throws IOException {
         if (!shouldInclude(p)) {
             return;
@@ -113,7 +146,6 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
         return ArrayUtils.contains(fields, field);
     }
 
-    @Override
     public void close() throws IOException {
         writer.commit();
 
@@ -121,7 +153,10 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
         prune();
         updateDocs();
 
-        super.close();
+        LOG.info(getName() + " wrote " + writer.numDocs() + " documents");
+        writer.commit();
+        writer.forceMergeDeletes();
+        this.writer.close();
     }
 
 
@@ -218,7 +253,7 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
             }
             if (doField(Page.FIELD_INLINKS)) {
                 for (int wpId : info.getInLinks(title).toArray()) {
-                    d.add(new StringField(Page.FIELD_INLINKS, ""+wpId, Field.Store.YES));
+                    d.add(new NormedStringField(Page.FIELD_INLINKS, ""+wpId, Field.Store.YES));
                 }
             }
             if (doField(Page.FIELD_LINKS)) {
@@ -227,14 +262,17 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
                 for (IndexableField l : links) {
                     int wpId = info.getPageId(l.stringValue());
                     if (wpId > 0) {
-                        d.add(new StringField(Page.FIELD_LINKS, ""+wpId, Field.Store.YES));
+                        d.add(new NormedStringField(Page.FIELD_LINKS, ""+wpId, Field.Store.YES));
                     }
                 }
             }
             if (booster != null) {
                 double boost = booster.getBoost(d);
-                for (String f : booster.getBoostedFields()) {
-                    ((Field)d.getField(f)).setBoost((float)boost);
+                for (String sf : booster.getBoostedFields()) {
+                    Field f = (Field) d.getField(sf);
+                    if (f != null) {
+                        f.setBoost((float)boost);
+                    }
                 }
             }
             writer.updateDocument(new Term("id", d.get("id")), Page.correctMetadata(d));
@@ -242,6 +280,66 @@ public class FieldsIndexGenerator extends BaseIndexGenerator<FieldsIndexGenerato
         LOG.info("finished updating fields in " + n + " docs");
         writer.commit();
         reader.close();
+    }
+
+
+    public String getName() {
+        return name;
+    }
+
+    public IndexGenerator setSimilarity(Similarity sim) {
+        this.similarity = sim;
+        return this;
+    }
+
+    public IndexGenerator setAnalyzer(Analyzer analyzer) {
+        this.analyzer = analyzer;
+        return this;
+    }
+
+    public void openIndex(File indexDir, int bufferMB) throws IOException {
+        this.indexDir = indexDir;
+        FileUtils.deleteDirectory(indexDir);
+        indexDir.mkdirs();
+        this.dir = FSDirectory.open(indexDir);
+        Analyzer analyzer = (this.analyzer == null) ? new StandardAnalyzer(Version.LUCENE_40) : this.analyzer;
+        IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);
+        iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+        iwc.setRAMBufferSizeMB(bufferMB);
+        if (this.similarity != null) {
+            iwc.setSimilarity(similarity);
+        }
+        this.writer = new IndexWriter(dir, iwc);
+    }
+
+    public IndexGenerator setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    protected void addDocument(Document d) throws IOException {
+        numDocs.incrementAndGet();
+        this.writer.addDocument(d);
+    }
+
+    public IndexWriter getWriter() {
+        return writer;
+    }
+
+    public Directory getDir() {
+        return dir;
+    }
+
+    public void setSkipLists(boolean skipLists) {
+        this.skipLists = skipLists;
+    }
+
+    public void setSkipDabs(boolean skipDabs) {
+        this.skipDabs = skipDabs;
+    }
+
+    public void setSkipRedirects(boolean skipRedirects) {
+        this.skipRedirects = skipRedirects;
     }
 
     /**

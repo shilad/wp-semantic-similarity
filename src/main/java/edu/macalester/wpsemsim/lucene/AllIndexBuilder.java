@@ -2,6 +2,7 @@ package edu.macalester.wpsemsim.lucene;
 
 import edu.macalester.wpsemsim.sim.ESAAnalyzer;
 import edu.macalester.wpsemsim.sim.ESASimilarity;
+import edu.macalester.wpsemsim.sim.InLinkBooster;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -27,7 +28,7 @@ public class AllIndexBuilder {
     private File outputDir;
     private File inputPath;
     private ConfigurationFile conf;
-    private List<BaseIndexGenerator> generators = new ArrayList<BaseIndexGenerator>();
+    private List<IndexGenerator> generators = new ArrayList<IndexGenerator>();
     private PageInfo info = new PageInfo();
 
     public AllIndexBuilder(ConfigurationFile conf, List<String> keys) throws ConfigurationException {
@@ -46,60 +47,61 @@ public class AllIndexBuilder {
         }
     }
 
-    private BaseIndexGenerator loadGenerator(String name, JSONObject params) throws ConfigurationFile.ConfigurationException {
+    private IndexGenerator loadGenerator(String name, JSONObject params) throws ConfigurationFile.ConfigurationException {
         info("loading metric " + name);
-        String type = requireString(params, "type");
-
-        BaseIndexGenerator g;
-        if (type.equals("main")) {
-            g = new MainIndexGenerator(info);
-        } else if (type.equals("fields")) {
-            String fields[] = requireListOfStrings(params, "fields").toArray(new String[0]);
-            FieldsIndexGenerator fg = new FieldsIndexGenerator(info, fields);
-            if (params.containsKey("minLinks")) {
-                fg.setMinLinks(requireInteger(params, "minLinks"));
-            }
-            if (params.containsKey("minWords")) {
-                fg.setMinWords(requireInteger(params, "minWords"));
-            }
-            if (params.containsKey("titleMultiplier")) {
-                fg.setTitleMultiplier(requireInteger(params, "titleMultiplier"));
-            }
-            if (params.containsKey("addInLinksToText")) {
-                fg.setAddInLinksToText(requireBoolean(params, "addInLinksToText"));
-            }
-            if (params.containsKey("namespaces")) {
-                List<Integer> nss = requireListOfIntegers(params, "namespaces");
-                fg.setNamespaces(ArrayUtils.toPrimitive(nss.toArray(new Integer[0])));
-            }
-            if (params.containsKey("similarity")) {
-                String sim = requireString(params, "similarity");
-                if (sim.equals("ESA")) {
-                    fg.setSimilarity(new ESASimilarity.LuceneSimilarity());
-                } else {
-                    throw new ConfigurationFile.ConfigurationException("unknown similarity type: " + sim);
-                }
-            }
-            if (params.containsKey("analyzer")) {
-                String analyzer = requireString(params, "analyzer");
-                if (analyzer.equals("ESA")) {
-                    fg.setAnalyzer(new ESAAnalyzer());
-                } else {
-                    throw new ConfigurationFile.ConfigurationException("unknown analyzer type: " + analyzer);
-                }
-            }
-            if (params.containsKey("booster")) {
-                String booster = requireString(params, "booster");
-                if (booster.equals("ESA")) {
-                    fg.setBooster(new ESASimilarity.ESABooster());
-                } else {
-                    throw new ConfigurationFile.ConfigurationException("unknown booster type: " + booster);
-                }
-            }
-            g = fg;
-        } else {
-            throw new ConfigurationFile.ConfigurationException("unknown index type: " + type);
+        IndexGenerator g;
+        String fields[] = requireListOfStrings(params, "fields").toArray(new String[0]);
+        IndexGenerator fg = new IndexGenerator(info, fields);
+        if (params.containsKey("minLinks")) {
+            fg.setMinLinks(requireInteger(params, "minLinks"));
         }
+        if (params.containsKey("minWords")) {
+            fg.setMinWords(requireInteger(params, "minWords"));
+        }
+        if (params.containsKey("titleMultiplier")) {
+            fg.setTitleMultiplier(requireInteger(params, "titleMultiplier"));
+        }
+        if (params.containsKey("addInLinksToText")) {
+            fg.setAddInLinksToText(requireBoolean(params, "addInLinksToText"));
+        }
+        if (params.containsKey("skipDabs")) {
+            fg.setSkipDabs(requireBoolean(params, "skipDabs"));
+        }
+        if (params.containsKey("skipLists")) {
+            fg.setSkipLists(requireBoolean(params, "skipLists"));
+        }
+        if (params.containsKey("skipRedirects")) {
+            fg.setSkipRedirects(requireBoolean(params, "skipRedirects"));
+        }
+        if (params.containsKey("namespaces")) {
+            List<Integer> nss = requireListOfIntegers(params, "namespaces");
+            fg.setNamespaces(ArrayUtils.toPrimitive(nss.toArray(new Integer[0])));
+        }
+        if (params.containsKey("similarity")) {
+            String sim = requireString(params, "similarity");
+            if (sim.equals("ESA")) {
+                fg.setSimilarity(new ESASimilarity.LuceneSimilarity());
+            } else {
+                throw new ConfigurationFile.ConfigurationException("unknown similarity type: " + sim);
+            }
+        }
+        if (params.containsKey("analyzer")) {
+            String analyzer = requireString(params, "analyzer");
+            if (analyzer.equals("ESA")) {
+                fg.setAnalyzer(new ESAAnalyzer());
+            } else {
+                throw new ConfigurationFile.ConfigurationException("unknown analyzer type: " + analyzer);
+            }
+        }
+        if (params.containsKey("booster")) {
+            String booster = requireString(params, "booster");
+            if (booster.equals("inlink")) {
+                fg.setBooster(new InLinkBooster());
+            } else {
+                throw new ConfigurationFile.ConfigurationException("unknown booster type: " + booster);
+            }
+        }
+        g = fg;
         g.setName(name);
         return g;
     }
@@ -112,7 +114,7 @@ public class AllIndexBuilder {
     }
 
     protected void open(int bufferMB) throws IOException {
-        for (BaseIndexGenerator g : generators) {
+        for (IndexGenerator g : generators) {
             g.openIndex(new File(outputDir, g.getName()), bufferMB / generators.size());
         }
     }
@@ -144,7 +146,7 @@ public class AllIndexBuilder {
     }
 
     protected void close() throws IOException {
-        for (BaseIndexGenerator g : generators) {
+        for (IndexGenerator g : generators) {
             g.close();
         }
     }
@@ -178,20 +180,20 @@ public class AllIndexBuilder {
             if (numDocs.incrementAndGet() % 10000 == 0) {
                 LOG.info("read doc " + numDocs + " from " + path + ": " + p.getTitle());
             }
-//            if (numDocs.get() > 5000) {
-//                break;
-//            }
+            if (numDocs.get() > 5000) {
+                break;
+            }
         }
     }
 
     public void storePage(Page p) throws IOException {
         info.update(p);
-        for (BaseIndexGenerator g : generators) {
+        for (IndexGenerator g : generators) {
             g.storePage(p);
         }
     }
 
-    public List<BaseIndexGenerator> getGenerators() {
+    public List<IndexGenerator> getGenerators() {
         return generators;
     }
 

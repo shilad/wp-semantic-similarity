@@ -12,18 +12,15 @@
         "inputDir" : "dat/test/dump",
         "outputDir" : "DAT/lucene",
         "main" : {
-            "type" : "main",
+            "fields" : ["id", "title", "type", "dab", "redirect", "ninlinks"],
         },
         "text" : {
-            "type" : "fields",
             "fields" : ["text", "id", "title"],
         },
         "links" : {
-            "type" : "fields",
-            "fields" : ["links", "id", "title"],
+            "fields" : ["links", "id", "title", "inlinks"],
         },
         "cats" : {
-            "type" : "fields",
             "fields" : ["cats", "id", "title", "ns"],
             "namespaces" : [0, 14]
         },

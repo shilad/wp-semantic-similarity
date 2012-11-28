@@ -52,11 +52,13 @@ public class SimilarityMetricConfigurator {
     }
 
     private SimilarityMetric loadEnsembleMetric(String key, List<SimilarityMetric> metrics) throws IOException, ConfigurationException {
+        info("loading ensemble metric " + key);
         try {
             Map<String, Object> params = (Map<String, Object>) configuration.get("metrics").get(key);
             EnsembleSimilarity similarity = new EnsembleSimilarity(getMapper(), getHelper());
             similarity.setComponents(metrics);
             similarity.read(requireDirectory(params, "model"));
+            similarity.setName(key);
             return similarity;
         } catch (DatabaseException e) {
             throw new ConfigurationException(e.toString());

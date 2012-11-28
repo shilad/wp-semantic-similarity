@@ -11,6 +11,7 @@ import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import libsvm.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -33,7 +34,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     private static final double P_EPSIONS[] = { 1.0, 0.5, 0.1, 0.01, 0.001 };
     private static final double P_CS[] = { 16, 8, 4, 2, 1, 0.5, 0.2, 0.1 };
 
-    private int numThreads;
+    private int numThreads = Runtime.getRuntime().availableProcessors();;
     private ConceptMapper mapper;
     private IndexHelper helper;
     private List<SimilarityMetric> components = new ArrayList<SimilarityMetric>();
@@ -49,7 +50,6 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         super(mapper, helper);
         this.mapper = mapper;
         this.helper = helper;
-        this.numThreads =  Runtime.getRuntime().availableProcessors();
 
         this.svmLog = new BufferedWriter(new FileWriter(new File("svm.log"), true));
         svm.svm_set_print_string_function(new svm_print_interface() {
@@ -67,12 +67,18 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
         svm_node[] v = getComponentSimilarities(phrase1, phrase2, -1);
+        return normalizeAndPredict(v, true);
+    }
+
+    private double normalizeAndPredict(List<svm_node> v, boolean truncate) {
+        return normalizeAndPredict(v.toArray(new svm_node[0]), truncate);
+    }
+    private double normalizeAndPredict(svm_node[] v, boolean truncate) {
         for (svm_node n : v) {
             normalize(n);
         }
-
         double p = svm.svm_predict(model, v);
-        return unnormalize(components.size(), p);
+        return unnormalize(components.size(), p, truncate);
     }
 
     @Override
@@ -81,8 +87,34 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     }
 
     @Override
-    public DocScoreList mostSimilar(int wpId1, int maxResults) throws IOException {
-        throw new UnsupportedOperationException();
+    public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
+        Map<Integer, List<svm_node>> features = new HashMap<Integer, List<svm_node>>();
+        for (int i = 0; i < components.size(); i++) {
+            DocScoreList top = components.get(i).mostSimilar(wpId, maxResults * 2);
+            if (top == null) {
+                return null;
+            }
+            for (DocScore ds : top) {
+                svm_node n = new svm_node();
+                n.index = i;
+                n.value = ds.getScore();
+                normalize(n);
+                if (!features.containsKey(ds.getId())) {
+                    features.put(ds.getId(), new ArrayList<svm_node>());
+                }
+                features.get(ds.getId()).add(n);
+            }
+        }
+        DocScoreList list = new DocScoreList(features.size());
+        int i = 0;
+        for (int wpId2 : features.keySet()) {
+            list.set(i++, wpId2, normalizeAndPredict(features.get(wpId2), false));
+        }
+        list.sort();
+        if (list.numDocs() > maxResults) {
+            list.truncate(maxResults);
+        }
+        return list;
     }
 
     public void setNumThreads(int n) {
@@ -90,6 +122,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     }
 
     public void setComponents(List<SimilarityMetric> components) {
+        components = new ArrayList<SimilarityMetric>(components);
         // make sure the order is deterministic
         Collections.sort(components, new Comparator<SimilarityMetric>() {
             @Override
@@ -179,8 +212,8 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
 
         String expected = StringUtils.join(getComponentNames(), ", ");
         String actual = FileUtils.readFileToString(new File(directory, "component_names.txt"));
-        if (!expected.equals(actual)) {
-            new IOException(
+        if (!expected.trim().equals(actual.trim())) {
+            throw new IOException(
                     "Unexpected component similarity metrics: " +
                     "Expected '" + expected + "', found '" + actual + "'"
             );
@@ -392,11 +425,13 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         return v;
     }
 
-    protected double unnormalize(int i, double v) {
+    protected double unnormalize(int i, double v, boolean truncate) {
         double min = componentMins[i];
         double max = componentMaxs[i];
-        v = Math.max(v, RESCALED_MIN);
-        v = Math.min(v, RESCALED_MAX);
+        if (truncate) {
+            v = Math.max(v, RESCALED_MIN);
+            v = Math.min(v, RESCALED_MAX);
+        }
         v = min + (max - min) * (v - RESCALED_MIN) / (RESCALED_MAX - RESCALED_MIN);
         return v;
     }

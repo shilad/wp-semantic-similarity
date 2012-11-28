@@ -14,20 +14,25 @@
         "inputDir" : "dat/wikipedia",
         "outputDir" : "dat/lucene",
         "main" : {
-            "type" : "main",
+            "type" : "fields",
+            "fields" : ["id", "title", "type", "dab", "redirect", "ninlinks"],
+            "booster" : "inlink"
         },
         "text" : {
             "type" : "fields",
-            "fields" : ["text", "id", "title"],
+            "fields" : ["text", "id", "title", "ninlinks"],
+            "booster" : "inlink"
         },
         "links" : {
             "type" : "fields",
-            "fields" : ["links", "id", "title", "inlinks"],
+            "fields" : ["links", "id", "title", "ninlinks", "inlinks"],
+            "booster" : "inlink"
         },
         "cats" : {
             "type" : "fields",
-            "fields" : ["cats", "id", "title", "ns"],
-            "namespaces" : [0, 14]
+            "fields" : ["cats", "id", "title", "ninlinks", "ns"],
+            "namespaces" : [0, 14],
+            "booster" : "inlink"
         },
         "esa" : {
             "type" : "fields",
@@ -38,7 +43,7 @@
             "addInLinksToText" : true,
             "similarity" : "ESA",
             "analyzer" : "ESA",
-            "booster" : "ESA"
+            "booster" : "inlink"
         }
     },
 
