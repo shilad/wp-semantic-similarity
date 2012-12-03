@@ -75,4 +75,7 @@ public class DocScoreList implements Iterable<DocScore> {
         return new ArrayIterator(results, 0, numDocs);
     }
 
+    public DocScore get(int i) {
+        return results[i];
+    }
 }

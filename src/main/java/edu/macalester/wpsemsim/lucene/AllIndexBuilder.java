@@ -1,7 +1,7 @@
 package edu.macalester.wpsemsim.lucene;
 
-import edu.macalester.wpsemsim.sim.ESAAnalyzer;
-import edu.macalester.wpsemsim.sim.ESASimilarity;
+import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
+import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
 import edu.macalester.wpsemsim.sim.InLinkBooster;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import org.apache.commons.io.FileUtils;
@@ -94,11 +94,19 @@ public class AllIndexBuilder {
             }
         }
         if (params.containsKey("booster")) {
-            String booster = requireString(params, "booster");
-            if (booster.equals("inlink")) {
-                fg.setBooster(new InLinkBooster());
+            JSONObject boosterParams = (JSONObject) params.get("booster");
+            String type = requireString(boosterParams, "type");
+            if (type.equals("inlink")) {
+                InLinkBooster booster = new InLinkBooster();
+                if (boosterParams.containsKey("numLogs")) {
+                    booster.setNumLogs(requireInteger(boosterParams, "numLogs"));
+                }
+                if (boosterParams.containsKey("pow")) {
+                    booster.setPow(requireDouble(boosterParams, "pow"));
+                }
+                fg.setBooster(booster);
             } else {
-                throw new ConfigurationFile.ConfigurationException("unknown booster type: " + booster);
+                throw new ConfigurationFile.ConfigurationException("unknown booster type: " + type);
             }
         }
         g = fg;

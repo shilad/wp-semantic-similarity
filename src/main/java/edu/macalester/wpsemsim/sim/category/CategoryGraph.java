@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.category;
 
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import gnu.trove.list.array.TIntArrayList;

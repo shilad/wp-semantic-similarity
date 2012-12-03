@@ -1,7 +1,9 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.utils;
 
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
@@ -23,7 +25,7 @@ public class SimilarityConsole {
         SimilarityMetricConfigurator conf = new SimilarityMetricConfigurator(
                 new ConfigurationFile(new File(args[0])));
         SimilarityMetric metric = null;
-        for (SimilarityMetric m : conf.loadAllMetrics()) {
+        for (SimilarityMetric m : conf.loadAllMetrics(true)) {
             if (m.getName().equals(args[1])) {
                 metric = m;
                 break;
@@ -52,7 +54,10 @@ public class SimilarityConsole {
             }
             String phrases[] = line.split(",");
             if (phrases.length == 1) {
-                DocScoreList results = metric.mostSimilar(phrases[0].trim(), 500);
+                DocScoreList results = metric.mostSimilar(phrases[0].trim(), 10000);
+                if (results.numDocs() > 500) {
+                    results.truncate(500);
+                }
                 System.out.println("top results for " + phrases[0]);
                 for (int i = 0; i < results.numDocs(); i++) {
                     String title = helper.wpIdToTitle(results.getId(i));

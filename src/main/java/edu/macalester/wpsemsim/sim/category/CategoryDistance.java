@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.category;
 
 /**
  *

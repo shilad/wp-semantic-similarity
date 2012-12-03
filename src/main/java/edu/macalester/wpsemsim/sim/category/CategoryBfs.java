@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.category;
 
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.lucene.document.Document;

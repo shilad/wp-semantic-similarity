@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim;
+package edu.macalester.wpsemsim.sim;
 
 import edu.macalester.wpsemsim.utils.KnownSim;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;

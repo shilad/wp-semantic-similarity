@@ -1,9 +1,13 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.esa;
 
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
-import edu.macalester.wpsemsim.lucene.DocBooster;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.lucene.Page;
+import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
+import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import edu.macalester.wpsemsim.sim.TextSimilarity;
+import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
+import edu.macalester.wpsemsim.sim.utils.SimUtils;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.commons.compress.compressors.CompressorException;

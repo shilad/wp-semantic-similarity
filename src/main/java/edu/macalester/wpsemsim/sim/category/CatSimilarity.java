@@ -1,7 +1,10 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.category;
 
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
+import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
+import edu.macalester.wpsemsim.sim.TextSimilarity;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.document.Document;

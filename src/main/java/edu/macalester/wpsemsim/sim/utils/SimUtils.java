@@ -1,9 +1,9 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.utils;
 
 import gnu.trove.map.hash.TIntDoubleHashMap;
 
 public class SimUtils {
-    static double cosineSimilarity(TIntDoubleHashMap X, TIntDoubleHashMap Y) {
+    public static double cosineSimilarity(TIntDoubleHashMap X, TIntDoubleHashMap Y) {
         double xDotX = 0.0;
         double yDotY = 0.0;
         double xDotY = 0.0;

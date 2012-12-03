@@ -3,13 +3,13 @@ package edu.macalester.wpsemsim.sim;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
+import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
+import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
 import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TLongDoubleHashMap;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.lucene.document.Document;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

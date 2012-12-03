@@ -1,14 +1,15 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.category;
 
 import edu.macalester.wpsemsim.lucene.IndexHelper;
-import edu.macalester.wpsemsim.lucene.Page;
+import edu.macalester.wpsemsim.sim.category.CatSimilarity;
+import edu.macalester.wpsemsim.sim.category.CategoryBfs;
+import edu.macalester.wpsemsim.sim.category.CategoryGraph;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.TestUtils;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.*;
@@ -17,9 +18,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;

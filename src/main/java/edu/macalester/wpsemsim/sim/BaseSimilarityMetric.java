@@ -100,15 +100,10 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 if (wpId2 < 0) {
                     continue;
                 }
-                double sim = 0.0;
-                if (wpId1 == wpId2) {
-                    sim = 1.0;
-                } else {
-                    sim = similarity(wpId1, wpId2);
-                    if (Double.isInfinite(sim) || Double.isNaN(sim)) {
+                double sim = similarity(wpId1, wpId2);
+                if (Double.isInfinite(sim) || Double.isNaN(sim)) {
 //                        LOG.info("sim between '" + article1 + "' and '" + article2 + "' is NAN or INF");
-                        continue;
-                    }
+                    continue;
                 }
 
                 double score = score1 * score2 * sim;
@@ -123,8 +118,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 }
             }
         }
-//        System.out.println("for " + phrase1 + ", " + phrase2 + " best is " +
-//                bestPair + ": " + bestSim);
+        System.out.println("for " + phrase1 + ", " + phrase2 + " best is " +
+                bestPair + ": " + bestSim);
         return bestSim;
     }
 

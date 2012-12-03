@@ -12,4 +12,4 @@ mb=$4
 
 export MAVEN_OPTS="-Xmx${mb}M -ea"
 mvn compile
-mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.sim.CatSimilarity" -D exec.classpathScope=runtime  -D exec.args="$in $out $maxsims"
+mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.sim.category.CatSimilarity" -D exec.classpathScope=runtime  -D exec.args="$in $out $maxsims"

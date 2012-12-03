@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.utils;
 
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
@@ -8,6 +8,16 @@ import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
+import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
+import edu.macalester.wpsemsim.sim.LinkSimilarity;
+import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import edu.macalester.wpsemsim.sim.TextSimilarity;
+import edu.macalester.wpsemsim.sim.category.CatSimilarity;
+import edu.macalester.wpsemsim.sim.category.CategoryGraph;
+import edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity;
+import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
+import edu.macalester.wpsemsim.sim.pairwise.PairwisePhraseSimilarity;
+import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import org.json.simple.JSONObject;
 
@@ -34,6 +44,10 @@ public class SimilarityMetricConfigurator {
     }
 
     public List<SimilarityMetric> loadAllMetrics() throws IOException, ConfigurationException {
+        return loadAllMetrics(false);
+
+    }
+    public List<SimilarityMetric> loadAllMetrics(boolean doEnsembles) throws IOException, ConfigurationException {
         info("loading metrics");
         Set<String> ensembleKeys = new HashSet<String>();
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
@@ -45,8 +59,10 @@ public class SimilarityMetricConfigurator {
                 metrics.add(loadMetric(key));
             }
         }
-        for (String key : ensembleKeys) {
-            metrics.add(loadEnsembleMetric(key, metrics));
+        if (doEnsembles) {
+            for (String key : ensembleKeys) {
+                metrics.add(loadEnsembleMetric(key, metrics));
+            }
         }
         return metrics;
     }
@@ -59,6 +75,9 @@ public class SimilarityMetricConfigurator {
             similarity.setComponents(metrics);
             similarity.read(requireDirectory(params, "model"));
             similarity.setName(key);
+            if (params.containsKey("minComponents")) {
+                similarity.setMinComponents(requireInteger(params, "minComponents"));
+            }
             return similarity;
         } catch (DatabaseException e) {
             throw new ConfigurationException(e.toString());

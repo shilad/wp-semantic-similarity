@@ -1,8 +1,9 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.utils;
 
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.list.array.TDoubleArrayList;

@@ -16,23 +16,39 @@
         "main" : {
             "type" : "fields",
             "fields" : ["id", "title", "type", "dab", "redirect", "ninlinks"],
-            "booster" : "inlink"
+            "booster" : {
+                "type" : "inlink",
+                "pow" : 0.5,
+                "logs" : 3
+            }
         },
         "text" : {
             "type" : "fields",
             "fields" : ["text", "id", "title", "ninlinks"],
-            "booster" : "inlink"
+            "booster" : {
+                "type" : "inlink",
+                "pow" : 0.5,
+                "logs" : 3
+            }
         },
         "links" : {
             "type" : "fields",
             "fields" : ["links", "id", "title", "ninlinks", "inlinks"],
-            "booster" : "inlink"
+            "booster" : {
+                "type" : "inlink",
+                "pow" : 0.5,
+                "logs" : 3
+            }
         },
         "cats" : {
             "type" : "fields",
             "fields" : ["cats", "id", "title", "ninlinks", "ns"],
             "namespaces" : [0, 14],
-            "booster" : "inlink"
+            "booster" : {
+                "type" : "inlink",
+                "pow" : 0.5,
+                "logs" : 3
+            }
         },
         "esa" : {
             "type" : "fields",
@@ -43,7 +59,10 @@
             "addInLinksToText" : true,
             "similarity" : "ESA",
             "analyzer" : "ESA",
-            "booster" : "inlink"
+            "booster" : {
+                "type" : "inlink",
+                "logs" : 2
+            }
         }
     },
 
@@ -105,7 +124,8 @@
 //        },
         "ensemble" : {
             "model" : "dat/model.out",
-            "type" : "ensemble"
+            "type" : "ensemble",
+            "minComponents" : 2
         },
     }
 }

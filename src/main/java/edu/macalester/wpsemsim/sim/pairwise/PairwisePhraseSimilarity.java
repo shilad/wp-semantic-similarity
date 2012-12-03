@@ -1,17 +1,17 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.pairwise;
 
 import com.sleepycat.je.DatabaseException;
-import edu.macalester.wpsemsim.concepts.ConceptMapper;
-import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
+import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
+import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
+import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -20,7 +20,6 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.util.Version;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;

@@ -1,9 +1,11 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.pairwise;
 
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
+import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
+import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.Leaderboard;
 import gnu.trove.map.hash.TIntDoubleHashMap;
