@@ -12,14 +12,14 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class TestDictionaryDatabase {
-    private DictionaryDatabase db;
+    private DictionaryMapper db;
     private File dbPath;
 
     @Before
     public void setUp() throws IOException, DatabaseException {
         this.dbPath = File.createTempFile("concepts-db", null);
         dbPath.deleteOnExit();
-        db = new DictionaryDatabase(dbPath, null, true);
+        db = new DictionaryMapper(dbPath, null, true);
         db.put(new DictionaryEntry("foo bar BLAH hi\t0.1 aa blah ah "), true);
         db.put(new DictionaryEntry(" Foo bar $$BLAH hi\t0.2 bbbb blah ah "), true);
         db.put(new DictionaryEntry(" Foo bar BLAH hi\t0.7 cc blah ah "), true);

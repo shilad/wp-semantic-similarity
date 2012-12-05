@@ -9,7 +9,14 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Data corresponding to a single Wikipedia page.
+ */
 public final class Page {
+    /**
+     * Field names used in the mapping to a lucene document.
+     * TODO: change to an enum.
+     */
     public static final String FIELD_LINKTEXT = "linktext";
     public static final String FIELD_NINLINKS = "ninlinks";
     public static final String FIELD_INLINKS = "inlinks";
@@ -20,6 +27,7 @@ public final class Page {
     public static final String FIELD_WPID = "id";
     public static final String FIELD_DAB = "dab";
     public static final String FIELD_REDIRECT = "redirect";
+
     private int id;
     private String title;
     private String text;
@@ -40,6 +48,11 @@ public final class Page {
         return id;
     }
 
+    /**
+     * Gets the text of the Wikipedia source by trying to strip of WikiMarkup tags, etc.
+     * This is a relatively expensive operation, so it is cached.
+     * @return Textual content of wiki markup
+     */
     public synchronized String getStrippedText() {
         if (this.strippedText == null) {
             this.strippedText = MarkupStripper.stripEverything(text);
@@ -59,6 +72,10 @@ public final class Page {
         return ns;
     }
 
+    /**
+     * Determines whether a page is a List page (i.e. "List of United States Presidents").
+     * @return
+     */
     public boolean isList() {
         String words[] = title.toLowerCase().split("[^a-zA-Z0-9]+");
         return (Collections.indexOfSubList(
@@ -73,6 +90,10 @@ public final class Page {
         return redirect;
     }
 
+    /**
+     * Convert the page to a lucene document.
+     * @return
+     */
     public synchronized Document toLuceneDoc() {
         if (this.luceneDoc == null) {
             Document d = new Document();
@@ -109,8 +130,13 @@ public final class Page {
         return this.luceneDoc   ;
     }
 
-
-
+    /**
+     * Given a lucene document, ensure that the fields have correct Metadata.
+     * This is useful because when documents are retrieved using index.document(),
+     * all metadata is lost.
+     * @param d
+     * @return New document with corrected metadata.
+     */
     public static Document correctMetadata(Document d) {
         Document d2 = new Document();
         for (IndexableField f : d.getFields()) {
@@ -145,6 +171,10 @@ public final class Page {
         return removeFragments(getAnchorLinksWithFragments(text));
     }
 
+    /**
+     * Get the categories referenced by a page.
+     * @return
+     */
     public List<String> getCategories() {
         List<String> cats = new ArrayList<String>();
         for (String link : getAnchorLinks()) {

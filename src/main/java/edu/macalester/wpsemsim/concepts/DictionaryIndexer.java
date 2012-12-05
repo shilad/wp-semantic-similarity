@@ -9,21 +9,25 @@ import java.io.*;
 import java.text.DecimalFormat;
 import java.util.logging.Logger;
 
+/**
+ * Indexes files from http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/
+ * into a database for a dictionary mapper.
+ */
 public class DictionaryIndexer {
     private static final Logger LOG = Logger.getLogger(DictionaryIndexer.class.getName());
 
     private int minNumLinks = 5;
     private double minFractionLinks = 0.01;
-    private DictionaryDatabase db;
+    private DictionaryMapper db;
 
     public DictionaryIndexer(File path) throws IOException, DatabaseException {
-        this.db = new DictionaryDatabase(path, null, true);
+        this.db = new DictionaryMapper(path, null, true);
     }
 
-    public void prune(BufferedReader in) throws IOException, DatabaseException {
+    public void index(BufferedReader in) throws IOException, DatabaseException {
         long numLines = 0;
         long numLinesRetained = 0;
-        DictionaryDatabase.Record record = null;
+        DictionaryMapper.Record record = null;
         while (true) {
             String line = in.readLine();
             if (line == null) {
@@ -44,7 +48,7 @@ public class DictionaryIndexer {
                     if (record != null) {
                         db.put(record, true);
                     }
-                    record = new DictionaryDatabase.Record(entry);
+                    record = new DictionaryMapper.Record(entry);
                 }
             }
         }
@@ -95,7 +99,7 @@ public class DictionaryIndexer {
         DictionaryIndexer indexer = new DictionaryIndexer(new File(args[1]));
         indexer.setMinNumLinks(minNumLinks);
         indexer.setMinFractionLinks(minFractionLinks);
-        indexer.prune(in);
+        indexer.index(in);
         in.close();
     }
 }

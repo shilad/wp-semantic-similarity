@@ -4,8 +4,6 @@ import com.sleepycat.je.*;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.lucene.index.MultiFields;
-import org.tartarus.snowball.ext.SpanishStemmer;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -15,16 +13,34 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class DictionaryDatabase implements ConceptMapper {
-    private static final Logger LOG = Logger.getLogger(DictionaryDatabase.class.getName());
+
+/**
+ * An implementation of a concept mapper that the Google wikipedia link dataset
+ * available at: http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/
+ *
+ * The database maps a string to a set of concepts associated with the string.
+ * Each concept is a Wikipedia page, plus a set of URLs.
+ * @see DictionaryEntry
+ */
+public class DictionaryMapper implements ConceptMapper {
+    private static final Logger LOG = Logger.getLogger(DictionaryMapper.class.getName());
     private Environment env;
     private Database db;
     private IndexHelper helper;
 
-    public DictionaryDatabase(File path, IndexHelper helper) throws IOException, DatabaseException {
+    public DictionaryMapper(File path, IndexHelper helper) throws IOException, DatabaseException {
         this(path, helper, false);
     }
-    public DictionaryDatabase(File path, IndexHelper helper, boolean isNew) throws IOException, DatabaseException {
+
+    /**
+     * Creates a new dictionary mapper.
+     * @param path Path to the directory containing the dictionary.
+     * @param helper The indexhelper, used to retrieve metadata associated with specific titles
+     * @param isNew If true, resets the mapper database.
+     * @throws IOException
+     * @throws DatabaseException
+     */
+    public DictionaryMapper(File path, IndexHelper helper, boolean isNew) throws IOException, DatabaseException {
         this.helper = helper;
         if (helper == null || !helper.hasField("redirect")) {
             LOG.warning("Helper not specified for concept mapper; will not be able to resolve redirects.");
@@ -49,14 +65,31 @@ public class DictionaryDatabase implements ConceptMapper {
                 dbConfig);
     }
 
+    /**
+     * Add some entries to the concept dictionary. Replace anything that exists.
+     * @param entries
+     * @throws DatabaseException
+     */
     public void put(List<DictionaryEntry> entries) throws DatabaseException {
         put(entries, true);
     }
 
+    /**
+     * Adds some entries to the concept dictionary.
+     * @param entries
+     * @param merge If true, merge entries with any current entries for the concept.
+     * @throws DatabaseException
+     */
     public void put(List<DictionaryEntry> entries, boolean merge) throws DatabaseException {
         put(new Record(entries), merge);
     }
 
+    /**
+     * Adds some entries to the concept dictionary.
+     * @param record
+     * @param merge If true, merge entries with any current entries for the concept.
+     * @throws DatabaseException
+     */
     public void put(Record record, boolean merge) throws DatabaseException {
         if (merge) {
             DatabaseEntry current = new DatabaseEntry();
@@ -70,12 +103,22 @@ public class DictionaryDatabase implements ConceptMapper {
         db.put(null, record.getDatabaseKey(), record.getDatabaseValue());
     }
 
+    /**
+     * Adds a single entry to the concept dictionary.
+     * @param entry
+     * @param merge If true, merge entries with any current entries for the concept.
+     * @throws DatabaseException
+     */
     public void put(DictionaryEntry entry, boolean merge) throws DatabaseException {
-        ArrayList<DictionaryEntry> entries = new ArrayList<DictionaryEntry>();
-        entries.add(entry);
-        this.put(entries, merge);
+        this.put(Arrays.asList(entry), merge);
     }
 
+    /**
+     * Gets the list of dictionary entries associated with a phrase.
+     * @param text
+     * @return
+     * @throws DatabaseException
+     */
     public List<DictionaryEntry> get(String text) throws DatabaseException {
         DatabaseEntry current = new DatabaseEntry();
         DatabaseEntry key = new DatabaseEntry(DictionaryEntry.normalize(text).getBytes());
@@ -89,6 +132,10 @@ public class DictionaryDatabase implements ConceptMapper {
         }
     }
 
+    /**
+     * Close and flush the concept database.
+     * @throws DatabaseException
+     */
     public void close() throws DatabaseException {
         this.db.close();
         this.env.close();
@@ -97,7 +144,7 @@ public class DictionaryDatabase implements ConceptMapper {
     @Override
     public LinkedHashMap<String, Float> map(String text, int maxConcepts) {
         try {
-            long sum = 0;
+            long sum = 0;  // total number of english links that contain the phrase.
             final Map<String, Float> s = new HashMap<String, Float>();
             for (DictionaryEntry e : get(text)) {
                 String title = e.getArticle();
@@ -125,7 +172,7 @@ public class DictionaryDatabase implements ConceptMapper {
                 }
             } );
 
-                    // normalize so that all entries sum to 0.0
+            // normalize so that all entries sum to 1.0
             LinkedHashMap < String, Float > result = new LinkedHashMap<String, Float>();
             if (sum > 0) {
                 for (String article : keys) {
@@ -142,6 +189,10 @@ public class DictionaryDatabase implements ConceptMapper {
         }
     }
 
+    /**
+     * Convenience class that captures a record corresponding
+     * to a single phrase in the database
+     */
     public static class Record {
         List<DictionaryEntry> entries = new ArrayList<DictionaryEntry>();
         String text;
@@ -194,7 +245,7 @@ public class DictionaryDatabase implements ConceptMapper {
 
     public static void main(String args[]) throws IOException, DatabaseException {
         IndexHelper helper = new IndexHelper(new File(args[1]), true);
-        DictionaryDatabase db = new DictionaryDatabase(new File(args[0]), helper, false);
+        DictionaryMapper db = new DictionaryMapper(new File(args[0]), helper, false);
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         while (true) {
             System.out.print("Enter phrase: ");

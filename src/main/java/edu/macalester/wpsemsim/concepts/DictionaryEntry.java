@@ -6,6 +6,15 @@ import org.apache.commons.lang3.math.Fraction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * A single dictionary entry corresponding to a line from a
+ * dictionary.bz2 at http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/.
+ *
+ * Major components of an entry are:
+ * - textual phrase
+ * - concept (a wikipedia article)
+ * - A variety of flags
+ */
 public class DictionaryEntry implements Comparable<DictionaryEntry> {
     private String text;
     private float fraction;

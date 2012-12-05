@@ -7,6 +7,10 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Maps concepts by adding up the concept mapping scores from
+ * several underlying concept mappers.
+ */
 public class EnsembleMapper implements ConceptMapper {
     private ConceptMapper[] mappers;
 

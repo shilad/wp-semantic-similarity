@@ -2,7 +2,7 @@ package edu.macalester.wpsemsim.sim.utils;
 
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
-import edu.macalester.wpsemsim.concepts.DictionaryDatabase;
+import edu.macalester.wpsemsim.concepts.DictionaryMapper;
 import edu.macalester.wpsemsim.concepts.EnsembleMapper;
 import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
@@ -229,7 +229,7 @@ public class SimilarityMetricConfigurator {
     }
 
     private ConceptMapper getDictionaryMapper() throws IOException, DatabaseException, ConfigurationException {
-        return new DictionaryDatabase(
+        return new DictionaryMapper(
                 requireDirectory(configuration.get("concept-mapper"), "dictionary"),
                 getHelper());
     }

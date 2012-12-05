@@ -19,36 +19,96 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
+/**
+ * Generator for a single Lucene index.
+ *
+ * Lifecycle:
+ * <ol>
+ *     <li>Create an index generator, possibly via a configuration file.</li>
+ *     <li>open() the index.</li>
+ *     <li>Add pages to the index using storePage().</li>
+ * </ol>
+ * Closing an index can be very slow, because it requires up to three passes over the index
+ * to accumulate information, prune the information, and finalize the documents.
+ *
+ * @see AllIndexBuilder
+ */
 public class IndexGenerator {
     private static Logger LOG = Logger.getLogger(IndexGenerator.class.getName());
 
-    // By default only include main namespace
+    /**
+     * A name used to identify the index.
+     */
+    private String name;
+
+    /**
+     * Namespaces that should be included in the index.
+     *  By default only include main namespace
+     */
     private int namespaces[] = new int[] { 0 };
 
-    // Include all fields below
+    /**
+     * Fields that should be indexed.
+     */
     private String fields[];
+
+    /**
+     * The minimum number of in or outlinks required for a page to
+     * appear in the index.  Can be used to filter out unpopular pages.
+     */
     private int minLinks = 0;
+
+    /**
+     * The minimum number of <b>unique</b> words that are required for a
+     * page to appear in the index. Useful for removing stubs.
+     */
     private int minWords = 0;
+
+    /**
+     * Append this many instances of the title of the article to the text
+     * field of a page. Useful for boosting the likelihood of finding a
+     * page based on its title.
+     */
     private int titleMultiplier = 0;
+
+    /**
+     * Whether the index should contain disambiguation pages, redirects, and lists.
+     */
     private boolean skipDabs = true;
     private boolean skipRedirects = true;
     private boolean skipLists = true;
 
+    /**
+     * If true, add the text displayed in inlinks to page text.
+     */
     private boolean addInLinksToText = false;
 
+    /**
+     * Accumulated text of inbound links.
+     */
+    TitleMap<StringBuffer> inLinkText = new TitleMap<StringBuffer>(StringBuffer.class);
+
+    /**
+     * The number of documents that have already been counted.
+     */
     protected AtomicInteger numDocs = new AtomicInteger();
+
+    /**
+     * Lucene components associated with the index.
+     */
     protected IndexWriter writer;
     protected Directory dir;
-    protected String name;
     protected Similarity similarity;
     private Analyzer analyzer;
     protected File indexDir;
+    private DocBooster booster;
+
+    /**
+     * Information shared across several index generators.
+     */
     protected PageInfo info;
 
 
-    private DocBooster booster;
-
-    TitleMap<StringBuffer> inLinkText = new TitleMap<StringBuffer>(StringBuffer.class);
 
     public IndexGenerator(PageInfo info, String... fields) {
         this.info = info;
@@ -87,6 +147,21 @@ public class IndexGenerator {
         return this;
     }
 
+
+    public String getName() {
+        return name;
+    }
+
+    public IndexGenerator setSimilarity(Similarity sim) {
+        this.similarity = sim;
+        return this;
+    }
+
+    public IndexGenerator setAnalyzer(Analyzer analyzer) {
+        this.analyzer = analyzer;
+        return this;
+    }
+
     public boolean shouldInclude(Page p) {
         if (!ArrayUtils.contains(namespaces, p.getNs())) {
             return false;
@@ -110,12 +185,39 @@ public class IndexGenerator {
         return this;
     }
 
+
+    /**
+     * Opens an index for writing with a specific number of MBs of memory.
+     * @param indexDir
+     * @param bufferMB
+     * @throws IOException
+     */
+    public void open(File indexDir, int bufferMB) throws IOException {
+        this.indexDir = indexDir;
+        FileUtils.deleteDirectory(indexDir);
+        indexDir.mkdirs();
+        this.dir = FSDirectory.open(indexDir);
+        Analyzer analyzer = (this.analyzer == null) ? new StandardAnalyzer(Version.LUCENE_40) : this.analyzer;
+        IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);
+        iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+        iwc.setRAMBufferSizeMB(bufferMB);
+        if (this.similarity != null) {
+            iwc.setSimilarity(similarity);
+        }
+        this.writer = new IndexWriter(dir, iwc);
+    }
+
+    /**
+     * Stores a page in the index if it should be stored.
+     * @param p
+     * @throws IOException
+     */
     public void storePage(Page p) throws IOException {
         if (!shouldInclude(p)) {
             return;
         }
         Document source = p.toLuceneDoc();
-        Document pruned = new Document();
+        Document pruned = new Document();  // only contains relevant fields
 
         for (String fieldName : fields) {
             for (IndexableField f : source.getFields(fieldName)) {
@@ -123,13 +225,14 @@ public class IndexGenerator {
             }
         }
 
-        // do we still need to add the linktext?
+        // add linktext to outbound pages.
         if (addInLinksToText && !doField(Page.FIELD_LINKTEXT)) {
             for (IndexableField f : source.getFields(Page.FIELD_LINKTEXT)) {
                 pruned.add(f);
             }
         }
 
+        // add copies of the title to the text
         if (titleMultiplier > 0) {
             String text = pruned.get(Page.FIELD_TEXT);
             for (int i = 0; i < titleMultiplier; i++) {
@@ -139,13 +242,22 @@ public class IndexGenerator {
             pruned.add(new TextField(Page.FIELD_TEXT, text, Field.Store.YES));
         }
 
-        addDocument(pruned);
+        storeLuceneDoc(pruned);
     }
 
-    private boolean doField(String field) {
+    /**
+     * Returns true if the index should contain the specified field.
+     * @param field
+     * @return
+     */
+    public boolean doField(String field) {
         return ArrayUtils.contains(fields, field);
     }
 
+    /**
+     * Prune and finalize all documents, then close the index.
+     * @throws IOException
+     */
     public void close() throws IOException {
         writer.commit();
 
@@ -160,6 +272,11 @@ public class IndexGenerator {
     }
 
 
+    /**
+     * First pass in close:
+     * Accumulates information that will be used in updating and pruning documents.
+     * @throws IOException
+     */
     private void accumulate() throws IOException {
         if (!(addInLinksToText || doField(Page.FIELD_INLINKS) || doField(Page.FIELD_LINKS))) {
             return; // nothing else to accumulate for now.
@@ -194,6 +311,14 @@ public class IndexGenerator {
         writer.commit();
     }
 
+    /**
+     * Second stage of closing an index.
+     * Prunes documents that don't meet necessary criteria. Right now the
+     * only criterion is that the documents has at least minlinks inbound links.
+     * Outbound links would have already been checked in shouldInclude()
+     *
+     * @throws IOException
+     */
     private void prune() throws IOException {
         // the only post hoc pruning we do is minLinks pruning
         if (minLinks == 0) {
@@ -218,6 +343,11 @@ public class IndexGenerator {
         LOG.info(getName() + " had " + writer.numDocs() + " docs after pruning");
     }
 
+    /**
+     * Pass three:
+     * Adds accumulated information to the lucene index for each document.
+     * @throws IOException
+     */
     private void updateDocs() throws IOException {
         if (!doField(Page.FIELD_NINLINKS)
         &&  !doField(Page.FIELD_INLINKS)
@@ -281,43 +411,12 @@ public class IndexGenerator {
         writer.commit();
         reader.close();
     }
-
-
-    public String getName() {
-        return name;
-    }
-
-    public IndexGenerator setSimilarity(Similarity sim) {
-        this.similarity = sim;
-        return this;
-    }
-
-    public IndexGenerator setAnalyzer(Analyzer analyzer) {
-        this.analyzer = analyzer;
-        return this;
-    }
-
-    public void openIndex(File indexDir, int bufferMB) throws IOException {
-        this.indexDir = indexDir;
-        FileUtils.deleteDirectory(indexDir);
-        indexDir.mkdirs();
-        this.dir = FSDirectory.open(indexDir);
-        Analyzer analyzer = (this.analyzer == null) ? new StandardAnalyzer(Version.LUCENE_40) : this.analyzer;
-        IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);
-        iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
-        iwc.setRAMBufferSizeMB(bufferMB);
-        if (this.similarity != null) {
-            iwc.setSimilarity(similarity);
-        }
-        this.writer = new IndexWriter(dir, iwc);
-    }
-
     public IndexGenerator setName(String name) {
         this.name = name;
         return this;
     }
 
-    protected void addDocument(Document d) throws IOException {
+    protected void storeLuceneDoc(Document d) throws IOException {
         numDocs.incrementAndGet();
         this.writer.addDocument(d);
     }

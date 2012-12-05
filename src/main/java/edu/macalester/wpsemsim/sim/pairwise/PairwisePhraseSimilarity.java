@@ -239,7 +239,7 @@ public class PairwisePhraseSimilarity extends BaseSimilarityMetric implements Si
 //        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(sim, new File(args[2]));
 //        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[3]));
 //        IndexHelper helper = new IndexHelper(new File("dat/lucene/esa"), true);
-//        ConceptMapper mapper = new DictionaryDatabase(new File("dat/dictionary.pruned"), null, false);
+//        ConceptMapper mapper = new DictionaryMapper(new File("dat/dictionary.pruned"), null, false);
 //        PairwisePhraseSimilarity sim = new PairwisePhraseSimilarity(null, helper);
 //        sim.similarity("Wal-Mart supply chain goes real time", "Bing");
     }

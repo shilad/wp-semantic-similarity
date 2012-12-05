@@ -15,6 +15,10 @@ import java.util.zip.GZIPInputStream;
 
 import static javax.xml.stream.XMLStreamConstants.END_DOCUMENT;
 
+/**
+ * Parses pages in Wikipedia XML dump format.
+ * Pages can be streamed using the iterator.
+ */
 public class PageReader implements Iterable<Page> {
     private static final Logger LOG = Logger.getLogger(PageReader.class.getName());
     private File path;

@@ -18,6 +18,9 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Maps concepts by searching for a phrase in the "text" field of a lucene index.
+ */
 public class LuceneMapper implements ConceptMapper {
     private static final Logger LOG = Logger.getLogger(LuceneMapper.class.getName());
 

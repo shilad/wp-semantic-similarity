@@ -135,7 +135,6 @@ public class SimilarityAnalyzer {
                             }
                             double sim = metric.similarity(ks.phrase1, ks.phrase2);
                             if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-    //            reg.addData(sim, ks.similarity);
                                 synchronized (X) {
                                     allX[finalI] = sim;
                                     X.add(ks.similarity);

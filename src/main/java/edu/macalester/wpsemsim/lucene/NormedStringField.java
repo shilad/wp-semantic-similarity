@@ -5,7 +5,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo;
 
 /**
- * Based closely on StringField
+ * Based closely on StringField, but stores norms.
  */
 public class NormedStringField extends Field {
 
