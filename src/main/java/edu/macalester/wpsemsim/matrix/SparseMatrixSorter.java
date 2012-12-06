@@ -12,7 +12,7 @@ public class SparseMatrixSorter {
         int rowIds[] = matrix.getRowIds();
         rowIds = Arrays.copyOf(rowIds, rowIds.length);
         Arrays.sort(rowIds);
-        SparseMatrixWriter writer = new SparseMatrixWriter(file);
+        SparseMatrixWriter writer = new SparseMatrixWriter(file, matrix.getValueConf());
         for (int id : rowIds) {
             writer.writeRow(matrix.getRow(id));
         }

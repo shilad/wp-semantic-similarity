@@ -23,9 +23,11 @@ public class SparseMatrixWriter {
     private File bodyPath;
     private BufferedOutputStream body;
     private long bodyOffset = 0;
+    private ValueConf vconf;
 
-    public SparseMatrixWriter(File path) throws IOException {
+    public SparseMatrixWriter(File path, ValueConf conf) throws IOException {
         this.path = path;
+        this.vconf = conf;
         info("writing matrix to " + path);
 
         // write tmp matrix file
@@ -37,6 +39,9 @@ public class SparseMatrixWriter {
     }
 
     public synchronized void writeRow(SparseMatrixRow row) throws IOException {
+        if (!row.getValueConf().almostEquals(vconf)) {
+            throw new IllegalArgumentException("Value conf for row does not match the writer's value conf");
+        }
         row.getBuffer().rewind();
         byte[] bytes = new byte[row.getBuffer().remaining()];
         row.getBuffer().get(bytes, 0, bytes.length);
@@ -60,9 +65,11 @@ public class SparseMatrixWriter {
 
         // write offset file
         info("generating header");
-        int sizeHeader = 8 + rowOffsets.size() * 12;
+        int sizeHeader = 16 + rowOffsets.size() * 12;
         body = new BufferedOutputStream(new FileOutputStream(path));
         body.write(intToBytes(SparseMatrix.FILE_HEADER));
+        body.write(floatToBytes(vconf.minScore));
+        body.write(floatToBytes(vconf.maxScore));
         body.write(intToBytes(rowOffsets.size()));
         for (int i = 0; i < rowIndexes.size(); i++) {
             int rowIndex = rowIndexes.get(i);
@@ -87,7 +94,10 @@ public class SparseMatrixWriter {
     }
 
     public static void write(File file, Iterator<SparseMatrixRow> rows) throws IOException {
-        SparseMatrixWriter w = new SparseMatrixWriter(file);
+        write(file, rows, new ValueConf());
+    }
+    public static void write(File file, Iterator<SparseMatrixRow> rows, ValueConf vconf) throws IOException {
+        SparseMatrixWriter w = new SparseMatrixWriter(file, vconf);
         while (rows.hasNext()) {
             w.writeRow(rows.next());
         }
@@ -101,5 +111,8 @@ public class SparseMatrixWriter {
 
     private static byte[] longToBytes(long i) {
         return ByteBuffer.allocate(8).putLong(i).array();
+    }
+    private static byte[] floatToBytes(float f) {
+        return ByteBuffer.allocate(4).putFloat(f).array();
     }
 }

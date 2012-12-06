@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
+import edu.macalester.wpsemsim.matrix.ValueConf;
 import edu.macalester.wpsemsim.sim.*;
 import edu.macalester.wpsemsim.sim.utils.SimilarityMetricConfigurator;
 import gnu.trove.set.hash.TIntHashSet;
@@ -155,7 +156,7 @@ public class TestUtils {
     public static SparseMatrix createTestMatrix(int nRows, int maxRowLen, boolean readAllRows, int pageSize, boolean sameIds) throws IOException {
         File tmpFile = File.createTempFile("matrix", null);
         tmpFile.deleteOnExit();
-        SparseMatrixWriter writer = new SparseMatrixWriter(tmpFile);
+        SparseMatrixWriter writer = new SparseMatrixWriter(tmpFile, new ValueConf());
         createTestMatrixRowsInternal(nRows, maxRowLen, sameIds, writer);
         writer.finish();
         return new SparseMatrix(tmpFile, readAllRows, pageSize);
@@ -183,7 +184,7 @@ public class TestUtils {
             for (int id2 : colIds) {
                 data.put(id2, random.nextFloat());
             }
-            SparseMatrixRow row = new SparseMatrixRow(id1, data);
+            SparseMatrixRow row = new SparseMatrixRow(new ValueConf(), id1, data);
             if (writer == null) {
                 rows.add(row);
             } else {

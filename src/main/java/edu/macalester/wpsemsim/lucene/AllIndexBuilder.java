@@ -17,15 +17,23 @@ import java.util.logging.Logger;
 import static edu.macalester.wpsemsim.utils.ConfigurationFile.*;
 import static java.util.concurrent.TimeUnit.HOURS;
 
+
+/**
+ * Parses a Wikipedia dump and constructs one or more lucene indexes.
+ * The dump should be one or more files in standard Wikipedia XML format in a single directory.
+ * Each file in the directory is processed in parallel.
+ */
 public class AllIndexBuilder {
     private static final Logger LOG = Logger.getLogger(AllIndexBuilder.class.getName());
-    private AtomicInteger numDocs = new AtomicInteger();
+
 
     private File outputDir;
     private File inputPath;
     private ConfigurationFile conf;
     private List<IndexGenerator> generators = new ArrayList<IndexGenerator>();
     private PageInfo info = new PageInfo();
+    private AtomicInteger numDocs = new AtomicInteger();
+
 
     public AllIndexBuilder(ConfigurationFile conf, List<String> keys) throws ConfigurationException {
         this.inputPath = requireDirectory(conf.get("indexes"), "inputDir");
@@ -35,7 +43,13 @@ public class AllIndexBuilder {
         generators.addAll(builder.loadGenerators(info, conf, keys));
     }
 
-
+    /**
+     * Process the Wikipedia dump and write all lucene indexes.
+     * @param numThreads
+     * @param bufferMB
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public void write(int numThreads, int bufferMB) throws IOException, InterruptedException {
         open(bufferMB);
         process(numThreads);
@@ -80,6 +94,10 @@ public class AllIndexBuilder {
         }
     }
 
+    /**
+     * Get all the dump input files.
+     * @return
+     */
     protected List<File> getInputFiles() {
         List<File> inputs = new ArrayList<File>();
         if (inputPath.isFile()) {
@@ -102,6 +120,11 @@ public class AllIndexBuilder {
         return inputs;
     }
 
+    /**
+     * Process a single XML dump file.
+     * @param path
+     * @throws IOException
+     */
     public void processOneFile(File path) throws IOException {
         LOG.info("reading input file " + path);
         for (Page p : new PageReader(path)) {

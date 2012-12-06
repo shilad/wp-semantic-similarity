@@ -2,6 +2,7 @@ package edu.macalester.wpsemsim.sim.pairwise;
 
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
+import edu.macalester.wpsemsim.matrix.ValueConf;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 
@@ -22,10 +23,12 @@ public class PairwiseSimilarityWriter {
     private SparseMatrixWriter writer;
     private AtomicInteger idCounter = new AtomicInteger();
     private long numCells;
+    private ValueConf vconf;
 
     public PairwiseSimilarityWriter(SimilarityMetric metric, File outputFile) throws IOException {
         this.metric = metric;
-        this.writer = new SparseMatrixWriter(outputFile);
+        this.vconf = new ValueConf();
+        this.writer = new SparseMatrixWriter(outputFile, vconf);
     }
 
     public void writeSims(final int wpIds[], final int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
@@ -61,7 +64,7 @@ public class PairwiseSimilarityWriter {
             synchronized (this) {
                 numCells += scores.getIds().length;
             }
-            writer.writeRow(new SparseMatrixRow(wpId, scores.getIds(), scores.getScoresAsFloat()));
+            writer.writeRow(new SparseMatrixRow(vconf, wpId, scores.getIds(), scores.getScoresAsFloat()));
         }
     }
 }

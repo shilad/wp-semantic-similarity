@@ -26,7 +26,7 @@ public class SparseMatrixTransposer {
 
     public SparseMatrixTransposer(SparseMatrix m, File f, int bufferMb) throws IOException {
         this.matrix = m;
-        this.writer = new SparseMatrixWriter(f);
+        this.writer = new SparseMatrixWriter(f, m.getValueConf());
         this.bufferMb = bufferMb;
         this.numColsTransposed = 0;
     }
@@ -98,7 +98,7 @@ public class SparseMatrixTransposer {
 
     public void writeBatch(Collection<RowAccumulator> batch) throws IOException {
         for (RowAccumulator ra: batch) {
-            writer.writeRow(ra.toRow());
+            writer.writeRow(ra.toRow(matrix.getValueConf()));
         }
     }
 
@@ -122,8 +122,8 @@ public class SparseMatrixTransposer {
         RowAccumulator(int id) {
             this.id = id;
         }
-        SparseMatrixRow toRow() {
-            return new SparseMatrixRow(id, colIds.toArray(), colVals.toArray());
+        SparseMatrixRow toRow(ValueConf vconf) {
+            return new SparseMatrixRow(vconf, id, colIds.toArray(), colVals.toArray());
         }
         void addCol(int id, short val) {
             this.colIds.add(id);

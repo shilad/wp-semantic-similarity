@@ -15,7 +15,12 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Implementation of a sparse matrix.
+ * The rows are memory mapped, so they can be immediately read from disk.
+ */
 public class SparseMatrix implements Iterable<SparseMatrixRow> {
+
     public static final Logger LOG = Logger.getLogger(SparseMatrix.class.getName());
 
     public static int DEFAULT_MAX_PAGE_SIZE = Integer.MAX_VALUE;
@@ -31,6 +36,7 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
     private File path;
 
     protected List<MappedBufferWrapper> buffers = new ArrayList<MappedBufferWrapper>();
+    private ValueConf vconf;
 
     public SparseMatrix(File path) throws IOException {
         this(path, DEFAULT_LOAD_ALL_PAGES, DEFAULT_MAX_PAGE_SIZE);
@@ -42,21 +48,22 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
         this.maxPageSize = maxPageSize;
         info("initializing sparse matrix with file length " + FileUtils.sizeOf(path));
         this.channel = (new FileInputStream(path)).getChannel();
-        readOffsets();
+        readHeaders();
         pageInRows();
     }
 
-    private void readOffsets() throws IOException {
+    private void readHeaders() throws IOException {
         long size = Math.min(channel.size(), maxPageSize);
         MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, size);
         if (buffer.getInt(0) != FILE_HEADER) {
             throw new IOException("invalid file header: " + buffer.getInt(0));
         }
-        int numRows = buffer.getInt(4);
+        this.vconf = new ValueConf(buffer.getFloat(4), buffer.getFloat(8));
+        int numRows = buffer.getInt(12);
         info("reading offsets for " + numRows + " rows");
         rowIds = new int[numRows];
         for (int i = 0; i < numRows; i++) {
-            int pos = 8 + 12 * i;
+            int pos = 16 + 12 * i;
             int rowIndex = buffer.getInt(pos);
             long rowOffset = buffer.getLong(pos + 4);
             rowOffsets.put(rowIndex, rowOffset);
@@ -98,7 +105,7 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
         for (int i = 0; i < buffers.size(); i++) {
             MappedBufferWrapper wrapper = buffers.get(i);
             if (wrapper.start <= targetOffset && targetOffset < wrapper.end) {
-                row = new SparseMatrixRow(wrapper.get(targetOffset));
+                row = new SparseMatrixRow(vconf, wrapper.get(targetOffset));
             } else if (!loadAllPages) {
                 wrapper.close();
             }
@@ -116,6 +123,10 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
 
     public int getNumRows() {
         return rowIds.length;
+    }
+
+    public ValueConf getValueConf() {
+        return vconf;
     }
 
     public void dump() throws IOException {
@@ -191,5 +202,4 @@ public class SparseMatrix implements Iterable<SparseMatrixRow> {
     private void debug(String message) {
         LOG.log(Level.FINEST, "sparse matrix " + path + ": " + message);
     }
-
 }

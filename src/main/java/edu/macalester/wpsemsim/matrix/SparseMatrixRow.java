@@ -9,6 +9,14 @@ import java.nio.ShortBuffer;
 import java.util.LinkedHashMap;
 import java.util.logging.Logger;
 
+/**
+ * A single sparse matrix row backed by a byte buffer. The row contains:
+ * - a row id (int),
+ * - a set of n columns, each with an id (int) and value (float packed into two bytes)
+ *
+ * The row can either be created from the component data, or from a byte buffer.
+ * This means that the object can wrap data from an mmap'd file in the correct format.
+ */
 public final class SparseMatrixRow {
     Logger LOG = Logger.getLogger(SparseMatrixRow.class.getName());
     public static final Float MIN_SCORE = -1.1f;
@@ -19,27 +27,45 @@ public final class SparseMatrixRow {
 
     public static final int HEADER = 0xfefefefe;
 
-    ByteBuffer buffer;
-    IntBuffer headerBuffer;
-    IntBuffer idBuffer;
-    ShortBuffer valBuffer;
+    /**
+     * The main "source" buffer.
+     */
+    private ByteBuffer buffer;
 
-    public SparseMatrixRow(int rowIndex, LinkedHashMap<Integer, Float> row) {
-        this(rowIndex,
+    /**
+     * A view buffer that points to the header.
+     */
+    private IntBuffer headerBuffer;
+
+    /**
+     * A view buffer that points to the ids.
+     */
+    private IntBuffer idBuffer;
+
+    /**
+     * A view buffer that points to the values.
+     */
+    private ShortBuffer valBuffer;
+    private ValueConf vconf;
+
+    public SparseMatrixRow(ValueConf vconf, int rowIndex, LinkedHashMap<Integer, Float> row) {
+        this(vconf, rowIndex,
             ArrayUtils.toPrimitive(row.keySet().toArray(new Integer[] {})),
             ArrayUtils.toPrimitive(row.values().toArray(new Float[]{}))
         );
     }
 
-    public SparseMatrixRow(int rowIndex, int colIds[], float colVals[]) {
+    public SparseMatrixRow(ValueConf vconf, int rowIndex, int colIds[], float colVals[]) {
+        this.vconf = vconf;
         short packed[] = new short[colVals.length];
         for (int i = 0; i < colVals.length; i++) {
-            packed[i] = packScore(colVals[i]);
+            packed[i] = vconf.pack(colVals[i]);
         }
         createBuffer(rowIndex, colIds, packed);
     }
 
-    public SparseMatrixRow(int rowIndex, int colIds[], short colVals[]) {
+    public SparseMatrixRow(ValueConf vconf, int rowIndex, int colIds[], short colVals[]) {
+        this.vconf = vconf;
         createBuffer(rowIndex, colIds, colVals);
     }
 
@@ -71,7 +97,12 @@ public final class SparseMatrixRow {
         valBuffer = buffer.asShortBuffer();
     }
 
-    public SparseMatrixRow(ByteBuffer buffer) {
+    /**
+     * Wrap an existing byte buffer that contains a row.
+     * @param buffer
+     */
+    public SparseMatrixRow(ValueConf vconf, ByteBuffer buffer) {
+        this.vconf = vconf;
         this.buffer = buffer;
         if (this.buffer.getInt(0) != HEADER) {
             throw new IllegalArgumentException("Invalid header in byte buffer");
@@ -84,7 +115,7 @@ public final class SparseMatrixRow {
     }
 
     public final float getColValue(int i) {
-        return unpackScore(valBuffer.get(i));
+        return vconf.unpack(valBuffer.get(i));
     }
 
     public final short getPackedColValue(int i) {
@@ -103,6 +134,10 @@ public final class SparseMatrixRow {
         return buffer;
     }
 
+    public ValueConf getValueConf() {
+        return vconf;
+    }
+
     public LinkedHashMap<Integer, Float> asMap() {
         LinkedHashMap<Integer, Float> result = new LinkedHashMap<Integer, Float>();
         for (int i = 0; i < getNumCols(); i++) {
@@ -117,23 +152,5 @@ public final class SparseMatrixRow {
             result.put(getColIndex(i), getColValue(i));
         }
         return result;
-    }
-
-    public static final float unpackScore(short s) {
-        float f = (1.0f * (s - Short.MIN_VALUE) / PACKED_RANGE) * SCORE_RANGE + MIN_SCORE;
-        assert(MIN_SCORE <= f && f <= MAX_SCORE);
-        return f;
-    }
-
-    public static final short packScore(float s) {
-        float normalized = (pinchScore(s) - MIN_SCORE) / SCORE_RANGE;
-        short r = (short)(normalized * PACKED_RANGE + Short.MIN_VALUE);
-        return r;
-    }
-
-    public static final float pinchScore(float s) {
-        if (s > MAX_SCORE) return MAX_SCORE;
-        else if (s < MIN_SCORE) return MIN_SCORE;
-        else return s;
     }
 }

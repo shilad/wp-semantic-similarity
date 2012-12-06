@@ -2,6 +2,7 @@ package edu.macalester.wpsemsim.concepts;
 
 import com.sleepycat.je.*;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -110,7 +111,7 @@ public class DictionaryMapper implements ConceptMapper {
      * @throws DatabaseException
      */
     public void put(DictionaryEntry entry, boolean merge) throws DatabaseException {
-        this.put(Arrays.asList(entry), merge);
+        this.put(new ArrayList<DictionaryEntry>(Arrays.asList(entry)), merge);
     }
 
     /**
