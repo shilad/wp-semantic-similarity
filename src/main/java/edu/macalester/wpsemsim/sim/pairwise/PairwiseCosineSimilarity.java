@@ -10,6 +10,7 @@ import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.Leaderboard;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
+import gnu.trove.set.TIntSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -77,7 +78,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
     }
 
     @Override
-    public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
+    public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
         synchronized (this) {
             if (lengths == null) {
                 calculateRowLengths();
@@ -97,8 +98,10 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
             SparseMatrixRow row2 = transpose.getRow(id);
             for (int j = 0; j < row2.getNumCols(); j++) {
                 int id2 = row2.getColIndex(j);
-                float val2 = row2.getColValue(j);
-                dots.adjustOrPutValue(id2, val1 * val2, val1 * val2);
+                if (validIds == null || validIds.contains(id2)) {
+                    float val2 = row2.getColValue(j);
+                    dots.adjustOrPutValue(id2, val1 * val2, val1 * val2);
+                }
             }
         }
 

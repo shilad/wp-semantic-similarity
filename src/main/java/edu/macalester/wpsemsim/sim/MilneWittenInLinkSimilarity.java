@@ -61,7 +61,7 @@ public class MilneWittenInLinkSimilarity extends BaseSimilarityMetric{
     }
 
     @Override
-    public DocScoreList mostSimilar(int wpId1, int maxResults) throws IOException {
+    public DocScoreList mostSimilar(int wpId1, int maxResults, TIntSet validIds) throws IOException {
         throw new NotImplementedException();
     }
 }

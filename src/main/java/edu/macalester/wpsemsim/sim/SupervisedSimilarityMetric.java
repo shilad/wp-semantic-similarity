@@ -6,7 +6,8 @@ import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import java.util.List;
 
 /**
- * TODO: create a general training problem if somebody besides
+ * TODO: create a general training tool if there are implementations
+ * beyond EnsembleSimilarity.
  */
 public interface SupervisedSimilarityMetric extends SimilarityMetric {
     // Train the similarity() function

@@ -6,27 +6,51 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A collection of predictions from similarity metrics that can be used by an ensemble predictor.
+ * Label may be null if it is not known.
+ *
+ * If this corresponds to {@link edu.macalester.wpsemsim.sim.SimilarityMetric#mostSimilar} reverse
+ * sims will be null. If it corresponds to  {@link edu.macalester.wpsemsim.sim.SimilarityMetric#similarity}
+ * then sims will capture similarity in one direction, reverse sims will be in the opposite direction.
+ */
 public class Example {
     KnownSim label;
-    List<Pair<ComponentSim, ComponentSim>> simPairs;
     List<ComponentSim> sims;
+    List<ComponentSim> reverseSims;
 
-    public Example(KnownSim label, List<Pair<ComponentSim, ComponentSim>> simPairs) {
-        this.label = label;
-        this.simPairs = simPairs;
+    public Example(KnownSim label, List<ComponentSim> sims) {
+        this(label, sims, null);
     }
 
-    /**
-     * Hack: order of constructor args are differ from above
-     * to eliminate  type-erasure ambiguity.
-     * @param sims
-     * @param label
-     */
-    public Example(List<ComponentSim> sims, KnownSim label) {
+    public Example(List<ComponentSim> sims) {
+        this(null, sims, null);
+    }
+    public Example(List<ComponentSim> sims, List<ComponentSim> reverseSims) {
+        this(null, sims, reverseSims);
+    }
+
+    public Example(KnownSim label, List<ComponentSim> sims, List<ComponentSim> reverseSims) {
+        this.label = label;
         this.sims = sims;
-        this.label = label;
+        this.reverseSims = reverseSims;
     }
 
+    public void add(ComponentSim sim) {
+        assert(reverseSims == null);
+        this.sims.add(sim);
+    }
+
+    public void add(ComponentSim sim, ComponentSim reverse) {
+        this.sims.add(sim);
+        this.reverseSims.add(reverse);
+    }
+
+    public boolean hasReverse() {
+        return reverseSims != null;
+    }
+
+    /*
     public Example toDense(List<ComponentSim> ifMissing) {
         List<ComponentSim> dense = new ArrayList<ComponentSim>();
         int j = 0;
@@ -39,15 +63,27 @@ public class Example {
         }
         assert(j == sims.size());
         return new Example(dense, label);
-    }
+    } */
 
-    public int getNumRanked() {
+    /**
+     * @return The number of components that generated
+     * a similarity score for the example.
+     */
+    public int getNumNotNan() {
+        assert(reverseSims != null && sims.size() == reverseSims.size());
         int n = 0;
-        for (Pair<ComponentSim, ComponentSim> pair : simPairs) {
-            if (pair.getLeft().hasValue() || pair.getRight().hasValue()) {
+        for (int i = 0; i < sims.size(); i++) {
+            if (sims.get(i).hasValue() || reverseSims.get(i).hasValue()) {
                 n += 1;
             }
         }
         return n;
+    }
+
+    public static Example makeEmpty() {
+        return new Example(new ArrayList<ComponentSim>());
+    }
+    public static Example makeEmptyWithReverse() {
+        return new Example(new ArrayList<ComponentSim>(), new ArrayList<ComponentSim>());
     }
 }

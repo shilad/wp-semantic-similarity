@@ -6,19 +6,21 @@ import edu.macalester.wpsemsim.concepts.DictionaryMapper;
 import edu.macalester.wpsemsim.concepts.EnsembleMapper;
 import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
 import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
 import edu.macalester.wpsemsim.sim.LinkSimilarity;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.sim.TextSimilarity;
-import edu.macalester.wpsemsim.sim.category.CatSimilarity;
+import edu.macalester.wpsemsim.sim.category.CategorySimilarity;
 import edu.macalester.wpsemsim.sim.category.CategoryGraph;
 import edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
-import edu.macalester.wpsemsim.sim.pairwise.PairwisePhraseSimilarity;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
+import org.apache.lucene.search.FieldCacheRangeFilter;
+import org.apache.lucene.search.Filter;
 import org.json.simple.JSONObject;
 
 import java.io.*;
@@ -108,19 +110,10 @@ public class SimilarityMetricConfigurator {
             metric = createLinkSimilarity(params, mapper);
         } else if (type.equals("pairwise")) {
             metric = createPairwiseSimilarity(params, mapper);
-        } else if (type.equals("pairwise-phrase")) {
-            metric = createPairwisePhraseSimilarity(params);
         } else {
             throw new ConfigurationException("Unknown metric type: " + type);
         }
         metric.setName(name);
-        return metric;
-    }
-
-    private SimilarityMetric createPairwisePhraseSimilarity(JSONObject params) throws ConfigurationException, IOException {
-        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
-        SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
-        metric = new PairwisePhraseSimilarity(new IndexHelper(luceneDir, true), m);
         return metric;
     }
 
@@ -159,8 +152,8 @@ public class SimilarityMetricConfigurator {
     }
 
     private SimilarityMetric createEsaSimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
-        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
-        metric = new ESASimilarity(mapper, new IndexHelper(luceneDir, true));
+        File luceneDir = requireDirectory(params, "lucene");
+        ESASimilarity metric = new ESASimilarity(mapper, new IndexHelper(luceneDir, true));
         return metric;
     }
 
@@ -189,7 +182,7 @@ public class SimilarityMetricConfigurator {
         IndexHelper helper = new IndexHelper(luceneDir, true);
         CategoryGraph graph = new CategoryGraph(helper);
         graph.init();
-        metric = new CatSimilarity(mapper, graph, helper);
+        metric = new CategorySimilarity(mapper, graph, helper);
         return metric;
     }
 
@@ -257,6 +250,15 @@ public class SimilarityMetricConfigurator {
         }
     }
 
+    protected Filter getFilter(JSONObject params) throws ConfigurationException {
+        if (params.containsKey("minInLinks")) {
+            int minLinks = requireInteger(params, "minInLinks");
+            return FieldCacheRangeFilter.newIntRange(Page.FIELD_NINLINKS, minLinks, Integer.MAX_VALUE, true, true);
+        } else {
+            throw new ConfigurationException("unrecognized filter: " + params);
+        }
+    }
+
     protected SimilarityMetric buildPairwise(String name, JSONObject params, List<SimilarityMetric> metrics, int[] wpIds) throws ConfigurationException, IOException, InterruptedException {
         info("building metric " + name);
         String basedOnName = requireString(params, "basedOn");
@@ -283,6 +285,7 @@ public class SimilarityMetricConfigurator {
 
         SimilarityMetric metric = new PairwiseCosineSimilarity(matrix, transpose);
         metric.setName(name);
+
         return metric;
     }
 

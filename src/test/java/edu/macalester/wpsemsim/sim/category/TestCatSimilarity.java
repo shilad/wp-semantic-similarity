@@ -1,9 +1,6 @@
 package edu.macalester.wpsemsim.sim.category;
 
 import edu.macalester.wpsemsim.lucene.IndexHelper;
-import edu.macalester.wpsemsim.sim.category.CatSimilarity;
-import edu.macalester.wpsemsim.sim.category.CategoryBfs;
-import edu.macalester.wpsemsim.sim.category.CategoryGraph;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.TestUtils;
@@ -30,7 +27,7 @@ public class TestCatSimilarity {
     static File indexPath;
     private static CategoryGraph graph;
     private static IndexHelper helper;
-    private static CatSimilarity catSim;
+    private static CategorySimilarity catSim;
     private static IndexReader reader;
 
     @BeforeClass
@@ -41,7 +38,7 @@ public class TestCatSimilarity {
         graph.init();
         helper = graph.helper;
         reader = graph.reader;
-        catSim = new CatSimilarity(graph, helper);
+        catSim = new CategorySimilarity(graph, helper);
 
     }
 
@@ -56,7 +53,7 @@ public class TestCatSimilarity {
     }
 
     public double pathSimilarity(String... cats) {
-        return CatSimilarity.distanceToScore(graph, pathDistance(cats));
+        return CategorySimilarity.distanceToScore(graph, pathDistance(cats));
     }
 
     @Test
@@ -115,7 +112,7 @@ public class TestCatSimilarity {
 
     public void verifyBfsDistance(String title1, String title2, String... path) throws IOException {
         Document d = reader.document(helper.titleToLuceneId(title1));
-        CategoryBfs bfs = new CategoryBfs(graph, d, Integer.MAX_VALUE);
+        CategoryBfs bfs = new CategoryBfs(graph, d, Integer.MAX_VALUE, null);
         while (bfs.hasMoreResults()) {
             bfs.step();
         }

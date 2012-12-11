@@ -2,23 +2,21 @@ package edu.macalester.wpsemsim.lucene;
 
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
+import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,10 +25,14 @@ import java.util.logging.Logger;
  */
 public class IndexHelper {
     private static final Logger LOG = Logger.getLogger(IndexHelper.class.getName());
+    private static final int FILTER_CACHE_SIZE = 50;
 
     private DirectoryReader reader;
     private IndexSearcher searcher;
     private File indexDir;
+    private final Map<TIntSet, WpIdFilter> filterCache =
+            Collections.synchronizedMap(new LRUMap(FILTER_CACHE_SIZE));
+
 
     /**
      * Creates a new helper for a Lucene index
@@ -312,5 +314,25 @@ public class IndexHelper {
 
     public IndexSearcher getSearcher() {
         return searcher;
+    }
+
+    public File getIndexDir() {
+        return indexDir;
+    }
+
+    public Filter getWpIdFilter(TIntSet wpIds) throws IOException {
+        if (wpIds == null) {
+            return null;   // no filter
+        }
+        if (!filterCache.containsKey(wpIds)) {
+            // guarantee only one writer at a time.
+            synchronized (filterCache) {
+                if (!filterCache.containsKey(wpIds)) {
+                    WpIdFilter f = new WpIdFilter(this, wpIds.toArray());
+                    filterCache.put(wpIds, f);
+                }
+            }
+        }
+        return filterCache.get(wpIds);
     }
 }

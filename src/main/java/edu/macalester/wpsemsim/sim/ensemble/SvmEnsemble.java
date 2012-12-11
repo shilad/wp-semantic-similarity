@@ -5,12 +5,15 @@ import gnu.trove.map.hash.TIntDoubleHashMap;
 import libsvm.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.*;
 import java.util.*;
 import java.util.logging.Logger;
 
+
+/**
+ * An SVM implementation of a supervised ensemble of similarity metrics.
+ */
 public class SvmEnsemble {
     private static final Logger LOG = Logger.getLogger(SvmEnsemble.class.getName());
     private static final Double MIN_VALUE = -1.0;
@@ -18,9 +21,7 @@ public class SvmEnsemble {
     private static final double P_EPSIONS[] = { 1.0, 0.5, 0.1, 0.01, 0.001 };
     private static final double P_CS[] = { 16, 8, 4, 2, 1, 0.5, 0.2, 0.1 };
 
-    private int minComponents;
     private List<SimilarityMetric> components;
-
 
     private Stats componentStats[];
     private Stats yStats = new Stats();
@@ -30,12 +31,11 @@ public class SvmEnsemble {
     private BufferedWriter svmLog;
     private List<Example> examples = new ArrayList<Example>();
 
-    public SvmEnsemble(int minComponents) throws IOException {
-        this(new ArrayList<SimilarityMetric>(), minComponents);
+    public SvmEnsemble() throws IOException {
+        this(new ArrayList<SimilarityMetric>());
     }
-    public SvmEnsemble(List<SimilarityMetric> components, int minComponents) throws IOException {
+    public SvmEnsemble(List<SimilarityMetric> components) throws IOException {
         this.components = components;
-        this.minComponents = minComponents;
         this.svmLog = new BufferedWriter(new FileWriter(new File("svm.log"), true));
         svm.svm_set_print_string_function(new svm_print_interface() {
             @Override
@@ -53,11 +53,10 @@ public class SvmEnsemble {
         this.components = components;
     }
 
-    public void setMinComponents(int n) {
-        this.minComponents = n;
-    }
-
     public void train(List<Example> examples) {
+        if (examples.isEmpty()) {
+            throw new IllegalArgumentException("no examples to train on!");
+        }
         this.examples = examples;
 
         calculateComponentStats();
@@ -103,96 +102,58 @@ public class SvmEnsemble {
         this.model = svm.svm_train(prob, param);
     }
 
-    public double predictPair(List<Pair<ComponentSim, ComponentSim>> preds, boolean truncate) {
-        assert(preds.size() == components.size());
-        svm_node nodes[] = simPairsToNodes(preds, truncate);
-        if (nodes.length < minComponents) {
-            return Double.NaN;
-        } else {
-            double p = svm.svm_predict(model, nodes);
-            return yStats.unnormalize(p, truncate);
-        }
-    }
-
-    public double predict(List<ComponentSim> preds, boolean truncate) {
-        assert(preds.size() == components.size());
-        svm_node nodes[] = simsToNodes(preds, truncate);
-        if (nodes.length < minComponents) {
-            return Double.NaN;
-        } else {
-            double p = svm.svm_predict(model, nodes);
-            return yStats.unnormalize(p, truncate);
-        }
+    public double predict(Example ex, boolean truncate) {
+        assert(ex.sims.size() == components.size());
+        svm_node nodes[] = simsToNodes(ex, truncate);
+        double p = svm.svm_predict(model, nodes);
+        return yStats.unnormalize(p, truncate);
     }
 
 
     public svm_problem makeProblem() {
-        int num_cells = 0;
-        int n = 0;
-        for (Example x : examples) {
-            num_cells += x.getNumRanked();
-            if (x.getNumRanked() >= minComponents) {
-                n++;
-            }
-        }
-
-        LOG.info("overall sparsity is " + 1.0 * num_cells / (examples.size() * components.size()));
-        LOG.info("coverage is " + 1.0 * n / examples.size());
-
         svm_problem prob = new svm_problem();
-        prob.l = n;
+        prob.l = examples.size();
         prob.x = new svm_node[prob.l][];
         prob.y = new double[prob.l];
         int i = 0;
-        num_cells = 0;
+        int num_cells = 0;
+        boolean hasReverse = examples.get(0).hasReverse();
         for (Example x : examples) {
-            if (x.getNumRanked() >= minComponents) {
-                num_cells += x.getNumRanked();
-                if (x.simPairs != null) {
-                    prob.x[i] = simPairsToNodes(x.simPairs, false);
-                } else if (x.sims != null) {
-                    prob.x[i] = simsToNodes(x.sims, false);
-                } else {
-                    assert(false);
-                }
-                prob.y[i] = yStats.normalize(x.label.similarity, false);
-                i++;
-            }
+            assert(hasReverse == x.hasReverse());
+            num_cells += x.getNumNotNan();
+            prob.x[i] = simsToNodes(x, false);
+            prob.y[i] = yStats.normalize(x.label.similarity, false);
+            i++;
         }
-        LOG.info("number of non-zero entries in matrix is: " +
-                num_cells + " out of " + (prob.l * components.size()));
+        LOG.info("overall sparsity is " + 1.0 * num_cells / (examples.size() * components.size()));
 
         return prob;
     }
 
-    protected svm_node[] simPairsToNodes(List<Pair<ComponentSim, ComponentSim>> preds, boolean truncate) {
-        assert(preds.size() == components.size());
+    protected svm_node[] simsToNodes(Example ex, boolean truncate) {
+        assert(ex.sims.size() == components.size());
+        if (ex.hasReverse()) { assert(ex.sims.size() == ex.reverseSims.size()); }
         List<svm_node> nodes = new ArrayList<svm_node>();
-        for (int i = 0; i < preds.size(); i++) {
-            ComponentSim cs1 = preds.get(i).getLeft();
-            ComponentSim cs2 = preds.get(i).getRight();
-            if (cs1.hasValue() || cs2.hasValue()) {
-                Stats s = componentStats[i];
-                double s1 = cs1.hasValue() ? cs1.sim : s.min;
-                double s2 = cs2.hasValue() ? cs2.sim : s.min;
-                svm_node n = new svm_node();
-                n.index = i;
-                n.value = s.normalize((s1 + s2) / 2.0, truncate);
-                nodes.add(n);
+        for (int i = 0; i < ex.sims.size(); i++) {
+            Stats s = componentStats[i];
+            svm_node n = new svm_node();
+            n.index = i;
+            n.value = Double.NaN;
+            if (ex.hasReverse()) {
+                ComponentSim cs1 = ex.sims.get(i);
+                ComponentSim cs2 = ex.reverseSims.get(i);
+                if (cs1.hasValue() || cs2.hasValue()) {
+                    double s1 = cs1.hasValue() ? cs1.sim : s.min;
+                    double s2 = cs2.hasValue() ? cs2.sim : s.min;
+                    n.value = s.normalize((s1 + s2) / 2.0, truncate);
+                }
+            } else {
+                ComponentSim cs = ex.sims.get(i);
+                if (cs.hasValue()) {
+                    n.value = s.normalize(cs.sim, truncate);
+                }
             }
-        }
-        return nodes.toArray(new svm_node[0]);
-    }
-
-    protected svm_node[] simsToNodes(List<ComponentSim> preds, boolean truncate) {
-        assert(preds.size() == components.size());
-        List<svm_node> nodes = new ArrayList<svm_node>();
-        for (int i = 0; i < preds.size(); i++) {
-            if (preds.get(i).hasValue()) {
-                Stats s = componentStats[i];
-                svm_node n = new svm_node();
-                n.index = i;
-                n.value = s.normalize(preds.get(i).sim, truncate);
+            if (!Double.isNaN(n.value)) {
                 nodes.add(n);
             }
         }
@@ -209,10 +170,11 @@ public class SvmEnsemble {
         for (Example x : examples) {
             yStats.update(x.label.similarity);
             for (int i = 0; i < components.size(); i++) {
-                List<ComponentSim> sims = (x.sims != null)
-                    ? Arrays.asList(x.sims.get(i))
-                    : Arrays.asList(x.simPairs.get(i).getLeft(), x.simPairs.get(i).getRight());
-                for (ComponentSim cs : sims) {
+                ComponentSim cs = x.sims.get(i);
+                componentStats[i].update(cs.maxSim);
+                componentStats[i].update(cs.minSim);
+                if (x.hasReverse()) {
+                    cs = x.reverseSims.get(i);
                     componentStats[i].update(cs.maxSim);
                     componentStats[i].update(cs.minSim);
                 }
@@ -375,8 +337,10 @@ public class SvmEnsemble {
         double max = -Double.MAX_VALUE;
 
         void update(double x) {
-            if (x < min) { min = x; }
-            if (x > max) { max = x; }
+            if (!Double.isNaN(x)) {
+                if (x < min) { min = x; }
+                if (x > max) { max = x; }
+            }
         }
 
         public String toString() { return "min=" + min + ", max=" + max; }

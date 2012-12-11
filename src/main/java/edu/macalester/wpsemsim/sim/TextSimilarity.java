@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.set.TIntSet;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -122,10 +123,11 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
     }
 
     @Override
-    public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
+    public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
         MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = helper.wpIdToLuceneId(wpId);
-        TopDocs similarDocs = searcher.search(mlt.like(luceneId), maxResults);
+        TopDocs similarDocs = searcher.search(mlt.like(luceneId),
+                helper.getWpIdFilter(validIds), maxResults);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
         for (int i = 0; i < similarDocs.scoreDocs.length; i++) {
             ScoreDoc sd = similarDocs.scoreDocs[i];

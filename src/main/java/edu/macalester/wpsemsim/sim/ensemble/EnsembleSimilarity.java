@@ -13,6 +13,7 @@ import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.set.TIntSet;
 import libsvm.*;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
@@ -20,6 +21,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.*;
@@ -30,12 +32,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * A supervised machine learner that predicts semantic similarity based
+ * on a collection of underlying component similarity metrics.
+ *
+ */
 public class EnsembleSimilarity extends BaseSimilarityMetric implements SupervisedSimilarityMetric {
     private static final Logger LOG = Logger.getLogger(EnsembleSimilarity.class.getName());
 
-    private int numThreads = Runtime.getRuntime().availableProcessors();;
+    private int numThreads = Runtime.getRuntime().availableProcessors();
     private ConceptMapper mapper;
     private IndexHelper helper;
+    private int minComponents;
+
     private List<SimilarityMetric> components = new ArrayList<SimilarityMetric>();
 
     SvmEnsemble svm;
@@ -44,16 +53,28 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         super(mapper, helper);
         this.mapper = mapper;
         this.helper = helper;
-        this.svm = new SvmEnsemble(0);
+        this.svm = new SvmEnsemble();
+        this.minComponents = 0;
     }
 
-    public void setMinComponents(int n) {
-        this.svm.setMinComponents(n);
+    @Override
+    public void trainSimilarity(List<KnownSim> gold) {
+        trainMostSimilar(gold, -1);
+    }
+
+    @Override
+    public void trainMostSimilar(List<KnownSim> gold, int numResults) {
+        train(gold, numResults);
     }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
-        return svm.predictPair(getComponentSimilarities(phrase1, phrase2, -1), true);
+        Example ex = getComponentSimilarities(phrase1, phrase2, -1);
+        if (ex.getNumNotNan() >= minComponents) {
+            return svm.predict(ex, true);
+        } else {
+            return Double.NaN;
+        }
     }
 
     @Override
@@ -62,34 +83,40 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     }
 
     @Override
-    public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
-        Map<Integer, List<ComponentSim>> features = new HashMap<Integer, List<ComponentSim>>();
-        List<ComponentSim> missing = new ArrayList<ComponentSim>();
+    public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
 
+        // build up example objects for each related page.
+        Map<Integer, Example> features = new HashMap<Integer, Example>();
         for (int i = 0; i < components.size(); i++) {
-            DocScoreList top = components.get(i).mostSimilar(wpId, maxResults * 2);
+            DocScoreList top = components.get(i).mostSimilar(wpId, maxResults * 2, validIds);
             if (top == null) {
                 return null;
             }
-            missing.add(new ComponentSim(i, top, -1));
             for (int j = 0; j < top.numDocs(); j++) {
                 DocScore ds = top.get(j);
-                if (!features.containsKey(ds.getId())) {
-                    features.put(ds.getId(), new ArrayList<ComponentSim>());
+                if (validIds == null || validIds.contains(ds.getId())) {
+                    if (!features.containsKey(ds.getId())) {
+                        features.put(ds.getId(), Example.makeEmpty());
+                    }
+                    features.get(ds.getId()).add(new ComponentSim(i, top, j));
                 }
-                features.get(ds.getId()).add(new ComponentSim(i, top, j));
             }
         }
-        DocScoreList list = new DocScoreList(features.size());
+
+        // Generate predictions for all pages that have enough component scores
         int n = 0;
+        DocScoreList list = new DocScoreList(features.size());
         for (int wpId2 : features.keySet()) {
-            List<ComponentSim> sparseSims = features.get(wpId);
-            List<ComponentSim> denseSims = sparseSimsToDense(missing, sparseSims);
-            double pred = svm.predict(denseSims, false);
-            if (!Double.isNaN(pred)) {
-                list.set(n++, wpId2, pred);
+            Example ex = features.get(wpId);
+            if (ex.getNumNotNan() >= minComponents) {
+                double pred = svm.predict(ex, false);
+                if (!Double.isNaN(pred)) {
+                    list.set(n++, wpId2, pred);
+                }
             }
         }
+
+        // Truncate and sort the list.
         list.truncate(n);
         list.sort();
         if (list.numDocs() > maxResults) {
@@ -98,24 +125,27 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         return list;
     }
 
-    private List<ComponentSim> sparseSimsToDense(List<ComponentSim> missing, List<ComponentSim> sparseSims) {
-        List<ComponentSim> denseSims = new ArrayList<ComponentSim>();
-        int j = 0;
-        for (int i = 0; i < components.size(); i++) {
-            if (j < sparseSims.size() && sparseSims.get(j).component == i) {
-                denseSims.add(sparseSims.get(j++));
-            } else {
-                denseSims.add(missing.get(i));
-            }
-        }
-        assert(j == sparseSims.size());
-        return denseSims;
+    /**
+     * Sets the minimum number of components that must generate a similarity score
+     * for the ensemble to output a prediction. This is particularly important for
+     * mostSimilar() where a page may appear in one similarity metric's mostSimilar()
+     * list but not in others.
+     *
+     * @param n Minimum number of similarity metric components that must generate
+     *          a similarity score for the ensemble to generate a similarity score.
+     */
+    public void setMinComponents(int n) {
+        this.minComponents = n;
     }
 
     public void setNumThreads(int n) {
         this.numThreads = n;
     }
 
+    /**
+     * Sets the similarity metric components.
+     * @param components
+     */
     public void setComponents(List<SimilarityMetric> components) {
         components = new ArrayList<SimilarityMetric>(components);
         // make sure the order is deterministic
@@ -129,23 +159,31 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         this.svm.setComponents(components);
     }
 
-    public void trainSimilarity(List<KnownSim> gold) {
-        trainMostSimilar(gold, -1);
-    }
 
-    @Override
-    public void trainMostSimilar(List<KnownSim> gold, int numResults) {
-        train(gold, numResults);
-    }
-
+    /**
+     * Writes the ensemble to a directory.
+     * @param directory
+     * @throws IOException
+     */
     public void write(File directory) throws IOException {
         svm.write(directory);
     }
 
+    /**
+     * Reads the ensemble from a directory.
+     * @param directory
+     * @throws IOException
+     */
     public void read(File directory) throws IOException {
         svm.read(directory);
     }
 
+    /**
+     * Trains the ensemble on a dataset.
+     * @param gold Labeled training data.
+     * @param numResults if less than or equal to 0 train similarity(),
+     *                   if greater than 0 train mostSimilar() with specified size of result lists.
+     */
     public void train(final List<KnownSim> gold, final int numResults) {
         final ExecutorService exec = Executors.newFixedThreadPool(numThreads);
         final List<Example> examples = Collections.synchronizedList(new ArrayList<Example>());
@@ -159,14 +197,15 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                         if (finalI % 50 == 0) {
                             LOG.info("training for number " + finalI + " of " + gold.size());
                         }
-                        List<Pair<ComponentSim, ComponentSim>> sims = getComponentSimilarities(ks.phrase1, ks.phrase2, numResults);
-                        examples.add(new Example(ks, sims));
+                        Example ex = getComponentSimilarities(ks.phrase1, ks.phrase2, numResults);
+                        if (ex.getNumNotNan() >= minComponents) {
+                            examples.add(ex);
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                         LOG.log(Level.SEVERE, "error processing similarity entry  " + ks, e);
                     }
-                    }
-                });
+                }});
             }
         } finally {
             try {
@@ -179,53 +218,67 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         }
         svm.train(examples);
         try {
-            writeArff(new File("examples.arff"), examples);
+            writeArff(new File("examples.arff"), examples, (numResults > 0));
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
     }
 
-    private void writeArff(File file, List<Example> examples) throws IOException {
+    private void writeArff(File file, List<Example> examples, boolean useReverse) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(file));
         writer.write("@relation similarities\n\n");
         for (int i = 0; i < components.size(); i++) {
             SimilarityMetric m = components.get(i);
             String name = m.getName().toLowerCase().replaceAll("[^a-zA-Z]+", "");
-            writer.write(ComponentSim.getArffHeader(name + "1"));
-            writer.write(ComponentSim.getArffHeader(name + "2"));
+            if (useReverse) {
+                writer.write(ComponentSim.getArffHeader(name + "1"));
+                writer.write(ComponentSim.getArffHeader(name + "2"));
+            } else {
+                writer.write(ComponentSim.getArffHeader(name));
+            }
         }
         writer.write("@attribute sim real\n");
 
         writer.write("@data\n");
         for (Example x : examples) {
-            for (Pair<ComponentSim, ComponentSim> pair : x.simPairs) {
-                writer.write(pair.getLeft().getArffEntry());
-                writer.write(pair.getRight().getArffEntry());
+            for (int i = 0; i < x.sims.size(); i++) {
+                writer.write(x.sims.get(i).getArffEntry());
+                if (useReverse) {
+                    writer.write(x.reverseSims.get(i).getArffEntry());
+                }
             }
             writer.write("" + x.label.similarity + "\n");
         }
     }
 
-    protected List<Pair<ComponentSim, ComponentSim>> getComponentSimilarities(String phrase1, String phrase2, int numResults) throws IOException, ParseException {
-        List<Pair<ComponentSim, ComponentSim>> pairs = new ArrayList<Pair<ComponentSim, ComponentSim>>();
+    /**
+     * Collects the similarities scores for a pair of phrases from all metrics.
+     * We are training mostSimilar iff numResults > 0.
+     *
+     * @param phrase1
+     * @param phrase2
+     * @param numResults
+     * @return
+     * @throws IOException
+     * @throws ParseException
+     */
+    protected Example getComponentSimilarities(String phrase1, String phrase2, int numResults) throws IOException, ParseException {
+        Example result = (numResults > 0) ? Example.makeEmptyWithReverse() : Example.makeEmpty();
         for (int i = 0; i < components.size(); i++) {
             SimilarityMetric m = components.get(i);
-            ComponentSim cs1;
-            ComponentSim cs2;
             if (numResults <= 0) {
-                cs1 = new ComponentSim(i, m.similarity(phrase1, phrase2));
-                cs2 = cs1;  // hack, for now.
+                result.add(new ComponentSim(i, m.similarity(phrase1, phrase2)));
             } else {
-                cs1 = getComponentSim(i, m, phrase1, phrase2, numResults);
-                cs2 = getComponentSim(i, m, phrase2, phrase1, numResults);
+                result.add(getComponentSim(i, m, phrase1, phrase2, numResults),
+                           getComponentSim(i, m, phrase2, phrase1, numResults));
             }
-            pairs.add(Pair.of(cs1, cs2));
         }
-        return pairs;
+        return result;
     }
 
     /**
      * Gets most similar for phrase 1, looks for concepts mapped to phrase 2
+     * @param ci Index of the similarity metric in the components
      * @param metric
      * @param phrase1
      * @param phrase2
@@ -234,18 +287,26 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
      * @throws IOException
      */
     protected ComponentSim getComponentSim(int ci, SimilarityMetric metric, String phrase1, String phrase2, int numResults) throws IOException {
-        TIntDoubleHashMap concepts = new TIntDoubleHashMap();
-        for (Map.Entry<String, Float> entry : mapper.map(phrase2, 10).entrySet()) {
-            Document d = helper.titleToLuceneDoc(entry.getKey());
-            if (d != null && (d.getFields(Page.FIELD_TYPE).length == 0 || d.get(Page.FIELD_TYPE).equals("normal"))) {
-                int wpId = Integer.valueOf(d.get(Page.FIELD_WPID));
-                concepts.put(wpId, entry.getValue());
-            }
-        }
+        // get most similar lucene ids for phrase 1
         DocScoreList top =  metric.mostSimilar(phrase1, numResults);
         if (top == null || top.numDocs() == 0) {
             return new ComponentSim(ci, new DocScoreList(0), 0);
         }
+
+        // build up mapping between lucene ids and likelihood of id representing phrase2.
+        TIntDoubleHashMap concepts = new TIntDoubleHashMap();
+        for (Map.Entry<String, Float> entry : mapper.map(phrase2, 10).entrySet()) {
+            Document d = helper.titleToLuceneDoc(entry.getKey());
+            if (d != null) {
+                IndexableField types[] = d.getFields(Page.FIELD_TYPE);
+                if (types.length == 0 || types[0].stringValue().equals("normal")) {
+                    int wpId = Integer.valueOf(d.get(Page.FIELD_WPID));
+                    concepts.put(wpId, entry.getValue());
+                }
+            }
+        }
+
+        // calculates the highest scoring pair for foo.
         double bestScore = -Double.MAX_VALUE;
         int bestRank = -1;
         for (int i = 0; i < top.numDocs(); i++) {

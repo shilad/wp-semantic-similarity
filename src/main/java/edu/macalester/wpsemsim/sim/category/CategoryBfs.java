@@ -1,6 +1,7 @@
 package edu.macalester.wpsemsim.sim.category;
 
 import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.set.TIntSet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 
@@ -17,11 +18,13 @@ public class CategoryBfs {
 
     public boolean addPages = true;
     public boolean exploreChildren = true;
+    private TIntSet validWpIds;
 
-    public CategoryBfs(CategoryGraph graph, Document start, int maxResults) {
+    public CategoryBfs(CategoryGraph graph, Document start, int maxResults, TIntSet validWpIds) {
         this.startPage = Integer.valueOf(start.getField("id").stringValue());
         this.maxResults = maxResults;
         this.graph = graph;
+        this.validWpIds = validWpIds;
         pageDistances.put(startPage, 0.000000);
         for (IndexableField f : start.getFields("cats")) {
             int ci = graph.getCategoryIndex(f.stringValue());
@@ -58,6 +61,9 @@ public class CategoryBfs {
         // add directly linked pages
         if (addPages) {
             for (int i : graph.catPages[cs.getCatIndex()]) {
+                if (validWpIds != null && !validWpIds.contains(i)) {
+                    continue;
+                }
                 if (!pageDistances.containsKey(i) || pageDistances.get(i) > cs.getDistance()) {
                     pageDistances.put(i, cs.getDistance());
                     finished.pages.put(i, cs.getDistance());

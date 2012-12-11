@@ -10,11 +10,9 @@ import gnu.trove.set.hash.TIntHashSet;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
-import org.apache.lucene.search.FieldCacheTermsFilter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.*;
 import org.apache.lucene.util.Version;
 
@@ -26,6 +24,7 @@ import java.io.IOException;
 public class LinkSimilarity extends BaseSimilarityMetric{
     private String field;
     private IndexSearcher searcher;
+    private Filter filter;
 
     public static enum SimFn {
         TFIDF,
@@ -94,7 +93,6 @@ public class LinkSimilarity extends BaseSimilarityMetric{
     }
 
     /**
-     * TODO: Extremely fragile! Simplify, or automatically tune this.
      * @param wpId1
      * @param wpId2
      * @return
@@ -107,6 +105,12 @@ public class LinkSimilarity extends BaseSimilarityMetric{
             return 0.0;
         }
         MoreLikeThis mlt = getMoreLikeThis();
+
+        BooleanFilter composition = new BooleanFilter();
+        composition.add(new FieldCacheTermsFilter("id", "" + wpId2), BooleanClause.Occur.MUST);
+        if (filter != null) {
+            composition.add(filter, BooleanClause.Occur.MUST);
+        }
 
         TopDocs similarDocs = searcher.search(
                 mlt.like(doc1),
@@ -216,13 +220,15 @@ public class LinkSimilarity extends BaseSimilarityMetric{
     }
 
     @Override
-    public DocScoreList mostSimilar(int wpId, int maxResults) throws IOException {
+    public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
         MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = linkHelper.wpIdToLuceneId(wpId);
         if (luceneId < 0) {
             return null;
         }
-        TopDocs similarDocs = searcher.search(mlt.like(luceneId), maxResults);
+        TopDocs similarDocs = searcher.search(mlt.like(luceneId),
+                linkHelper.getWpIdFilter(validIds),
+                maxResults);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
         for (int i = 0; i < similarDocs.scoreDocs.length; i++) {
             ScoreDoc sd = similarDocs.scoreDocs[i];

@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import edu.macalester.wpsemsim.matrix.ValueConf;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScoreList;
+import gnu.trove.set.TIntSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,11 +25,16 @@ public class PairwiseSimilarityWriter {
     private AtomicInteger idCounter = new AtomicInteger();
     private long numCells;
     private ValueConf vconf;
+    private TIntSet validIds;
 
     public PairwiseSimilarityWriter(SimilarityMetric metric, File outputFile) throws IOException {
         this.metric = metric;
         this.vconf = new ValueConf();
         this.writer = new SparseMatrixWriter(outputFile, vconf);
+    }
+
+    public void setValidIds(TIntSet validIds) {
+        this.validIds = validIds;
     }
 
     public void writeSims(final int wpIds[], final int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
@@ -60,11 +66,13 @@ public class PairwiseSimilarityWriter {
                 System.err.println("" + new Date() + ": finding matches for doc " + idCounter.get());
             }
             int wpId = wpIds[i];
-            DocScoreList scores = metric.mostSimilar(wpId, maxSimsPerDoc);
-            synchronized (this) {
-                numCells += scores.getIds().length;
+            DocScoreList scores = metric.mostSimilar(wpId, maxSimsPerDoc, validIds);
+            if (scores != null) {
+                synchronized (this) {
+                    numCells += scores.getIds().length;
+                }
+                writer.writeRow(new SparseMatrixRow(vconf, wpId, scores.getIds(), scores.getScoresAsFloat()));
             }
-            writer.writeRow(new SparseMatrixRow(vconf, wpId, scores.getIds(), scores.getScoresAsFloat()));
         }
     }
 }

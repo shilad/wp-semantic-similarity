@@ -3,8 +3,10 @@ package edu.macalester.wpsemsim.sim;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.utils.DocScoreList;
+import gnu.trove.set.TIntSet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -29,31 +31,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     }
 
 
-    @Override
-    public DocScoreList mostSimilar(String phrase, int maxResults) throws IOException {
-        if (mapper == null) {
-            throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
-        }
-        LinkedHashMap<String, Float> concepts = mapper.map(phrase, 5);
-        if (concepts.isEmpty()) {
-            LOG.info("no concepts for phrase " + phrase);
-            return new DocScoreList(0);
-        }
-
-        for (String article : concepts.keySet()) {
-            int wpId = helper.titleToWpId(article);
-            if (wpId < 0) {
-                LOG.info("couldn't find article with title '" + article + "'");
-            } else {
-//                System.out.println("calling mostSimilar of " + article + " (" + wpId + ")");
-                DocScoreList top = mostSimilar(wpId, maxResults);
-                if (top != null) {
-                    return top;
-                }
-            }
-        }
-        return null;
-    }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
@@ -137,7 +114,43 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     public abstract double similarity(int wpId1, int wpId2) throws IOException;
 
     @Override
-    public abstract DocScoreList mostSimilar(int wpId1, int maxResults) throws IOException;
+    public abstract DocScoreList mostSimilar(int wpId1, int maxResults, TIntSet possibleWpIds) throws IOException;
+
+    @Override
+    public DocScoreList mostSimilar(String phrase, int maxResults, TIntSet possibleWpIds) throws IOException {
+        if (mapper == null) {
+            throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
+        }
+        LinkedHashMap<String, Float> concepts = mapper.map(phrase, 5);
+        if (concepts.isEmpty()) {
+            LOG.info("no concepts for phrase " + phrase);
+            return new DocScoreList(0);
+        }
+
+        for (String article : concepts.keySet()) {
+            int wpId = helper.titleToWpId(article);
+            if (wpId < 0) {
+                LOG.info("couldn't find article with title '" + article + "'");
+            } else {
+//                System.out.println("calling mostSimilar of " + article + " (" + wpId + ")");
+                DocScoreList top = mostSimilar(wpId, maxResults, possibleWpIds);
+                if (top != null) {
+                    return top;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public DocScoreList mostSimilar(int wpId1, int maxResults) throws IOException {
+        return mostSimilar(wpId1,  maxResults, null);
+    }
+
+    @Override
+    public DocScoreList mostSimilar(String phrase, int maxResults) throws IOException {
+        return mostSimilar(phrase, maxResults, null);
+    }
 
     public IndexHelper getHelper() {
         return this.helper;

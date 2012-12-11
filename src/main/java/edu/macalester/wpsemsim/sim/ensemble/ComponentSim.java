@@ -2,6 +2,11 @@ package edu.macalester.wpsemsim.sim.ensemble;
 
 import edu.macalester.wpsemsim.utils.DocScoreList;
 
+/**
+ * A single similarity metric's similarity score.
+ * Can represent output from either mostSimilar() or similarity().
+ * If output is from similarity(), rank = -1 and length = 0.
+ */
 public class ComponentSim {
     public int component;
 
