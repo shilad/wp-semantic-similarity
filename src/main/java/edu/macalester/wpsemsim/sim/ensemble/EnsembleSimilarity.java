@@ -306,7 +306,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
             }
         }
 
-        // calculates the highest scoring pair for foo.
+        // finds the document with the highest product of semantic relatedness and concept likelihood
         double bestScore = -Double.MAX_VALUE;
         int bestRank = -1;
         for (int i = 0; i < top.numDocs(); i++) {
@@ -319,7 +319,6 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                 }
             }
         }
-//        System.out.println("for " + phrase1 + ", " + phrase2 + " metric " + metric.getName() + " returning " + bestSim);
         return new ComponentSim(ci, top, bestRank);
     }
 

@@ -62,6 +62,9 @@
             "booster" : {
                 "type" : "inlink",
                 "logs" : 2
+            },
+            "mostSimilarFilter" : {
+                "minInLinks" : 50
             }
         }
     },
@@ -75,6 +78,9 @@
         "esa" : {
             "type" : "esa",
             "lucene" : "dat/lucene/esa",
+            "mostSimilarFilter" : {
+                "minInLinks" : 50
+            }
         },
         "article-text" : {
             "type" : "text",
@@ -104,24 +110,27 @@
             "lucene" : "dat/lucene/links",
             "similarity" : "lucene"
         },
-//        "pairwise-text" : {
-//            "type" : "pairwise",
-//            "matrix" : "dat/text-sims.matrix",
-//            "basedOn" : "article-text",
-//            "transpose" : "dat/text-sims.transpose.matrix",
-//        },
-//        "pairwise-links" : {
-//            "type" : "pairwise",
-//            "matrix" : "dat/link-sims.matrix",
-//            "basedOn" : "article-links",
-//            "transpose" : "dat/link-sims.transpose.matrix",
-//        },
-//        "pairwise-cats" : {
-//            "type" : "pairwise",
-//            "matrix" : "dat/cat-sims.matrix",
-//            "basedOn" : "article-cats",
-//            "transpose" : "dat/cat-sims.transpose.matrix",
-//        },
+        "pairwise-text" : {
+            "type" : "pairwise",
+            "matrix" : "dat/text-sims.matrix",
+            "basedOn" : "article-text",
+            "transpose" : "dat/text-sims.transpose.matrix",
+            "mostSimilarFilter" : {
+                "minInLinks" : 50
+            }
+        },
+        "pairwise-links" : {
+            "type" : "pairwise",
+            "matrix" : "dat/link-sims.matrix",
+            "basedOn" : "article-links",
+            "transpose" : "dat/link-sims.transpose.matrix",
+        },
+        "pairwise-cats" : {
+            "type" : "pairwise",
+            "matrix" : "dat/cat-sims.matrix",
+            "basedOn" : "article-cats",
+            "transpose" : "dat/cat-sims.transpose.matrix",
+        },
         "ensemble" : {
             "model" : "dat/model.out",
             "type" : "ensemble",
