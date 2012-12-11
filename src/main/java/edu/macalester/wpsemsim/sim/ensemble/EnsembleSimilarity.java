@@ -43,7 +43,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     private int numThreads = Runtime.getRuntime().availableProcessors();
     private ConceptMapper mapper;
     private IndexHelper helper;
-    private int minComponents;
+    private int minComponents = 0;
 
     private List<SimilarityMetric> components = new ArrayList<SimilarityMetric>();
 
@@ -54,7 +54,6 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         this.mapper = mapper;
         this.helper = helper;
         this.svm = new SvmEnsemble();
-        this.minComponents = 0;
     }
 
     @Override

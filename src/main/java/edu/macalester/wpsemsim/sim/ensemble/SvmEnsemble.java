@@ -131,26 +131,30 @@ public class SvmEnsemble {
     }
 
     protected svm_node[] simsToNodes(Example ex, boolean truncate) {
-        assert(ex.sims.size() == components.size());
+//        assert(ex.sims.size() == components.size());
         if (ex.hasReverse()) { assert(ex.sims.size() == ex.reverseSims.size()); }
+
+//        svm_node nodes[] = new svm_node[components.size()];
         List<svm_node> nodes = new ArrayList<svm_node>();
-        for (int i = 0; i < ex.sims.size(); i++) {
-            Stats s = componentStats[i];
+        for (int si = 0; si < ex.sims.size(); si++) {
+            ComponentSim cs1 = ex.sims.get(si);
+            ComponentSim cs2 = (ex.reverseSims == null) ? null : ex.reverseSims.get(si);
+            assert(cs2 == null || cs1.component == cs2.component);
+
             svm_node n = new svm_node();
-            n.index = i;
+            n.index = cs1.component;
             n.value = Double.NaN;
+            Stats s = componentStats[n.index];
+
             if (ex.hasReverse()) {
-                ComponentSim cs1 = ex.sims.get(i);
-                ComponentSim cs2 = ex.reverseSims.get(i);
                 if (cs1.hasValue() || cs2.hasValue()) {
                     double s1 = cs1.hasValue() ? cs1.sim : s.min;
                     double s2 = cs2.hasValue() ? cs2.sim : s.min;
                     n.value = s.normalize((s1 + s2) / 2.0, truncate);
                 }
             } else {
-                ComponentSim cs = ex.sims.get(i);
-                if (cs.hasValue()) {
-                    n.value = s.normalize(cs.sim, truncate);
+                if (cs1.hasValue()) {
+                    n.value = s.normalize(cs1.sim, truncate);
                 }
             }
             if (!Double.isNaN(n.value)) {
@@ -158,6 +162,16 @@ public class SvmEnsemble {
             }
         }
         return nodes.toArray(new svm_node[0]);
+
+        /* TODO: try imputing missing values
+        for (int i = 0; i < nodes.length; i++) {
+            if (nodes[i] == null) {
+                Stats s = componentStats[i];
+
+            }
+        }
+        return nodes;
+        */
     }
 
     protected void calculateComponentStats() {
@@ -210,7 +224,7 @@ public class SvmEnsemble {
         double sumv = 0, sumy = 0, sumvv = 0, sumyy = 0, sumvy = 0;
         double[] target = new double[prob.l];
 
-        svm.svm_cross_validation(prob,param,nr_fold,target);
+        svm.svm_cross_validation(prob, param, nr_fold, target);
         for(i=0;i<prob.l;i++)
         {
             double y = prob.y[i];
