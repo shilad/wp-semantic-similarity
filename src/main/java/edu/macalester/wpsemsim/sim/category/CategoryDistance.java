@@ -1,14 +1,14 @@
 package edu.macalester.wpsemsim.sim.category;
 
 /**
- *
+ * Captures the distance to a category.
  * @author shilad
  */
 final class CategoryDistance implements Comparable<CategoryDistance> {
     private int catIndex;
     private String catString;
     private double distance;
-    private byte direction; // +1 or -1
+    private byte direction; // +1 (heading upwards) or -1 (heading downwards)
 
     public CategoryDistance(int catIndex, String catString, double distance, byte direction) {
         this.catIndex = catIndex;

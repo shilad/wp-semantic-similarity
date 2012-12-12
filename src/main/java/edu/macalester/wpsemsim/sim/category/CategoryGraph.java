@@ -1,6 +1,7 @@
 package edu.macalester.wpsemsim.sim.category;
 
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.lucene.Page;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import org.apache.lucene.document.Document;
@@ -15,6 +16,9 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Builds and stores a directed graph among categories and pages.
+ */
 public class CategoryGraph {
 
     private static final Logger LOG = Logger.getLogger(CategoryGraph.class.getName());
@@ -32,7 +36,15 @@ public class CategoryGraph {
     protected double minCost = -1;
     protected IndexHelper helper;
 
+    /**
+     * Create a category graph from a lucene index. The index
+     * @param helper
+     * @throws IOException
+     */
     public CategoryGraph(IndexHelper helper) throws IOException {
+        if (!helper.hasField(Page.FIELD_CATS)) {
+            throw new IllegalArgumentException("lucene index must have field " + Page.FIELD_CATS);
+        }
         this.helper = helper;
         this.reader = helper.getReader();
     }

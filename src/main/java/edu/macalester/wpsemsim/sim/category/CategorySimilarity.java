@@ -89,8 +89,8 @@ public class CategorySimilarity extends BaseSimilarityMetric {
         &&     (maxDist1 + maxDist2 < shortestDistance)) {
             // Search from d1
             while (bfs1.hasMoreResults() && (maxDist1 <= maxDist2 || !bfs2.hasMoreResults())) {
-                CategoryBfs.BfsFinished finished = bfs1.step();
-                for (int catId : finished.cats.keys()) {
+                CategoryBfs.BfsVisited visited = bfs1.step();
+                for (int catId : visited.cats.keys()) {
                     if (bfs2.hasCategoryDistance(catId)) {
                         double d = bfs1.getCategoryDistance(catId)
                                 + bfs2.getCategoryDistance(catId)
@@ -98,13 +98,13 @@ public class CategorySimilarity extends BaseSimilarityMetric {
                         shortestDistance = Math.min(d, shortestDistance);
                     }
                 }
-                maxDist1 = Math.max(maxDist1, finished.maxCatDistance());
+                maxDist1 = Math.max(maxDist1, visited.maxCatDistance());
             }
 
             // Search from d2
             while (bfs2.hasMoreResults() && (maxDist2 <= maxDist1 || !bfs1.hasMoreResults())) {
-                CategoryBfs.BfsFinished finished = bfs2.step();
-                for (int catId : finished.cats.keys()) {
+                CategoryBfs.BfsVisited visited = bfs2.step();
+                for (int catId : visited.cats.keys()) {
                     if (bfs1.hasCategoryDistance(catId)) {
                         double d = bfs1.getCategoryDistance(catId) +
                                 bfs2.getCategoryDistance(catId) + 0
@@ -112,7 +112,7 @@ public class CategorySimilarity extends BaseSimilarityMetric {
                         shortestDistance = Math.min(d, shortestDistance);
                     }
                 }
-                maxDist2 = Math.max(maxDist2, finished.maxCatDistance());
+                maxDist2 = Math.max(maxDist2, visited.maxCatDistance());
             }
         }
 

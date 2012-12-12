@@ -27,6 +27,7 @@ public final class Page {
     public static final String FIELD_WPID = "id";
     public static final String FIELD_DAB = "dab";
     public static final String FIELD_REDIRECT = "redirect";
+    public static final String FIELD_CATS = "cats";
 
     private int id;
     private String title;
@@ -97,34 +98,34 @@ public final class Page {
     public synchronized Document toLuceneDoc() {
         if (this.luceneDoc == null) {
             Document d = new Document();
-            d.add(new StringField("title", title, Field.Store.YES));
-            d.add(new StringField("id", ""+id, Field.Store.YES));
+            d.add(new StringField(FIELD_TITLE, title, Field.Store.YES));
+            d.add(new StringField(FIELD_WPID, ""+id, Field.Store.YES));
             d.add(new StringField("ns", ""+ns, Field.Store.YES));
-            d.add(new TextField("text", text, Field.Store.YES));
+            d.add(new TextField(FIELD_TEXT, text, Field.Store.YES));
             for (String l : getAnchorLinks()) {
-                d.add(new NormedStringField("links", l, Field.Store.YES));
+                d.add(new NormedStringField(FIELD_LINKS, l, Field.Store.YES));
             }
             for (String l : getTextOfAnchors()) {
-                d.add(new StringField("linktext", l, Field.Store.YES));
+                d.add(new StringField(FIELD_LINKTEXT, l, Field.Store.YES));
             }
             for (String c : getCategories()) {
-                d.add(new StringField("cats", c, Field.Store.YES));
+                d.add(new StringField(FIELD_CATS, c, Field.Store.YES));
             }
             String type;
             if (redirect != null) {
                 type = "redirect";
-                d.add(new StringField("redirect", redirect, Field.Store.YES));
+                d.add(new StringField(FIELD_REDIRECT, redirect, Field.Store.YES));
             } else if (isDisambiguation()) {
                 type = "dab";
                 for (String l : getDisambiguationLinks()) {
-                    d.add(new StringField("dab", l, Field.Store.YES));
+                    d.add(new StringField(FIELD_DAB, l, Field.Store.YES));
                 }
             } else if (isList()) {
                 type = "list";
             } else {
                 type = "normal";
             }
-            d.add(new StringField("type", type, Field.Store.YES));
+            d.add(new StringField(FIELD_TYPE, type, Field.Store.YES));
             this.luceneDoc = d;
         }
         return this.luceneDoc   ;

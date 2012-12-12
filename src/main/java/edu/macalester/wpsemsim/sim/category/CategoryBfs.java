@@ -7,17 +7,50 @@ import org.apache.lucene.index.IndexableField;
 
 import java.util.PriorityQueue;
 
+/**
+ * Conducts Dijkstra on the category hierarchy from a starting document.
+ * Pages attached to visited categories are recorded, and iterations stop
+ * when a certain number of unique pages have been discovered.
+ */
 public class CategoryBfs {
     private CategoryGraph graph;
     private int startPage;
     private int maxResults;
-    private TIntDoubleHashMap catDistances = new TIntDoubleHashMap();
-    private TIntDoubleHashMap pageDistances = new TIntDoubleHashMap();
-    private PriorityQueue<CategoryDistance> openCats = new PriorityQueue<CategoryDistance>();
-    private BfsFinished finished = new BfsFinished();
 
+    /**
+     * Observed distances to visited categories.
+     */
+    private TIntDoubleHashMap catDistances = new TIntDoubleHashMap();
+
+    /**
+     * Observed distances to visited pages.
+     */
+    private TIntDoubleHashMap pageDistances = new TIntDoubleHashMap();
+
+    /**
+     * Categories that have been seen, but not visited.
+     */
+    private PriorityQueue<CategoryDistance> openCats = new PriorityQueue<CategoryDistance>();
+
+    /**
+     * Results of the current iteration.
+     */
+    private BfsVisited visited = new BfsVisited();
+
+    /**
+     * If true, tracks pages visited along the way.
+     */
     public boolean addPages = true;
+
+    /**
+     * If true, explore paths that travel up to an ancestor and back down to a descendant.
+     * If false, only travel upwards.
+     */
     public boolean exploreChildren = true;
+
+    /**
+     * Wikipedia ids that can be traversed in the result set.
+     */
     private TIntSet validWpIds;
 
     public CategoryBfs(CategoryGraph graph, Document start, int maxResults, TIntSet validWpIds) {
@@ -44,17 +77,21 @@ public class CategoryBfs {
         return openCats.size() > 0 && pageDistances.size() < maxResults;
     }
 
-    public BfsFinished step() {
-        finished.clear();
+    /**
+     * Runs one step of Dijjkstra by visiting the closest unvisited category.
+     * @return A BfsVisited object that captures all pages and categories visited in the step.
+     */
+    public BfsVisited step() {
+        visited.clear();
         if (!hasMoreResults()) {
-            return finished;
+            return visited;
         }
         CategoryDistance cs;
         do {
             cs = openCats.poll();
         } while (hasMoreResults() && catDistances.contains(cs.getCatIndex()));
 
-        finished.cats.put(cs.getCatIndex(), cs.getDistance());
+        visited.cats.put(cs.getCatIndex(), cs.getDistance());
         catDistances.put(cs.getCatIndex(), cs.getDistance());
 //        System.out.println("visited " + cs.toString());
 
@@ -66,7 +103,7 @@ public class CategoryBfs {
                 }
                 if (!pageDistances.containsKey(i) || pageDistances.get(i) > cs.getDistance()) {
                     pageDistances.put(i, cs.getDistance());
-                    finished.pages.put(i, cs.getDistance());
+                    visited.pages.put(i, cs.getDistance());
                 }
                 if (pageDistances.size() >= maxResults) {
                     break;  // may be an issue for huge categories
@@ -94,7 +131,7 @@ public class CategoryBfs {
             }
         }
 
-        return finished;
+        return visited;
     }
 
     public TIntDoubleHashMap getPageDistances() {
@@ -113,7 +150,7 @@ public class CategoryBfs {
         return catDistances.get(categoryId);
     }
 
-    public class BfsFinished {
+    public class BfsVisited {
         TIntDoubleHashMap pages = new TIntDoubleHashMap();
         TIntDoubleHashMap cats = new TIntDoubleHashMap();
         public void clear() { pages.clear(); cats.clear(); }

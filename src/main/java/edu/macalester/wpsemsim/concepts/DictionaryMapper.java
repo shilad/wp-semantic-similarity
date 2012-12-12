@@ -21,6 +21,7 @@ import java.util.logging.Logger;
  *
  * The database maps a string to a set of concepts associated with the string.
  * Each concept is a Wikipedia page, plus a set of URLs.
+ *
  * @see DictionaryEntry
  */
 public class DictionaryMapper implements ConceptMapper {
