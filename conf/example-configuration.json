@@ -71,10 +71,10 @@
 
     // The similarity metrics
     "metrics" : {
-//        "article-cats" : {
-//            "type" : "category",
-//            "lucene" : "dat/lucene/cats",
-//        },
+        "article-cats" : {
+            "type" : "category",
+            "lucene" : "dat/lucene/cats",
+        },
         "esa" : {
             "type" : "esa",
             "lucene" : "dat/lucene/esa",

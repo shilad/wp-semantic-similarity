@@ -15,7 +15,6 @@ public class BuilderMain {
     private static final Logger LOG = Logger.getLogger(BuilderMain.class.getName());
 
     public static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors();
-    public static final int DEFAULT_BUFFER_MBS = 100;
     public static final int DEFAULT_NUM_RESULTS = 500;
 
     public static TIntSet readIds(String path) throws IOException {
@@ -86,10 +85,6 @@ public class BuilderMain {
             numThreads = Integer.valueOf(cmd.getOptionValue("t"));
         }
 
-        int bufferMBs = DEFAULT_BUFFER_MBS;
-        if (cmd.hasOption("buffer")) {
-            bufferMBs = Integer.valueOf(cmd.getOptionValue("b"));
-        }
         int numResults = DEFAULT_NUM_RESULTS;
         if (cmd.hasOption("results")) {
             numResults = Integer.valueOf(cmd.getOptionValue("r"));
@@ -102,7 +97,6 @@ public class BuilderMain {
         LOG.info("building metric " + metricName);
         LOG.info("using configuration file " + pathConf);
         LOG.info("writing results to file " + outputFile);
-        LOG.info("using up to " + bufferMBs + "MBs for I/O buffer");
         LOG.info("using up to " + numThreads + " threads");
         LOG.info("storing up to " + numResults + " results per page");
         if (validIds != null) {
