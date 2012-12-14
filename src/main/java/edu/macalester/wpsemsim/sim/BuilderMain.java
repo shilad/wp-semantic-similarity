@@ -33,7 +33,6 @@ public class BuilderMain {
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, InterruptedException {
         Options options = new Options();
         options.addOption("t", "threads", true, "number of threads");
-        options.addOption("b", "buffer", true, "max I/O buffer size in MBs");
         options.addOption(new DefaultOptionBuilder()
                 .isRequired()
                 .hasArg()

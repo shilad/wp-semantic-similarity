@@ -78,6 +78,7 @@
         "esa" : {
             "type" : "esa",
             "lucene" : "dat/lucene/esa",
+            "textLucene" : "dat/lucene/text",
             "mostSimilarFilter" : {
                 "minInLinks" : 50
             }

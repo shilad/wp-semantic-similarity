@@ -154,6 +154,10 @@ public class SimilarityMetricConfigurator {
     private SimilarityMetric createEsaSimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
         File luceneDir = requireDirectory(params, "lucene");
         ESASimilarity metric = new ESASimilarity(mapper, new IndexHelper(luceneDir, true));
+        if (params.containsKey("textLucene")) {
+            File textLuceneDir = requireDirectory(params, "textLucene");
+            metric.setTextHelper(new IndexHelper(textLuceneDir, true));
+        }
         return metric;
     }
 
