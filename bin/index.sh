@@ -13,9 +13,10 @@ if [ $cache_mb -gt 2000 ]; then
 fi
 
 shift 2
+args=(${@// /\\ })
 
-keys=$@
-
-export MAVEN_OPTS="-Xmx${mb}M -ea"
-mvn compile
-mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.lucene.AllIndexBuilder" -D exec.classpathScope=runtime  -D exec.args="$conf $cache_mb $keys"
+export MAVEN_OPTS="-Xmx${mb}M -ea -server"
+mvn compile &&
+mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.lucene.AllIndexBuilder" \
+              -D exec.classpathScope=runtime  \
+              -D exec.args="$conf $cache_mb ${args[*]}"
