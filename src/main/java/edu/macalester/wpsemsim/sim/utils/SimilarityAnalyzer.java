@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
+import edu.macalester.wpsemsim.utils.Env;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.lang3.ArrayUtils;
@@ -184,21 +185,21 @@ public class SimilarityAnalyzer {
         }
         SimilarityMetricConfigurator conf = new SimilarityMetricConfigurator(
                 new ConfigurationFile(new File(args[0])));
-        SimilarityAnalyzer fitter = new SimilarityAnalyzer(
-                new File(args[1]),
-                conf.getMapper(),
-                conf.getHelper()
-        );
+        conf.setShouldLoadMetrics(false);
+        Env env = conf.loadEnv();
+
+        SimilarityAnalyzer analyzer = new SimilarityAnalyzer(
+                new File(args[1]), env.getMainMapper(), env.getMainIndex());
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
         if (args.length == 3) {
-            metrics = conf.loadAllMetrics();
+            metrics = conf.loadMetrics(env);
         } else {
             for (String name : ArrayUtils.subarray(args, 3, args.length)) {
-                metrics.add(conf.loadMetric(name));
+                metrics.add(conf.loadMetric(env, name));
             }
         }
-        fitter.analyzeMetrics(metrics, writer);
+        analyzer.analyzeMetrics(metrics, writer);
         writer.close();
     }
 }

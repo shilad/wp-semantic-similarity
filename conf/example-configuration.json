@@ -1,8 +1,4 @@
 {
-    // The lucene index directory used to get Wikipedia ids and
-    // a mapping between ids and article titles
-    "index" : "dat/lucene/main",
-
     // The concept mapper that maps phrases to articles
     "concept-mapper" : {
 //        "ensemble" : true,

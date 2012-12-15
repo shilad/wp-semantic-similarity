@@ -6,6 +6,7 @@ import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DocScoreList;
+import edu.macalester.wpsemsim.utils.Env;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.BufferedReader;
@@ -24,13 +25,8 @@ public class SimilarityConsole {
         }
         SimilarityMetricConfigurator conf = new SimilarityMetricConfigurator(
                 new ConfigurationFile(new File(args[0])));
-        SimilarityMetric metric = null;
-        for (SimilarityMetric m : conf.loadAllMetrics(true)) {
-            if (m.getName().equals(args[1])) {
-                metric = m;
-                break;
-            }
-        }
+        Env env = conf.loadEnv();
+        SimilarityMetric metric = env.getMetric(args[1]);
         if (metric == null) {
             System.err.println("couldn't find metric named " + args[1]);
             System.exit(1);
@@ -41,7 +37,7 @@ public class SimilarityConsole {
                         "\tor two phrases separated by commas for similarity()" +
                         "\tor exit to stop");
 
-        IndexHelper helper = conf.getHelper();
+        IndexHelper helper = env.getMainIndex();
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         while (true) {
             String line = in.readLine();

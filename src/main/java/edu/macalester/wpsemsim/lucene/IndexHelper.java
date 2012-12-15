@@ -1,10 +1,12 @@
 package edu.macalester.wpsemsim.lucene;
 
+import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
@@ -32,6 +34,7 @@ public class IndexHelper {
     private File indexDir;
     private final Map<TIntSet, WpIdFilter> filterCache =
             Collections.synchronizedMap(new LRUMap(FILTER_CACHE_SIZE));
+    private Analyzer analyzer;
 
 
     /**
@@ -334,5 +337,9 @@ public class IndexHelper {
             }
         }
         return filterCache.get(wpIds);
+    }
+
+    public void setAnalyzer(Analyzer analyzer) {
+        this.analyzer = analyzer;
     }
 }

@@ -7,6 +7,7 @@ import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import edu.macalester.wpsemsim.matrix.ValueConf;
 import edu.macalester.wpsemsim.sim.*;
+import edu.macalester.wpsemsim.sim.utils.SimilarityMetricBuilder;
 import edu.macalester.wpsemsim.sim.utils.SimilarityMetricConfigurator;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.io.FileUtils;
@@ -93,10 +94,9 @@ public class TestUtils {
         File index = buildIndexWithCategories();
         File conf = new File(index.getParent(), "conf.txt");
 
-        SimilarityMetricConfigurator configurator =
-                new SimilarityMetricConfigurator(new ConfigurationFile(conf));
-        configurator.build();
-        return configurator.loadAllMetrics();
+        SimilarityMetricBuilder builder = new SimilarityMetricBuilder(new ConfigurationFile(conf));
+        Env env = builder.build();
+        return new ArrayList<SimilarityMetric>(env.getMetrics().values());
     }
 
     public static ConfigurationFile makeSandboxConfiguration() throws IOException, ConfigurationFile.ConfigurationException {

@@ -6,9 +6,8 @@ import edu.macalester.wpsemsim.concepts.DictionaryMapper;
 import edu.macalester.wpsemsim.concepts.EnsembleMapper;
 import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
-import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
-import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
+import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
 import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
 import edu.macalester.wpsemsim.sim.LinkSimilarity;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
@@ -17,10 +16,8 @@ import edu.macalester.wpsemsim.sim.category.CategorySimilarity;
 import edu.macalester.wpsemsim.sim.category.CategoryGraph;
 import edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
-import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
-import org.apache.lucene.search.FieldCacheRangeFilter;
-import org.apache.lucene.search.Filter;
+import edu.macalester.wpsemsim.utils.Env;
 import org.json.simple.JSONObject;
 
 import java.io.*;
@@ -30,26 +27,58 @@ import java.util.logging.Logger;
 import static edu.macalester.wpsemsim.utils.ConfigurationFile.*;
 
 /*
-* TODO: share resources when possible; move to a true dependency injection framework
-*
-* For format, see JSON spec and dat/example-configuration.conf
-*/
+ * TODO: consider a dependency injection framework
+ *
+ * For format, see JSON spec and dat/example-configuration.conf
+ */
 public class SimilarityMetricConfigurator {
     private static final Logger LOG = Logger.getLogger(SimilarityMetricConfigurator.class.getName());
 
-    ConfigurationFile configuration;
-    ConceptMapper mapper;
-    IndexHelper helper;
+    protected ConfigurationFile configuration;
+    private boolean doEnsembles = true;
+    private boolean doPairwise = true;
+    private boolean shouldLoadIndexes = true;
+    private boolean shouldLoadMappers = true;
+    private boolean shouldLoadMetrics = true;
+
 
     public SimilarityMetricConfigurator(ConfigurationFile conf) {
         this.configuration = conf;
     }
 
-    public List<SimilarityMetric> loadAllMetrics() throws IOException, ConfigurationException {
-        return loadAllMetrics(false);
-
+    public Env loadEnv() throws IOException, ConfigurationException {
+        Env env = new Env(configuration);
+        if (shouldLoadIndexes) {
+            loadIndexes(env);
+        }
+        if (shouldLoadMappers) {
+            loadMappers(env);
+        }
+        if (shouldLoadMetrics) {
+            loadMetrics(env);
+        }
+        return env;
     }
-    public List<SimilarityMetric> loadAllMetrics(boolean doEnsembles) throws IOException, ConfigurationException {
+
+    public void loadMappers(Env env) throws IOException, ConfigurationException {
+        // Hack! TODO fixup mapper configuration format.
+        getMapper(env);
+    }
+
+    public void loadIndexes(Env env) throws ConfigurationException, IOException {
+        info("loading indexes");
+        JSONObject indexConfig = configuration.get("indexes");
+        File dir = requireDirectory(indexConfig, "outputDir");
+        Collection<String> namesToSkip = Arrays.asList("inputDir", "outputDir");
+        for (String name : (Set<String>)indexConfig.keySet()) {
+            if (namesToSkip.contains(name)) {
+                continue;
+            }
+            loadIndex(env, indexConfig, dir, name);
+        }
+    }
+
+    public List<SimilarityMetric> loadMetrics(Env env) throws IOException, ConfigurationException {
         info("loading metrics");
         Set<String> ensembleKeys = new HashSet<String>();
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
@@ -57,77 +86,95 @@ public class SimilarityMetricConfigurator {
             String type = requireString(configuration.get("metrics", key), "type");
             if (type.equals("ensemble")) {
                 ensembleKeys.add(key);
+            } else if (type.equals("pairwise") && !doPairwise) {
+                // do nothing
             } else {
-                metrics.add(loadMetric(key));
+                metrics.add(loadMetric(env, key));
             }
         }
         if (doEnsembles) {
             for (String key : ensembleKeys) {
-                metrics.add(loadEnsembleMetric(key, metrics));
+                metrics.add(loadEnsembleMetric(env, key, metrics));
             }
         }
         return metrics;
     }
 
-    private SimilarityMetric loadEnsembleMetric(String key, List<SimilarityMetric> metrics) throws IOException, ConfigurationException {
-        info("loading ensemble metric " + key);
-        try {
-            Map<String, Object> params = (Map<String, Object>) configuration.get("metrics").get(key);
-            EnsembleSimilarity similarity = new EnsembleSimilarity(getMapper(), getHelper());
-            similarity.setComponents(metrics);
-            similarity.read(requireDirectory(params, "model"));
-            similarity.setName(key);
-            if (params.containsKey("minComponents")) {
-                similarity.setMinComponents(requireInteger(params, "minComponents"));
+    private void loadIndex(Env env, JSONObject indexConfig, File dir, String name) throws IOException, ConfigurationException {
+        JSONObject p = (JSONObject)indexConfig.get(name);
+        IndexHelper helper = new IndexHelper(new File(dir, name), true);
+
+        if (p.containsKey("similarity")) {
+            String sim = requireString(p, "similarity");
+            if (sim.equals("ESA")) {
+                helper.getSearcher().setSimilarity(new ESASimilarity.LuceneSimilarity());
+            } else {
+                throw new ConfigurationException("unknown similarity type: " + sim);
             }
-            return similarity;
-        } catch (DatabaseException e) {
-            throw new ConfigurationException(e.toString());
         }
+        if (p.containsKey("analyzer")) {
+            String analyzer = requireString(p, "analyzer");
+            if (analyzer.equals("ESA")) {
+                helper.setAnalyzer(new ESAAnalyzer());
+            } else {
+                throw new ConfigurationException("unknown analyzer type: " + analyzer);
+            }
+        }
+        env.addIndex(name, helper);
     }
 
-    public SimilarityMetric loadMetric(String name) throws IOException, ConfigurationException {
-        return loadMetric(name, configuration.get("metrics", name));
+    private SimilarityMetric loadEnsembleMetric(Env env, String key, List<SimilarityMetric> metrics) throws IOException, ConfigurationException {
+        info("loading ensemble metric " + key);
+        Map<String, Object> params = (Map<String, Object>) configuration.get("metrics").get(key);
+        EnsembleSimilarity similarity = new EnsembleSimilarity(getMapper(env), env.getMainIndex());
+        similarity.setComponents(metrics);
+        similarity.read(requireDirectory(params, "model"));
+        similarity.setName(key);
+        if (params.containsKey("minComponents")) {
+            similarity.setMinComponents(requireInteger(params, "minComponents"));
+        }
+        env.addMetric(key, similarity);
+        return similarity;
     }
 
-    protected SimilarityMetric loadMetric(String name, JSONObject params) throws ConfigurationException, IOException {
+    public SimilarityMetric loadMetric(Env env, String name) throws IOException, ConfigurationException {
+        return loadMetric(env, name, configuration.get("metrics", name));
+    }
+
+    protected SimilarityMetric loadMetric(Env env, String name, JSONObject params) throws ConfigurationException, IOException {
         info("loading metric " + name);
         String type = requireString(params, "type");
         SimilarityMetric metric;
-        ConceptMapper mapper = null;
-        try {
-            mapper = getMapper();
-        } catch (DatabaseException e) {
-            throw new ConfigurationException(e.getMessage());
-        }
+        ConceptMapper mapper = getMapper(env);
         if (type.equals("category")) {
-            metric = createCategorySimilarity(params, mapper);
+            metric = createCategorySimilarity(env, params, mapper);
         } else if (type.equals("text")) {
-            metric = createTextSimilarity(params, mapper);
+            metric = createTextSimilarity(env, params, mapper);
         } else if (type.equals("esa")) {
-            metric = createEsaSimilarity(params, mapper);
+            metric = createEsaSimilarity(env, params, mapper);
         } else if (type.equals("links")) {
-            metric = createLinkSimilarity(params, mapper);
+            metric = createLinkSimilarity(env, params, mapper);
         } else if (type.equals("pairwise")) {
-            metric = createPairwiseSimilarity(params, mapper);
+            metric = createPairwiseSimilarity(env, params, mapper);
         } else {
             throw new ConfigurationException("Unknown metric type: " + type);
         }
         metric.setName(name);
+        env.addMetric(name, metric);
         return metric;
     }
 
-    private SimilarityMetric createPairwiseSimilarity(JSONObject params, ConceptMapper mapper) throws IOException, ConfigurationException {
+    private SimilarityMetric createPairwiseSimilarity(Env env, JSONObject params, ConceptMapper mapper) throws IOException, ConfigurationException {
         SimilarityMetric metric;SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
         SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
-        metric = new PairwiseCosineSimilarity(mapper, getHelper(), m, mt);
+        metric = new PairwiseCosineSimilarity(mapper, env.getMainIndex(), m, mt);
         return metric;
     }
 
-    private SimilarityMetric createLinkSimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
+    private SimilarityMetric createLinkSimilarity(Env env, JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
         SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
         String field = requireString(params, "field");
-        LinkSimilarity lmetric = new LinkSimilarity(mapper, new IndexHelper(luceneDir, true), getHelper(), field);
+        LinkSimilarity lmetric = new LinkSimilarity(mapper, new IndexHelper(luceneDir, true), env.getMainIndex(), field);
         if (params.containsKey("similarity")) {
             String sim = requireString(params, "similarity");
             if (sim.equals("tfidf")) {
@@ -151,7 +198,7 @@ public class SimilarityMetricConfigurator {
         return metric;
     }
 
-    private SimilarityMetric createEsaSimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
+    private SimilarityMetric createEsaSimilarity(Env env, JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
         File luceneDir = requireDirectory(params, "lucene");
         ESASimilarity metric = new ESASimilarity(mapper, new IndexHelper(luceneDir, true));
         if (params.containsKey("textLucene")) {
@@ -161,7 +208,7 @@ public class SimilarityMetricConfigurator {
         return metric;
     }
 
-    private SimilarityMetric createTextSimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
+    private SimilarityMetric createTextSimilarity(Env env, JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
         SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
         IndexHelper helper = new IndexHelper(luceneDir, true);
         String field = requireString(params, "field");
@@ -181,7 +228,7 @@ public class SimilarityMetricConfigurator {
         return metric;
     }
 
-    private SimilarityMetric createCategorySimilarity(JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
+    private SimilarityMetric createCategorySimilarity(Env env, JSONObject params, ConceptMapper mapper) throws ConfigurationException, IOException {
         SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
         IndexHelper helper = new IndexHelper(luceneDir, true);
         CategoryGraph graph = new CategoryGraph(helper);
@@ -190,110 +237,73 @@ public class SimilarityMetricConfigurator {
         return metric;
     }
 
-    public synchronized IndexHelper getHelper() throws ConfigurationException, IOException {
-        if (helper == null) {
-            helper = new IndexHelper(requireDirectory(configuration.get(), "index"), true);
-        }
-        return helper;
-    }
-
-    public synchronized  ConceptMapper getMapper() throws ConfigurationException, IOException, DatabaseException {
+    public synchronized  ConceptMapper getMapper(Env env) throws ConfigurationException, IOException {
+        ConceptMapper mapper = env.getMapper(Env.MAIN_KEY);
         if (mapper == null && configuration.get().containsKey("concept-mapper")) {
             if (configuration.get("concept-mapper").containsKey("ensemble")) {
-                mapper = getEnsembleMapper();
+                mapper = getEnsembleMapper(env);
             } else if (configuration.get("concept-mapper").containsKey("dictionary")) {
-                mapper = getDictionaryMapper();
+                mapper = getDictionaryMapper(env);
             } else if (configuration.get("concept-mapper").containsKey("lucene")) {
-                mapper = getLuceneMapper();
+                mapper = getLuceneMapper(env);
             } else {
                 throw new IllegalArgumentException("unrecognized concept mapper");
             }
+            env.addMapper(Env.MAIN_KEY, mapper);
         }
         return mapper;
     }
 
-    private ConceptMapper getEnsembleMapper() throws IOException, ConfigurationException, DatabaseException {
-        return new EnsembleMapper(
-                getDictionaryMapper(),
-                getLuceneMapper()
+    private ConceptMapper getEnsembleMapper(Env env) throws IOException, ConfigurationException {
+        ConceptMapper mapper = new EnsembleMapper(
+                getDictionaryMapper(env),
+                getLuceneMapper(env)
             );
+        env.addMapper("ensemble", mapper);
+        return mapper;
     }
 
-    private ConceptMapper getLuceneMapper() throws IOException, ConfigurationException {
+    private ConceptMapper getLuceneMapper(Env env) throws IOException, ConfigurationException {
         IndexHelper helper = new IndexHelper(
                 requireDirectory(configuration.get("concept-mapper"), "lucene"), false);
-        return new LuceneMapper(helper);
+        ConceptMapper mapper = new LuceneMapper(helper);
+        env.addMapper("lucene", mapper);
+        return mapper;
     }
 
-    private ConceptMapper getDictionaryMapper() throws IOException, DatabaseException, ConfigurationException {
-        return new DictionaryMapper(
-                requireDirectory(configuration.get("concept-mapper"), "dictionary"),
-                getHelper());
-    }
-
-    public void build() throws IOException, ConfigurationException, InterruptedException {
-        info("building all metrics");
-        List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-
-        // first do non-pairwise (no pre-processing required)
-        for (String key : configuration.getKeys("metrics")) {
-            JSONObject params = configuration.get("metrics", key);
-            if (!params.get("type").equals("pairwise")) {
-                metrics.add(loadMetric(key, params));
-            }
+    private ConceptMapper getDictionaryMapper(Env env) throws IOException, ConfigurationException {
+        try {
+            ConceptMapper mapper = new DictionaryMapper(
+                    requireDirectory(configuration.get("concept-mapper"), "dictionary"),
+                    env.getMainIndex());
+            env.addMapper("dictionary", mapper);
+            return mapper;
+        } catch (DatabaseException e) {
+            throw new IOException(e);
         }
-
-        // next do pairwise
-        IndexHelper helper = getHelper();
-        int wpIds[] = helper.getWpIds();
-        for (String key : configuration.getKeys("metrics")) {
-            JSONObject params = configuration.get("metrics", key);
-            if (params.get("type").equals("pairwise")) {
-                metrics.add(buildPairwise(key, params, metrics, wpIds));
-            }
-        }
-    }
-
-    protected Filter getFilter(JSONObject params) throws ConfigurationException {
-        if (params.containsKey("minInLinks")) {
-            int minLinks = requireInteger(params, "minInLinks");
-            return FieldCacheRangeFilter.newIntRange(Page.FIELD_NINLINKS, minLinks, Integer.MAX_VALUE, true, true);
-        } else {
-            throw new ConfigurationException("unrecognized filter: " + params);
-        }
-    }
-
-    protected SimilarityMetric buildPairwise(String name, JSONObject params, List<SimilarityMetric> metrics, int[] wpIds) throws ConfigurationException, IOException, InterruptedException {
-        info("building metric " + name);
-        String basedOnName = requireString(params, "basedOn");
-        SimilarityMetric basedOn = null;
-        for (SimilarityMetric m : metrics) {
-            if (m.getName().equals(basedOnName)) {
-                basedOn = m;
-                break;
-            }
-        }
-        if (basedOn == null) {
-            throw new ConfigurationException("could not find basedOn metric: " + basedOnName);
-        }
-
-        File matrixFile = new File(requireString(params, "matrix"));
-        File transposeFile = new File(requireString(params, "transpose"));
-        PairwiseSimilarityWriter writer =
-                new PairwiseSimilarityWriter(basedOn, matrixFile);
-        writer.writeSims(wpIds, 1, 20);
-        SparseMatrix matrix = new SparseMatrix(matrixFile);
-        SparseMatrixTransposer transposer = new SparseMatrixTransposer(matrix, transposeFile, 100);
-        transposer.transpose();
-        SparseMatrix transpose = new SparseMatrix(transposeFile);
-
-        SimilarityMetric metric = new PairwiseCosineSimilarity(matrix, transpose);
-        metric.setName(name);
-
-        return metric;
     }
 
     private void info(String message) {
         LOG.info("configurator for " + configuration.getPath() + ": " + message);
+    }
+
+    public void setDoEnsembles(boolean doEnsembles) {
+        this.doEnsembles = doEnsembles;
+    }
+
+    public void setDoPairwise(boolean doPairwise) {
+        this.doPairwise = doPairwise;
+    }
+
+    public void setShouldLoadIndexes(boolean shouldLoadIndexes) {
+        this.shouldLoadIndexes = shouldLoadIndexes;
+    }
+
+    public void setShouldLoadMappers(boolean shouldLoadMappers) {
+        this.shouldLoadMappers = shouldLoadMappers;
+    }
+
+    public void setShouldLoadMetrics(boolean shouldLoadMetrics) {
+        this.shouldLoadMetrics = shouldLoadMetrics;
     }
 }

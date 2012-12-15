@@ -8,10 +8,7 @@ import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.sim.utils.SimilarityMetricConfigurator;
-import edu.macalester.wpsemsim.utils.ConfigurationFile;
-import edu.macalester.wpsemsim.utils.DocScore;
-import edu.macalester.wpsemsim.utils.DocScoreList;
-import edu.macalester.wpsemsim.utils.KnownSim;
+import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.TIntSet;
 import libsvm.*;
@@ -341,18 +338,19 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
             FileUtils.forceDelete(modelPath);
         }
         modelPath.mkdirs();
+        conf.setDoEnsembles(false);
+        Env env = conf.loadEnv();
         EnsembleSimilarity ensemble = new EnsembleSimilarity(
-                conf.getMapper(),
-                conf.getHelper()
+                env.getMainMapper(), env.getMainIndex()
         );
 //        ensemble.setNumThreads(1);
         ensemble.setMinComponents(0);
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
         if (args.length == 4) {
-            metrics = conf.loadAllMetrics();
+            metrics = new ArrayList<SimilarityMetric>(env.getMetrics().values());
         } else {
             for (String name : ArrayUtils.subarray(args, 4, args.length)) {
-                metrics.add(conf.loadMetric(name));
+                metrics.add(env.getMetric(name));
             }
         }
         ensemble.setComponents(metrics);

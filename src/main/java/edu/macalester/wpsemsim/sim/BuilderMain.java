@@ -4,6 +4,7 @@ import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
 import edu.macalester.wpsemsim.sim.utils.SimilarityMetricConfigurator;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DefaultOptionBuilder;
+import edu.macalester.wpsemsim.utils.Env;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.cli.*;
@@ -104,12 +105,14 @@ public class BuilderMain {
 
         ConfigurationFile conf = new ConfigurationFile(pathConf);
         SimilarityMetricConfigurator configurator = new SimilarityMetricConfigurator(conf);
-        SimilarityMetric m = configurator.loadMetric(metricName);
+        configurator.setShouldLoadMetrics(false);
 
+        Env env = configurator.loadEnv();
+        SimilarityMetric m = configurator.loadMetric(env, metricName);
         PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(m, outputFile);
         if (validIds != null) {
             writer.setValidIds(validIds);
         }
-        writer.writeSims(configurator.getHelper().getWpIds(), numThreads, numResults);
+        writer.writeSims(env.getMainIndex().getWpIds(), numThreads, numResults);
     }
 }
