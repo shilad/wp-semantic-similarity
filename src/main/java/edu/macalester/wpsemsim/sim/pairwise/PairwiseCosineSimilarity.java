@@ -81,6 +81,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
         if (basedOn == null) {
             throw new IllegalArgumentException("basedOn must be non-null if buildPhraseVectors is true");
         }
+        initIfNeeded();
         DocScoreList list1 = basedOn.mostSimilar(phrase1, maxResults, idsInResults);
         DocScoreList list2 = basedOn.mostSimilar(phrase2, maxResults, idsInResults);
         list1.makeUnitLength();
