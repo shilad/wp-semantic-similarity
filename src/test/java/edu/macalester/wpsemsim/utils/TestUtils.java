@@ -22,7 +22,7 @@ import java.util.Random;
 public class TestUtils {
     public static File TEST_INPUT_FILE = new File("dat/test/dump/wp.test.xml");
     public static final File TEST_CATEGORIES = new File("dat/test/article_cats.txt");
-    public static final File TEST_CONF = new File("dat/test/test-configuration.txt");
+    public static final File TEST_CONF = new File("conf/test-configuration.json");
     /**
      * Build a lucene index for the test data.
      * @return

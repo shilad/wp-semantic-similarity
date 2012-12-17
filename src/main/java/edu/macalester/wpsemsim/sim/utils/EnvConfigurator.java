@@ -244,7 +244,7 @@ public class EnvConfigurator {
         JSONObject params = configuration.getMetric(name);
         SimilarityMetric metric;SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
         SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
-        metric = new PairwiseCosineSimilarity(loadMainMapper(), env.getMainIndex(), m, mt);
+        metric = new PairwiseCosineSimilarity(loadMainMapper(), loadMainIndex(), m, mt);
         return metric;
     }
 
@@ -351,6 +351,10 @@ public class EnvConfigurator {
 
     protected ConceptMapper loadMainMapper() throws IOException, ConfigurationException {
         return loadMapper(Env.MAIN_KEY);
+    }
+
+    protected IndexHelper loadMainIndex() throws IOException, ConfigurationException {
+        return loadIndex(Env.MAIN_KEY);
     }
 
     public void setDoEnsembles(boolean doEnsembles) {
