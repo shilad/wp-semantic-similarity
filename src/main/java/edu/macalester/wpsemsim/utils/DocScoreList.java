@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.utils;
 
+import gnu.trove.map.hash.TIntFloatHashMap;
 import org.apache.commons.collections.iterators.ArrayIterator;
 
 import java.util.Arrays;
@@ -50,20 +51,34 @@ public class DocScoreList implements Iterable<DocScore> {
         return ids;
     }
 
-    public double[] getScores() {
-        double result[] = new double[numDocs];
-        for (int i = 0; i < numDocs; i++) {
-            result[i] = results[i].score;
-        }
-        return result;
-    }
-
     public float[] getScoresAsFloat() {
         float result[] = new float[numDocs];
         for (int i = 0; i < numDocs; i++) {
             result[i] = (float) results[i].score;
         }
         return result;
+    }
+
+    public TIntFloatHashMap asTroveMap() {
+        TIntFloatHashMap map = new TIntFloatHashMap();
+        for (int i = 0; i < numDocs; i++) {
+            map.put(results[i].id, (float) results[i].score);
+        }
+        return map;
+    }
+
+    public void makeUnitLength() {
+        double length = 0.0;
+        for (int i = 0; i < numDocs; i++) {
+            double x = results[i].score;
+            length += x * x;
+        }
+        if (length != 0) {
+            length = Math.sqrt(length);
+            for (int i = 0; i < numDocs; i++) {
+                results[i].score /= length;
+            }
+        }
     }
 
     public void sort() {

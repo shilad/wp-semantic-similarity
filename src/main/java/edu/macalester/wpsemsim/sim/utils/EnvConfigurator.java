@@ -242,9 +242,16 @@ public class EnvConfigurator {
 
     private SimilarityMetric createPairwiseSimilarity(String name) throws IOException, ConfigurationException {
         JSONObject params = configuration.getMetric(name);
-        SimilarityMetric metric;SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
+        PairwiseCosineSimilarity metric;
+        SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
         SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
         metric = new PairwiseCosineSimilarity(loadMainMapper(), loadMainIndex(), m, mt);
+        if (params.containsKey("basedOn")) {
+            metric.setBasedOn(loadMetric(requireString(params, "basedOn")));
+        }
+        if (params.containsKey("buildPhraseVectors")) {
+            metric.setBuildPhraseVectors(requireBoolean(params, "buildPhraseVectors"));
+        }
         return metric;
     }
 

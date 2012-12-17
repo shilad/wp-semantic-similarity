@@ -11,6 +11,7 @@ import edu.macalester.wpsemsim.utils.Leaderboard;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
 import gnu.trove.set.TIntSet;
+import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +22,10 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
 
     private SparseMatrix matrix;
     private SparseMatrix transpose;
-    private TIntFloatHashMap lengths;   // lengths of each row
+    private TIntFloatHashMap lengths = null;   // lengths of each row
+    private int maxResults = -1;
+    private SimilarityMetric basedOn;   // underlying similarity metric that generated these similarities
+    private boolean buildPhraseVectors; // if true, build phrase vectors using the underlying similarity metric.
 
     public PairwiseCosineSimilarity(SparseMatrix matrix, SparseMatrix transpose) throws IOException {
         this(null, null, matrix, transpose);
@@ -36,15 +40,18 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
                 transpose.getPath() + ")");
     }
 
+    public void setBasedOn(SimilarityMetric metric) {
+        this.basedOn = metric;
+    }
+
+
+
     public void calculateRowLengths() {
-        LOG.info("calculating row lengths");
         lengths = new TIntFloatHashMap();
+        LOG.info("calculating row lengths");
         for (SparseMatrixRow row : matrix) {
-            double length = 0.0;
-            for (int i = 0; i < row.getNumCols(); i++) {
-                length += row.getColValue(i) * row.getColValue(i);
-            }
-            lengths.put(row.getRowIndex(), (float) Math.sqrt(length));
+            lengths.put(row.getRowIndex(), (float) row.getNorm());
+            maxResults = Math.max(maxResults, row.getNumCols());
         }
     }
 
@@ -60,41 +67,59 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
 //            LOG.info("unknown wpId: " + wpId2);
             return 0;
         }
-        TIntFloatHashMap map1 = row1.asTroveMap();
-        TIntFloatHashMap map2 = row2.asTroveMap();
-        double xDotX = 0.0;
-        double yDotY = 0.0;
-        double xDotY = 0.0;
+        return cosineSimilarity(row1.asTroveMap(), row2.asTroveMap());
+    }
 
-        for (float x: map1.values()) { xDotX += x * x; }
-        for (float y: map2.values()) { yDotY += y * y; }
-        for (int id : map1.keys()) {
-            if (map2.containsKey(id)) {
-                xDotY += map1.get(id) * map2.get(id);
-            }
+    @Override
+    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+        if (!buildPhraseVectors) {
+            return super.similarity(phrase1, phrase2);
         }
-
-        return xDotY / Math.sqrt(xDotX * yDotY);
+        if (basedOn == null) {
+            throw new IllegalArgumentException("basedOn must be non-null if buildPhraseVectors is true");
+        }
+        DocScoreList list1 = basedOn.mostSimilar(phrase1, maxResults);
+        DocScoreList list2 = basedOn.mostSimilar(phrase2, maxResults);
+        list1.makeUnitLength();
+        list2.makeUnitLength();
+        return cosineSimilarity(list1.asTroveMap(), list2.asTroveMap());
     }
 
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
+        SparseMatrixRow row = matrix.getRow(wpId);
+        if (row == null) {
+            LOG.info("unknown wpId: " + wpId);
+            return new DocScoreList(0);
+        }
+        TIntFloatHashMap vector = row.asTroveMap();
+        return mostSimilar(maxResults, validIds, vector);
+    }
+
+    @Override
+    public DocScoreList mostSimilar(String phrase, int maxResults, TIntSet validIds) throws IOException {
+        if (!buildPhraseVectors) {
+            return super.mostSimilar(phrase, maxResults, validIds);
+        }
+        if (basedOn == null) {
+            throw new IllegalArgumentException("basedOn must be non-null if buildPhraseVectors is true");
+        }
+        DocScoreList list = basedOn.mostSimilar(phrase, maxResults, validIds);
+        return mostSimilar(maxResults, validIds, list.asTroveMap());
+
+    }
+
+    private DocScoreList mostSimilar(int maxResults, TIntSet validIds, TIntFloatHashMap vector) throws IOException {
         synchronized (this) {
             if (lengths == null) {
                 calculateRowLengths();
             }
         }
 
-        SparseMatrixRow row = matrix.getRow(wpId);
-        if (row == null) {
-            LOG.info("unknown wpId: " + wpId);
-            return new DocScoreList(0);
-        }
         TIntDoubleHashMap dots = new TIntDoubleHashMap();
 
-        for (int i = 0; i < row.getNumCols(); i++) {
-            int id = row.getColIndex(i);
-            float val1 = row.getColValue(i);
+        for (int id : vector.keys()) {
+            float val1 = vector.get(id);
             SparseMatrixRow row2 = transpose.getRow(id);
             for (int j = 0; j < row2.getNumCols(); j++) {
                 int id2 = row2.getColIndex(j);
@@ -106,14 +131,44 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
         }
 
         final Leaderboard leaderboard = new Leaderboard(maxResults);
+        double rowNorm = norm(vector);
         for (int id : dots.keys()) {
             double l1 = lengths.get(id);
-            double l2 = lengths.get(row.getRowIndex());
+            double l2 = rowNorm;
             double dot = dots.get(id);
             double sim = dot / (l1 * l2);
             leaderboard.tallyScore(id, sim);
         }
+
         return leaderboard.getTop();
+    }
+
+
+    private double cosineSimilarity(TIntFloatHashMap map1, TIntFloatHashMap map2) {
+        double xDotX = 0.0;
+        double yDotY = 0.0;
+        double xDotY = 0.0;
+
+        for (float x: map1.values()) { xDotX += x * x; }
+        for (float y: map2.values()) { yDotY += y * y; }
+        for (int id : map1.keys()) {
+            if (map2.containsKey(id)) {
+                xDotY += map1.get(id) * map2.get(id);
+            }
+        }
+        return xDotY / Math.sqrt(xDotX * yDotY);
+    }
+
+    private double norm(TIntFloatHashMap vector) {
+        double length = 0;
+        for (float x : vector.values()) {
+            length += x * x;
+        }
+        return Math.sqrt(length);
+    }
+
+    public void setBuildPhraseVectors(boolean buildPhraseVectors) {
+        this.buildPhraseVectors = buildPhraseVectors;
     }
 
     public static int PAGE_SIZE = 1024*1024*500;    // 500MB

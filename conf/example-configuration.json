@@ -110,11 +110,19 @@
             "lucene" : "links",
             "similarity" : "lucene"
         },
+        "pairwise-esa" : {
+            "type" : "pairwise",
+            "matrix" : "dat/esa-sims.matrix",
+            "basedOn" : "esa",
+            "transpose" : "dat/esa-sims.transpose.matrix",
+            "buildPhraseVectors" : true,
+        },
         "pairwise-text" : {
             "type" : "pairwise",
             "matrix" : "dat/text-sims.matrix",
             "basedOn" : "article-text",
             "transpose" : "dat/text-sims.transpose.matrix",
+            "buildPhraseVectors" : true,
         },
         "pairwise-links" : {
             "type" : "pairwise",

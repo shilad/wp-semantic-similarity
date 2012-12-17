@@ -153,4 +153,12 @@ public final class SparseMatrixRow {
         }
         return result;
     }
+
+    public double getNorm() {
+        double length = 0.0;
+        for (int i = 0; i < getNumCols(); i++) {
+            length += getColValue(i) * getColValue(i);
+        }
+        return Math.sqrt(length);
+    }
 }
