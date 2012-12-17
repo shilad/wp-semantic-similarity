@@ -17,9 +17,15 @@ Instructions for building the semantic similarity network:
 -----------
 * Clone this project
 * Download the wikipedia dumps from http://dumps.wikimedia.org/enwiki/ . You want the *-pages-articles*.bz2 files, but the version broken down into many (25 or so) different bz2 files.
-* Create the lucene index. This should take an hour or two:
+* Create a configuration file modeled after the example in conf/example.configuration.js
+* Create the lucene index. Both steps should take an hour or two:
 
-  `./bin/index.sh path/to/dump/bz2s/dir lucene/output/dir jvm_MBs`
+  `./bin/index.sh conf/example.configuration.json jvm_MBs esa`
+  `./bin/index.sh conf/example.configuration.json jvm_MBs text cats links main`
+
+* Create the concept mapper index, which is used to map phrases to Wikipedia articles. Download dictionary.bz2 from http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/dictionary.bz2, then run:
+
+  `./bin/make-concept-index.sh path/to/dictionary.bz2 path/to/index/output-directory jvm_MBs`
 
 * Generate the similarity files:
 
