@@ -8,7 +8,6 @@ import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import edu.macalester.wpsemsim.matrix.ValueConf;
 import edu.macalester.wpsemsim.sim.*;
 import edu.macalester.wpsemsim.sim.utils.SimilarityMetricBuilder;
-import edu.macalester.wpsemsim.sim.utils.SimilarityMetricConfigurator;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;

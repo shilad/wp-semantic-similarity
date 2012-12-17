@@ -183,7 +183,7 @@ public class SimilarityAnalyzer {
             );
             System.exit(1);
         }
-        SimilarityMetricConfigurator conf = new SimilarityMetricConfigurator(
+        EnvConfigurator conf = new EnvConfigurator(
                 new ConfigurationFile(new File(args[0])));
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
@@ -193,10 +193,10 @@ public class SimilarityAnalyzer {
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
         if (args.length == 3) {
-            metrics = conf.loadMetrics(env);
+            metrics = conf.loadMetrics();
         } else {
             for (String name : ArrayUtils.subarray(args, 3, args.length)) {
-                metrics.add(conf.loadMetric(env, name));
+                metrics.add(conf.loadMetric(name));
             }
         }
         analyzer.analyzeMetrics(metrics, writer);

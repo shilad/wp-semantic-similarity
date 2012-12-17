@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 
 import static edu.macalester.wpsemsim.utils.ConfigurationFile.*;
 
-public class SimilarityMetricBuilder extends SimilarityMetricConfigurator {
+public class SimilarityMetricBuilder extends EnvConfigurator {
     private static final Logger LOG = Logger.getLogger(SimilarityMetricBuilder.class.getName());
 
     public SimilarityMetricBuilder(ConfigurationFile conf) {
@@ -26,21 +26,21 @@ public class SimilarityMetricBuilder extends SimilarityMetricConfigurator {
 
     public Env build() throws IOException, ConfigurationFile.ConfigurationException, InterruptedException {
         // load everything
-        Env env = loadEnv();
+        loadEnv();
 
         // build pairwise
         int wpIds[] = env.getMainIndex().getWpIds();
         for (String key : configuration.getKeys("metrics")) {
             JSONObject params = configuration.get("metrics", key);
             if (params.get("type").equals("pairwise")) {
-                buildPairwise(env, key, params, wpIds);
+                buildPairwise(key, params, wpIds);
             }
         }
 
         return env;
     }
 
-    protected SimilarityMetric buildPairwise(Env env, String name, JSONObject params, int[] wpIds) throws ConfigurationFile.ConfigurationException, IOException, InterruptedException {
+    protected SimilarityMetric buildPairwise(String name, JSONObject params, int[] wpIds) throws ConfigurationFile.ConfigurationException, IOException, InterruptedException {
         info("building metric " + name);
         String basedOnName = requireString(params, "basedOn");
         SimilarityMetric basedOn = env.getMetric(basedOnName);

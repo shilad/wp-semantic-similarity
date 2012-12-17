@@ -7,16 +7,12 @@ import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import edu.macalester.wpsemsim.sim.utils.SimilarityMetricConfigurator;
+import edu.macalester.wpsemsim.sim.utils.EnvConfigurator;
 import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.TIntSet;
-import libsvm.*;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
@@ -331,7 +327,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
             );
             System.exit(1);
         }
-        SimilarityMetricConfigurator conf = new SimilarityMetricConfigurator(
+        EnvConfigurator conf = new EnvConfigurator(
                 new ConfigurationFile(new File(args[0])));
         File modelPath = new File(args[2]);
         if (modelPath.exists()) {

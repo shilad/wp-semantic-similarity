@@ -23,7 +23,7 @@ public class SimilarityConsole {
                             " path/to/sim/metric/conf.txt metric-name");
             System.exit(1);
         }
-        SimilarityMetricConfigurator conf = new SimilarityMetricConfigurator(
+        EnvConfigurator conf = new EnvConfigurator(
                 new ConfigurationFile(new File(args[0])));
         Env env = conf.loadEnv();
         SimilarityMetric metric = env.getMetric(args[1]);

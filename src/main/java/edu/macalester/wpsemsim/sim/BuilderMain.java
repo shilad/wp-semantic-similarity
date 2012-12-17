@@ -1,7 +1,7 @@
 package edu.macalester.wpsemsim.sim;
 
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
-import edu.macalester.wpsemsim.sim.utils.SimilarityMetricConfigurator;
+import edu.macalester.wpsemsim.sim.utils.EnvConfigurator;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DefaultOptionBuilder;
 import edu.macalester.wpsemsim.utils.Env;
@@ -104,11 +104,11 @@ public class BuilderMain {
         }
 
         ConfigurationFile conf = new ConfigurationFile(pathConf);
-        SimilarityMetricConfigurator configurator = new SimilarityMetricConfigurator(conf);
+        EnvConfigurator configurator = new EnvConfigurator(conf);
         configurator.setShouldLoadMetrics(false);
 
         Env env = configurator.loadEnv();
-        SimilarityMetric m = configurator.loadMetric(env, metricName);
+        SimilarityMetric m = configurator.loadMetric(metricName);
         PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(m, outputFile);
         if (validIds != null) {
             writer.setValidIds(validIds);

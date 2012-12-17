@@ -9,6 +9,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Contains the configuration for the similarity metric environment in JSON format.
+ * See conf/example.configuration.json.
+ */
 public class ConfigurationFile {
     private JSONObject conf;
     private File file;
@@ -152,22 +156,62 @@ public class ConfigurationFile {
         return result;
     }
 
-    public boolean isSimilarityMetric(String key) {
-        if (!(conf.get(key) instanceof JSONObject)) {
-            return false;
-        }
-        if (!get(key).containsKey("type")) {
-            return false;
-        }
-        return get(key).get("type") instanceof String;
-    }
-
     public JSONObject get() {
         return conf;
     }
 
     public File getPath() {
         return file;
+    }
+    /**
+     * Gets the configuration for all indexes.
+     * @return
+     */
+    public JSONObject getIndexes() {
+        return get("indexes");
+    }
+
+    /**
+     * Returns the configuration of a particular index
+     * @param name Name of index.
+     * @return Configuration for that index.
+     */
+    public JSONObject getIndex(String name) {
+        return (JSONObject) get("indexes").get(name);
+    }
+
+    /**
+     * Gets the configuration for all metrics.
+     * @return
+     */
+    public JSONObject getMetrics() {
+        return get("metrics");
+    }
+
+    /**
+     * Returns the configuration of a particular metric.
+     * @param name Name of metric.
+     * @return Configuration for that metric.
+     */
+    public JSONObject getMetric(String name) {
+        return (JSONObject)get("metrics").get(name);
+    }
+
+    /**
+     * The configuration of all mappers.
+     * @return
+     */
+    public JSONObject getMappers() {
+        return get("mappers");
+    }
+
+    /**
+     * The configuration of a specific mapper.
+     * @param name
+     * @return
+     */
+    public JSONObject getMapper(String name) {
+        return (JSONObject) getMappers().get(name);
     }
 
 

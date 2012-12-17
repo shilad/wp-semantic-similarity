@@ -1,9 +1,15 @@
 {
     // The concept mapper that maps phrases to articles
-    "concept-mapper" : {
-//        "ensemble" : true,
-        "dictionary" : "dat/dictionary.pruned",
-//        "lucene" : "dat/lucene/esa",
+    "mapper" : {
+        "main" : {
+            "type" : "dictionary",
+            "indexName" : "main",
+            "dir" : "dat/dictionary.pruned"
+        },
+//        "lucene" : {
+//            "type" : "lucene",
+//            "indexName" : "esa"
+//        }
     },
 
     "indexes" : {
@@ -69,15 +75,12 @@
     "metrics" : {
         "article-cats" : {
             "type" : "category",
-            "lucene" : "dat/lucene/cats",
+            "lucene" : "cats",
         },
         "esa" : {
             "type" : "esa",
-            "lucene" : "dat/lucene/esa",
-            "textLucene" : "dat/lucene/text",
-            "mostSimilarFilter" : {
-                "minInLinks" : 50
-            }
+            "lucene" : "esa",
+            "textLucene" : "text",
         },
         "article-text" : {
             "type" : "text",
@@ -85,7 +88,7 @@
             "maxPercentage" : 10,
             "minTermFreq" : 2,
             "minDocFreq" : 6,
-            "lucene" : "dat/lucene/text",
+            "lucene" : "text",
         },
         "article-links" : {
             "type" : "text",
@@ -93,18 +96,18 @@
             "maxPercentage" : 10,
             "minTermFreq" : 1,
             "minDocFreq" : 2,
-            "lucene" : "dat/lucene/links",
+            "lucene" : "links",
         },
         "outlinks" : {
             "type" : "links",
             "field" : "links",
-            "lucene" : "dat/lucene/links",
+            "lucene" : "links",
             "similarity" : "lucene"
         },
         "inlinks" : {
             "type" : "links",
             "field" : "inlinks",
-            "lucene" : "dat/lucene/links",
+            "lucene" : "links",
             "similarity" : "lucene"
         },
         "pairwise-text" : {
@@ -112,9 +115,6 @@
             "matrix" : "dat/text-sims.matrix",
             "basedOn" : "article-text",
             "transpose" : "dat/text-sims.transpose.matrix",
-            "mostSimilarFilter" : {
-                "minInLinks" : 50
-            }
         },
         "pairwise-links" : {
             "type" : "pairwise",
