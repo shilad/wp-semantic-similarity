@@ -11,6 +11,7 @@ import edu.macalester.wpsemsim.utils.Leaderboard;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntFloatHashMap;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.File;
@@ -26,6 +27,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
     private int maxResults = -1;
     private SimilarityMetric basedOn;   // underlying similarity metric that generated these similarities
     private boolean buildPhraseVectors; // if true, build phrase vectors using the underlying similarity metric.
+    private TIntSet idsInResults = new TIntHashSet();
 
     public PairwiseCosineSimilarity(SparseMatrix matrix, SparseMatrix transpose) throws IOException {
         this(null, null, matrix, transpose);
@@ -44,14 +46,15 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
         this.basedOn = metric;
     }
 
-
-
-    public void calculateRowLengths() {
-        lengths = new TIntFloatHashMap();
-        LOG.info("calculating row lengths");
-        for (SparseMatrixRow row : matrix) {
-            lengths.put(row.getRowIndex(), (float) row.getNorm());
-            maxResults = Math.max(maxResults, row.getNumCols());
+    public synchronized void initIfNeeded() {
+        if (lengths == null) {
+            LOG.info("building cached matrix information");
+            lengths = new TIntFloatHashMap();
+            for (SparseMatrixRow row : matrix) {
+                lengths.put(row.getRowIndex(), (float) row.getNorm());
+                maxResults = Math.max(maxResults, row.getNumCols());
+            }
+            idsInResults.addAll(transpose.getRowIds());
         }
     }
 
@@ -78,8 +81,8 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
         if (basedOn == null) {
             throw new IllegalArgumentException("basedOn must be non-null if buildPhraseVectors is true");
         }
-        DocScoreList list1 = basedOn.mostSimilar(phrase1, maxResults);
-        DocScoreList list2 = basedOn.mostSimilar(phrase2, maxResults);
+        DocScoreList list1 = basedOn.mostSimilar(phrase1, maxResults, idsInResults);
+        DocScoreList list2 = basedOn.mostSimilar(phrase2, maxResults, idsInResults);
         list1.makeUnitLength();
         list2.makeUnitLength();
         return cosineSimilarity(list1.asTroveMap(), list2.asTroveMap());
@@ -104,18 +107,14 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
         if (basedOn == null) {
             throw new IllegalArgumentException("basedOn must be non-null if buildPhraseVectors is true");
         }
-        DocScoreList list = basedOn.mostSimilar(phrase, maxResults, validIds);
+        initIfNeeded();
+        DocScoreList list = basedOn.mostSimilar(phrase, maxResults, idsInResults);
         return mostSimilar(maxResults, validIds, list.asTroveMap());
 
     }
 
     private DocScoreList mostSimilar(int maxResults, TIntSet validIds, TIntFloatHashMap vector) throws IOException {
-        synchronized (this) {
-            if (lengths == null) {
-                calculateRowLengths();
-            }
-        }
-
+        initIfNeeded();
         TIntDoubleHashMap dots = new TIntDoubleHashMap();
 
         for (int id : vector.keys()) {
