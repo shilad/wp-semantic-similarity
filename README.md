@@ -27,7 +27,9 @@ Instructions for building the semantic similarity network:
 
   `./bin/make-concept-index.sh path/to/dictionary.bz2 path/to/index/output-directory jvm_MBs`
   
-* TODO: compute the list of ids that will appear as column ids in the similar matrix
+* Compute the list of ids that may appear as column ids in the similarity matrix (these are the 250K most linked-to ids):
+
+  `./bin/make-valid-ids.sh conf/example-configuration.json 50`
 
 * Generate the precomputed similarity matrices:
 
