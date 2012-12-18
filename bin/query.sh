@@ -6,16 +6,22 @@
 #
 
 
-if [ $# -lt 2 ]; then
-    echo "usage: $0 path/to/conf.txt index_name num_results <query.txt" >&2
+if [ $# -lt 4 ]; then
+    echo "usage: $0 path/to/conf.txt index_name num_results query....." >&2
     exit 1
 fi
 
-query=`cat`
+conf=$1
+index=$2
+num_results=$3
+
+shift 3
+
+query=$@
 
 echo "executing query $query"
 
 export MAVEN_OPTS="-Xmx1000M -server -ea"
 mvn compile &&
 echo "$query" |
-mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.lucene.WpQuery" -D exec.classpathScope=runtime  -D exec.args="$1 $2 $3"
+mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.lucene.WpQuery" -D exec.classpathScope=runtime  -D exec.args="$conf $index $num_results"
