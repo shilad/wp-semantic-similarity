@@ -1,6 +1,6 @@
 {
     // The concept mapper that maps phrases to articles
-    "mapper" : {
+    "mappers" : {
         "main" : {
             "type" : "dictionary",
             "indexName" : "main",
