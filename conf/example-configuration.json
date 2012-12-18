@@ -4,7 +4,7 @@
         "main" : {
             "type" : "dictionary",
             "indexName" : "main",
-            "dir" : "dat/dictionary.pruned"
+            "dictionary" : "dat/dictionary.pruned"
         },
 //        "lucene" : {
 //            "type" : "lucene",
