@@ -257,9 +257,9 @@ public class EnvConfigurator {
 
     private SimilarityMetric createLinkSimilarity(String name) throws ConfigurationException, IOException {
         JSONObject params = configuration.getMetric(name);
-        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
+        SimilarityMetric metric;
         String field = requireString(params, "field");
-        LinkSimilarity lmetric = new LinkSimilarity(loadMainMapper(), new IndexHelper(luceneDir, true), env.getMainIndex(), field);
+        LinkSimilarity lmetric = new LinkSimilarity(loadMainMapper(), loadIndex(requireString(params, "lucene")), env.getMainIndex(), field);
         if (params.containsKey("similarity")) {
             String sim = requireString(params, "similarity");
             if (sim.equals("tfidf")) {
