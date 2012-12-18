@@ -26,20 +26,25 @@ Instructions for building the semantic similarity network:
 * Create the concept mapper index, which is used to map phrases to Wikipedia articles. Download dictionary.bz2 from http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/dictionary.bz2, then run:
 
   `./bin/make-concept-index.sh path/to/dictionary.bz2 path/to/index/output-directory jvm_MBs`
+  
+* TODO: compute the list of ids that will appear as column ids in the similar matrix
 
-* Generate the similarity files:
+* Generate the precomputed similarity matrices:
 
-  `./bin/cat-sim.sh ./dat/lucene/cats/ ./dat/cat.sims.matrix 500 cache-size-in-MB`
-  `./bin/text-sim.sh ./dat/lucene/text/ ./dat/text.sims.matrix 500 cache-size-in-MB`
-  `./bin/link-sim.sh ./dat/lucene/links/ ./dat/links.sims.matrix 500 cache-size-in-MB`
-
-  The cat and link jobs are fast (less than an hour). The text job takes 5 to 10 hours.
+  `./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n esa -o dat/esa-sims.matrix -r 500 -v dat/valid_ids.txt`
+  `./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n text -o dat/text-sims.matrix -r 500 -v dat/valid_ids.txt`
+  `./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n links -o dat/link-sims.matrix -r 500 -v dat/valid_ids.txt`
+  `./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n inlinks -o dat/inlink-sims.matrix -r 500 -v dat/valid_ids.txt`
+  
+  The text and esa jobs will take quite a while - many hours.
 
 * Generate the tranposes of the similarity files:
 
   `./bin/transpose.sh ./dat/cat-sims.matrix ./dat/cat-sims.transpose.matrix 24000 5000`
   `./bin/transpose.sh ./dat/text-sims.matrix ./dat/text-sims.transpose.matrix 24000 5000`
   `./bin/transpose.sh ./dat/link-sims.matrix ./dat/link-sims.transpose.matrix 24000 5000`
+  `./bin/transpose.sh ./dat/esa-sims.matrix ./dat/esa-sims.transpose.matrix 24000 5000`
+  `./bin/transpose.sh ./dat/inlink-sims.matrix ./dat/inlink-sims.transpose.matrix 24000 5000`
   
   These take about 30 min each.
 
@@ -49,17 +54,8 @@ Instructions for building the semantic similarity network:
 
   This should take about a minute, and it writes a combined gold standard dataset from a variety of sources to dat/gold/combined.tab.txt.
 
-* Create the concept mapper index, which is used to map phrases to Wikipedia articles. Download dictionary.bz2 from http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/dictionary.bz2, then run:
-
-  `./bin/make-concept-index.sh path/to/dictionary.bz2 path/to/index/output-directory jvm_MBs`
-
 * Fit the combined model:
   `TODO`
 
-* Generate the pairwise similarity files:
-
-  `./bin/pairwise-sim.sh ./dat/cat-sims.matrix ./dat/cat-sims.transpose.matrix ./dat/cat-sims-stage2.matrix 500 jvm_MBs`
-  `./bin/pairwise-sim.sh ./dat/text-sims.matrix ./dat/text-sims.transpose.matrix ./dat/text-sims-stage2.matrix 500 jvm_MBs`
-  `./bin/pairwise-sim.sh ./dat/links-sims.matrix ./dat/links-sims.transpose.matrix ./dat/links-sims-stage2.matrix 500 jvm_MBs`
-
-  These are SLOW. About a day and a half each.
+* Generate the final pairwise similarity matrix:
+  `TODO`
