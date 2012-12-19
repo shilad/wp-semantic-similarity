@@ -177,6 +177,9 @@ public class ConfigurationFile {
      * @return Configuration for that index.
      */
     public JSONObject getIndex(String name) {
+        if (!get("indexes").containsKey(name)) {
+            throw new IllegalArgumentException("no index named " + name);
+        }
         return (JSONObject) get("indexes").get(name);
     }
 
@@ -194,6 +197,9 @@ public class ConfigurationFile {
      * @return Configuration for that metric.
      */
     public JSONObject getMetric(String name) {
+        if (!get("metrics").containsKey(name)) {
+            throw new IllegalArgumentException("no metric named " + name);
+        }
         return (JSONObject)get("metrics").get(name);
     }
 
@@ -211,6 +217,9 @@ public class ConfigurationFile {
      * @return
      */
     public JSONObject getMapper(String name) {
+        if (!get("mappers").containsKey(name)) {
+            throw new IllegalArgumentException("no mapper named " + name);
+        }
         return (JSONObject) getMappers().get(name);
     }
 
