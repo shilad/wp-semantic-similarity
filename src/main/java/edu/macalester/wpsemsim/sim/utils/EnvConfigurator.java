@@ -285,11 +285,11 @@ public class EnvConfigurator {
 
     private SimilarityMetric createEsaSimilarity(String name) throws ConfigurationException, IOException {
         JSONObject params = configuration.getMetric(name);
-        File luceneDir = requireDirectory(params, "lucene");
-        ESASimilarity metric = new ESASimilarity(loadMainMapper(), new IndexHelper(luceneDir, true));
+        ESASimilarity metric = new ESASimilarity(
+                loadMainMapper(),
+                loadIndex(requireString(params, "lucene")));
         if (params.containsKey("textLucene")) {
-            File textLuceneDir = requireDirectory(params, "textLucene");
-            metric.setTextHelper(new IndexHelper(textLuceneDir, true));
+            metric.setTextHelper(loadIndex(requireString(params, "textLucene")));
         }
         return metric;
     }
