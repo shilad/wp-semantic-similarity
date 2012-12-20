@@ -1,7 +1,17 @@
 wp-semantic-similarity
 ======================
-This project creates a large-scale semantic similarity network between Wikipedia articles.
-The semantic network is computed in batch mode using three types of article features: article text, article links, and article categories.
+This project provides semantic similarity measures derived from Wikipedia. It provides four main functions:
+* Given a phrase, list the most similar Wikipedia articles along with their similarity scores.
+* Given a Wikipedia article, list the most similar Wikipedia articles along with their similarity scores.
+* Calculate the semantic similarity of two Wikipedia articles.
+* Calculate the semantic similarity of two phrases.
+
+For the phrase-based functions, the concept resolution framework maps a phrase to a Wikipedia article in one of two ways: 1) by searching 
+Wikipedia articles for the phrase, or 2) by searching for the phrase in links to Wikipedia articles [crawled by Google](http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/).
+
+The semantic network between Wikipedia pages uses article text, article links, and article categories. A machine learner trained on four different human-labeled semantic similarity datasets combines metrics based on these features. For a good overview of state-of-the-art in semantic similarity, see [Explanatory Semantic Relatedness and Explicit Spatialization for Exploratory Search, Hecht et al.](http://brenthecht.com/papers/bhecht_sigir2012_ExpSpatialization_SRplusE.pdf).
+
+One of the goals of this project is to generate a precomputed semantic similarity network over all Wikipedia pages using state of the semantic similarity techniques.
 
 This is still a work in progress.
 
