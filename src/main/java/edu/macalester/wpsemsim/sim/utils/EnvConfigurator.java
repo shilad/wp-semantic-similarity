@@ -296,8 +296,8 @@ public class EnvConfigurator {
 
     private SimilarityMetric createTextSimilarity(String name) throws ConfigurationException, IOException {
         JSONObject params = configuration.getMetric(name);
-        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
-        IndexHelper helper = new IndexHelper(luceneDir, true);
+        SimilarityMetric metric;
+        IndexHelper helper = loadIndex(requireString(params, "lucene"));
         String field = requireString(params, "field");
         metric = new TextSimilarity(loadMainMapper(), helper, field);
         if (params.containsKey("maxPercentage")) {

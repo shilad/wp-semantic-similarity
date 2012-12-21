@@ -64,6 +64,88 @@ public class ConfigurationFile {
         return get(keys).keySet();
     }
 
+
+    public JSONObject get() {
+        return conf;
+    }
+
+    public File getPath() {
+        return file;
+    }
+    /**
+     * Gets the configuration for all indexes.
+     * @return
+     */
+    public JSONObject getIndexes() {
+        return get("indexes");
+    }
+
+    /**
+     * Returns the configuration of a particular index
+     * @param name Name of index.
+     * @return Configuration for that index.
+     */
+    public JSONObject getIndex(String name) {
+        if (!get("indexes").containsKey(name)) {
+            throw new IllegalArgumentException("no index named " + name);
+        }
+        return (JSONObject) get("indexes").get(name);
+    }
+
+    /**
+     * Gets the configuration for all metrics.
+     * @return
+     */
+    public JSONObject getMetrics() {
+        return get("metrics");
+    }
+
+    /**
+     * Returns the configuration of a particular metric.
+     * @param name Name of metric.
+     * @return Configuration for that metric.
+     */
+    public JSONObject getMetric(String name) {
+        if (!get("metrics").containsKey(name)) {
+            throw new IllegalArgumentException("no metric named " + name);
+        }
+        return (JSONObject)get("metrics").get(name);
+    }
+
+    /**
+     * The configuration of all mappers.
+     * @return
+     */
+    public JSONObject getMappers() {
+        return get("mappers");
+    }
+
+    /**
+     * The configuration of a specific mapper.
+     * @param name
+     * @return
+     */
+    public JSONObject getMapper(String name) {
+        if (!get("mappers").containsKey(name)) {
+            throw new IllegalArgumentException("no mapper named " + name);
+        }
+        return (JSONObject) getMappers().get(name);
+    }
+
+
+    public static class ConfigurationException extends Exception {
+        public ConfigurationException(String message) {
+            super(message);
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //
+    // The remaining methods are utilities that are helpful in extracting specific
+    // types from configuration files.
+    //
+    ///////////////////////////////////////////////////////////////////////////////
+
     public static String requireString(Map<String, Object> params, String key) throws ConfigurationException {
         Object val = params.get(key);
         if (val == null) {
@@ -154,79 +236,5 @@ public class ConfigurationFile {
 
         }
         return result;
-    }
-
-    public JSONObject get() {
-        return conf;
-    }
-
-    public File getPath() {
-        return file;
-    }
-    /**
-     * Gets the configuration for all indexes.
-     * @return
-     */
-    public JSONObject getIndexes() {
-        return get("indexes");
-    }
-
-    /**
-     * Returns the configuration of a particular index
-     * @param name Name of index.
-     * @return Configuration for that index.
-     */
-    public JSONObject getIndex(String name) {
-        if (!get("indexes").containsKey(name)) {
-            throw new IllegalArgumentException("no index named " + name);
-        }
-        return (JSONObject) get("indexes").get(name);
-    }
-
-    /**
-     * Gets the configuration for all metrics.
-     * @return
-     */
-    public JSONObject getMetrics() {
-        return get("metrics");
-    }
-
-    /**
-     * Returns the configuration of a particular metric.
-     * @param name Name of metric.
-     * @return Configuration for that metric.
-     */
-    public JSONObject getMetric(String name) {
-        if (!get("metrics").containsKey(name)) {
-            throw new IllegalArgumentException("no metric named " + name);
-        }
-        return (JSONObject)get("metrics").get(name);
-    }
-
-    /**
-     * The configuration of all mappers.
-     * @return
-     */
-    public JSONObject getMappers() {
-        return get("mappers");
-    }
-
-    /**
-     * The configuration of a specific mapper.
-     * @param name
-     * @return
-     */
-    public JSONObject getMapper(String name) {
-        if (!get("mappers").containsKey(name)) {
-            throw new IllegalArgumentException("no mapper named " + name);
-        }
-        return (JSONObject) getMappers().get(name);
-    }
-
-
-    public static class ConfigurationException extends Exception {
-        public ConfigurationException(String message) {
-            super(message);
-        }
     }
 }

@@ -93,7 +93,6 @@ public class TestPairwiseSimilarity {
 
     @Test
     public void testSimilarityMatchesMostSimilar() throws IOException {
-
         PairwiseCosineSimilarity cosine = new PairwiseCosineSimilarity(matrix, transpose);
         int[] ids = matrix.getRowIds();
         Map<Integer, TIntDoubleHashMap> sims = new HashMap<Integer, TIntDoubleHashMap>();
