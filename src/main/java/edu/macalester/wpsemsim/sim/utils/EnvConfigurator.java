@@ -6,6 +6,7 @@ import edu.macalester.wpsemsim.concepts.DictionaryMapper;
 import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
+import edu.macalester.wpsemsim.sim.ensemble.SvmEnsemble;
 import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
 import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
 import edu.macalester.wpsemsim.sim.LinkSimilarity;
@@ -230,7 +231,7 @@ public class EnvConfigurator {
     private SimilarityMetric loadEnsembleMetric(String key) throws IOException, ConfigurationException {
         info("loading ensemble metric " + key);
         Map<String, Object> params = (Map<String, Object>) configuration.getMetric(key);
-        EnsembleSimilarity similarity = new EnsembleSimilarity(loadMainMapper(), env.getMainIndex());
+        EnsembleSimilarity similarity = new EnsembleSimilarity(new SvmEnsemble(), loadMainMapper(), env.getMainIndex());
         similarity.setComponents(new ArrayList<SimilarityMetric>(env.getMetrics().values()));
         similarity.read(requireDirectory(params, "model"));
         similarity.setName(key);
@@ -317,8 +318,8 @@ public class EnvConfigurator {
 
     private SimilarityMetric createCategorySimilarity(String name) throws ConfigurationException, IOException {
         JSONObject params = configuration.getMetric(name);
-        SimilarityMetric metric;File luceneDir = requireDirectory(params, "lucene");
-        IndexHelper helper = new IndexHelper(luceneDir, true);
+        SimilarityMetric metric;
+        IndexHelper helper = loadIndex(requireString(params, "lucene"));
         CategoryGraph graph = new CategoryGraph(helper);
         graph.init();
         metric = new CategorySimilarity(loadMainMapper(), graph, helper);

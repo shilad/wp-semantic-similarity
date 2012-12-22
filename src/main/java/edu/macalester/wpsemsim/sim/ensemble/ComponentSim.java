@@ -23,6 +23,10 @@ public class ComponentSim {
     // length of list
     public int length = 0;
 
+    // scores TODO: is this safe, or too much memory?
+    public float scores[];
+
+
     public ComponentSim(int component, double sim) {
         this.component = component;
         this.sim = sim;
@@ -38,31 +42,12 @@ public class ComponentSim {
             if (rank >= 0) {
                 sim = list.getScore(rank);
             }
+            scores = list.getScoresAsFloat();
         }
     }
 
     public boolean hasValue() {
         return !Double.isNaN(sim);
-    }
-
-    public static String getArffHeader(String prefix) {
-        StringBuffer buff = new StringBuffer();
-        buff.append("@attribute " +  prefix + "length integer\n");
-        buff.append("@attribute " +  prefix + "rank integer\n");
-        buff.append("@attribute " +  prefix + "min real\n");
-        buff.append("@attribute " +  prefix + "max real\n");
-        buff.append("@attribute " +  prefix + "sim real\n");
-        return buff.toString();
-    }
-
-    public String getArffEntry() {
-        StringBuffer buff = new StringBuffer();
-        buff.append(length  + ",");
-        buff.append("" + (rank == -1 ? "?" : rank) + ",");
-        buff.append("" + (Double.isNaN(minSim) ? "?" : minSim) + ",");
-        buff.append("" + (Double.isNaN(maxSim) ? "?" : maxSim) + ",");
-        buff.append("" + (Double.isNaN(sim) ? "?" : sim) + ",");
-        return buff.toString();
     }
 
     @Override

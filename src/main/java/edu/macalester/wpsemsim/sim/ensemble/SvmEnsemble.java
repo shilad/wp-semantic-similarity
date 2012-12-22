@@ -1,6 +1,8 @@
 package edu.macalester.wpsemsim.sim.ensemble;
 
+import edu.macalester.wpsemsim.normalize.RangeNormalizer;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import edu.macalester.wpsemsim.normalize.BaseNormalizer;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import libsvm.*;
 import org.apache.commons.io.FileUtils;
@@ -14,7 +16,7 @@ import java.util.logging.Logger;
 /**
  * An SVM implementation of a supervised ensemble of similarity metrics.
  */
-public class SvmEnsemble {
+public class SvmEnsemble implements Ensemble {
     private static final Logger LOG = Logger.getLogger(SvmEnsemble.class.getName());
     private static final Double MIN_VALUE = -1.0;
     private static final Double MAX_VALUE = +1.0;
@@ -23,8 +25,8 @@ public class SvmEnsemble {
 
     private List<SimilarityMetric> components;
 
-    private Stats componentStats[];
-    private Stats yStats = new Stats();
+    private BaseNormalizer componentStats[];
+    private BaseNormalizer yStats = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
 
     private svm_model model;
     private svm_parameter param;
@@ -49,10 +51,12 @@ public class SvmEnsemble {
         });
     }
 
+    @Override
     public void setComponents(List<SimilarityMetric> components) {
         this.components = components;
     }
 
+    @Override
     public void train(List<Example> examples) {
         if (examples.isEmpty()) {
             throw new IllegalArgumentException("no examples to train on!");
@@ -62,7 +66,7 @@ public class SvmEnsemble {
         calculateComponentStats();
 
         for (int i = 0; i < componentStats.length; i++) {
-            Stats s = componentStats[i];
+            BaseNormalizer s = componentStats[i];
             LOG.info("component " + components.get(i).getName() + ": " + s);
         }
         LOG.info("Y: " + yStats);
@@ -102,11 +106,12 @@ public class SvmEnsemble {
         this.model = svm.svm_train(prob, param);
     }
 
+    @Override
     public double predict(Example ex, boolean truncate) {
         assert(ex.sims.size() == components.size());
         svm_node nodes[] = simsToNodes(ex, truncate);
         double p = svm.svm_predict(model, nodes);
-        return yStats.unnormalize(p, truncate);
+        return yStats.unnormalize(p);
     }
 
 
@@ -122,7 +127,7 @@ public class SvmEnsemble {
             assert(hasReverse == x.hasReverse());
             num_cells += x.getNumNotNan();
             prob.x[i] = simsToNodes(x, false);
-            prob.y[i] = yStats.normalize(x.label.similarity, false);
+            prob.y[i] = yStats.normalize(x.label.similarity);
             i++;
         }
         LOG.info("overall sparsity is " + 1.0 * num_cells / (examples.size() * components.size()));
@@ -144,17 +149,17 @@ public class SvmEnsemble {
             svm_node n = new svm_node();
             n.index = cs1.component;
             n.value = Double.NaN;
-            Stats s = componentStats[n.index];
+            BaseNormalizer s = componentStats[n.index];
 
             if (ex.hasReverse()) {
                 if (cs1.hasValue() || cs2.hasValue()) {
                     double s1 = cs1.hasValue() ? cs1.sim : s.min;
                     double s2 = cs2.hasValue() ? cs2.sim : s.min;
-                    n.value = s.normalize((s1 + s2) / 2.0, truncate);
+                    n.value = s.normalize((s1 + s2) / 2.0);
                 }
             } else {
                 if (cs1.hasValue()) {
-                    n.value = s.normalize(cs1.sim, truncate);
+                    n.value = s.normalize(cs1.sim);
                 }
             }
             if (!Double.isNaN(n.value)) {
@@ -175,24 +180,28 @@ public class SvmEnsemble {
     }
 
     protected void calculateComponentStats() {
-        componentStats = new Stats[components.size()];
+        componentStats = new BaseNormalizer[components.size()];
         for (int i = 0; i < components.size(); i++) {
-            componentStats[i] = new Stats();
+            componentStats[i] = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
         }
-        yStats = new Stats();
+        yStats = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
 
         for (Example x : examples) {
-            yStats.update(x.label.similarity);
+            yStats.observe(x.label.similarity);
             for (int i = 0; i < components.size(); i++) {
                 ComponentSim cs = x.sims.get(i);
-                componentStats[i].update(cs.maxSim);
-                componentStats[i].update(cs.minSim);
+                componentStats[i].observe(cs.maxSim);
+                componentStats[i].observe(cs.minSim);
                 if (x.hasReverse()) {
                     cs = x.reverseSims.get(i);
-                    componentStats[i].update(cs.maxSim);
-                    componentStats[i].update(cs.minSim);
+                    componentStats[i].observe(cs.maxSim);
+                    componentStats[i].observe(cs.minSim);
                 }
             }
+        }
+        yStats.observationsFinished();
+        for (BaseNormalizer normalizer : componentStats) {
+            normalizer.observationsFinished();
         }
     }
 
@@ -245,6 +254,7 @@ public class SvmEnsemble {
         return new double[] { total_error / prob.l, pearson}; // return mse
     }
 
+    @Override
     public void write(File directory) throws IOException {
         if (directory.isDirectory()) {
             FileUtils.forceDelete(directory);
@@ -275,6 +285,7 @@ public class SvmEnsemble {
         FileUtils.write(new File(directory, "component_names.txt"), names);
     }
 
+    @Override
     public void read(File directory) throws IOException {
         if (!directory.isDirectory()) {
             throw new FileNotFoundException(directory.toString());
@@ -302,12 +313,12 @@ public class SvmEnsemble {
 
             in = new ObjectInputStream(
                     new FileInputStream(new File(directory, "stats.X")));
-            componentStats = (Stats[]) in.readObject();
+            componentStats = (BaseNormalizer[]) in.readObject();
             in.close();
 
             in = new ObjectInputStream(
                     new FileInputStream(new File(directory, "stats.Y")));
-            yStats = (Stats) in.readObject();
+            yStats = (BaseNormalizer) in.readObject();
             in.close();
         } catch (ClassNotFoundException e) {
             throw new IOException(e);
@@ -346,42 +357,4 @@ public class SvmEnsemble {
         return names;
     }
 
-    private static class Stats implements Serializable {
-        double min = Double.MIN_VALUE;
-        double max = -Double.MAX_VALUE;
-
-        void update(double x) {
-            if (!Double.isNaN(x)) {
-                if (x < min) { min = x; }
-                if (x > max) { max = x; }
-            }
-        }
-
-        public String toString() { return "min=" + min + ", max=" + max; }
-
-        public double normalize(ComponentSim sim, boolean truncate) {
-            if (sim.rank < 0) {
-                return min - 0.1 * (max - min);
-            } else {
-                return normalize(sim.sim, truncate);
-            }
-        }
-        public double normalize(double x, boolean truncate) {
-            if (truncate) {
-                x = Math.max(x, min);
-                x = Math.min(x, max);
-            }
-            x = MIN_VALUE+ (MAX_VALUE- MIN_VALUE) *
-                    (x - min) / (max - min);
-            return x;
-        }
-        public double unnormalize(double x, boolean truncate) {
-            if (truncate) {
-                x = Math.max(x, MIN_VALUE);
-                x = Math.min(x, MAX_VALUE);
-            }
-            x = min + (max - min) * (x - MIN_VALUE) / (MAX_VALUE - MIN_VALUE);
-            return x;
-        }
-    }
 }

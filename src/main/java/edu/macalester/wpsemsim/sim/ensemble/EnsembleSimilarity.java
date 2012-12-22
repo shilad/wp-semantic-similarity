@@ -40,13 +40,13 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
 
     private List<SimilarityMetric> components = new ArrayList<SimilarityMetric>();
 
-    SvmEnsemble svm;
+    Ensemble ensemble;
 
-    public EnsembleSimilarity(ConceptMapper mapper, IndexHelper helper) throws IOException {
+    public EnsembleSimilarity(Ensemble ensemble, ConceptMapper mapper, IndexHelper helper) throws IOException {
         super(mapper, helper);
         this.mapper = mapper;
         this.helper = helper;
-        this.svm = new SvmEnsemble();
+        this.ensemble = ensemble;
     }
 
     @Override
@@ -63,7 +63,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
         Example ex = getComponentSimilarities(phrase1, phrase2, -1);
         if (ex.getNumNotNan() >= minComponents) {
-            return svm.predict(ex, true);
+            return ensemble.predict(ex, true);
         } else {
             return Double.NaN;
         }
@@ -101,7 +101,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         for (int wpId2 : features.keySet()) {
             Example ex = features.get(wpId);
             if (ex.getNumNotNan() >= minComponents) {
-                double pred = svm.predict(ex, false);
+                double pred = ensemble.predict(ex, false);
                 if (!Double.isNaN(pred)) {
                     list.set(n++, wpId2, pred);
                 }
@@ -148,7 +148,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
             }
         });
         this.components = components;
-        this.svm.setComponents(components);
+        this.ensemble.setComponents(components);
     }
 
 
@@ -158,7 +158,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
      * @throws IOException
      */
     public void write(File directory) throws IOException {
-        svm.write(directory);
+        ensemble.write(directory);
     }
 
     /**
@@ -167,7 +167,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
      * @throws IOException
      */
     public void read(File directory) throws IOException {
-        svm.read(directory);
+        ensemble.read(directory);
     }
 
     /**
@@ -208,40 +208,9 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                 LOG.log(Level.WARNING, "error while awaiting termination:", e);
             }
         }
-        svm.train(examples);
-        try {
-            writeArff(new File("examples.arff"), examples, (numResults > 0));
-        } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+        ensemble.train(examples);
     }
 
-    private void writeArff(File file, List<Example> examples, boolean useReverse) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-        writer.write("@relation similarities\n\n");
-        for (int i = 0; i < components.size(); i++) {
-            SimilarityMetric m = components.get(i);
-            String name = m.getName().toLowerCase().replaceAll("[^a-zA-Z]+", "");
-            if (useReverse) {
-                writer.write(ComponentSim.getArffHeader(name + "1"));
-                writer.write(ComponentSim.getArffHeader(name + "2"));
-            } else {
-                writer.write(ComponentSim.getArffHeader(name));
-            }
-        }
-        writer.write("@attribute sim real\n");
-
-        writer.write("@data\n");
-        for (Example x : examples) {
-            for (int i = 0; i < x.sims.size(); i++) {
-                writer.write(x.sims.get(i).getArffEntry());
-                if (useReverse) {
-                    writer.write(x.reverseSims.get(i).getArffEntry());
-                }
-            }
-            writer.write("" + x.label.similarity + "\n");
-        }
-    }
 
     /**
      * Collects the similarities scores for a pair of phrases from all metrics.
@@ -337,7 +306,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         conf.setDoEnsembles(false);
         Env env = conf.loadEnv();
         EnsembleSimilarity ensemble = new EnsembleSimilarity(
-                env.getMainMapper(), env.getMainIndex()
+                new WekaEnsemble(new File("dat/problem.arff")), env.getMainMapper(), env.getMainIndex()
         );
 //        ensemble.setNumThreads(1);
         ensemble.setMinComponents(0);

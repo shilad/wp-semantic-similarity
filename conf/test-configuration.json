@@ -29,7 +29,7 @@
     "metrics" : {
         "article-cats" : {
             "type" : "category",
-            "lucene" : "DAT/lucene/cats",
+            "lucene" : "cats",
             "test-list" : ["foo", "bar"],
         },
         "article-text" : {
@@ -38,7 +38,7 @@
             "maxPercentage" : 100,
             "minTermFreq" : 2,
             "minDocFreq" : 2,
-            "lucene" : "DAT/lucene/text",
+            "lucene" : "text",
         },
         "article-links" : {
             "type" : "text",
@@ -46,7 +46,7 @@
             "maxPercentage" : 100,
             "minTermFreq" : 1,
             "minDocFreq" : 2,
-            "lucene" : "DAT/lucene/links",
+            "lucene" : "links",
         },
         "pairwise-text" : {
             "type" : "pairwise",
