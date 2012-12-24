@@ -11,7 +11,7 @@ import java.util.*;
 
 /**
  * Writes an ARFF file suitable for weka analysis.
- * Does not actually generate predictions. Just useful for exploring ensemble learners.
+ * Does not actually generate predictions, but useful for exploring ensemble learners via Weka.
  */
 public class WekaEnsemble implements Ensemble {
     private List<SimilarityMetric> components;

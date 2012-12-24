@@ -313,11 +313,11 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         ensemble.setMinComponents(0);
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
         if (args.length == 4) {
+            conf.loadMetrics();
             metrics = new ArrayList<SimilarityMetric>(env.getMetrics().values());
         } else {
-            conf.loadMetrics();
             for (String name : ArrayUtils.subarray(args, 4, args.length)) {
-                metrics.add(env.getMetric(name));
+                metrics.add(conf.loadMetric(name));
             }
         }
         ensemble.setComponents(metrics);
