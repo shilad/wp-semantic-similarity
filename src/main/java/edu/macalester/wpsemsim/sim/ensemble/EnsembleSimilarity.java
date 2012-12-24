@@ -303,6 +303,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
             FileUtils.forceDelete(modelPath);
         }
         modelPath.mkdirs();
+        conf.setShouldLoadMetrics(false);
         conf.setDoEnsembles(false);
         Env env = conf.loadEnv();
         EnsembleSimilarity ensemble = new EnsembleSimilarity(
@@ -314,6 +315,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
         if (args.length == 4) {
             metrics = new ArrayList<SimilarityMetric>(env.getMetrics().values());
         } else {
+            conf.loadMetrics();
             for (String name : ArrayUtils.subarray(args, 4, args.length)) {
                 metrics.add(env.getMetric(name));
             }
