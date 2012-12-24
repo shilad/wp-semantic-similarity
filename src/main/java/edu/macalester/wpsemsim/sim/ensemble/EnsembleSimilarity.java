@@ -13,6 +13,7 @@ import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.TIntSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
@@ -194,8 +195,8 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                             examples.add(ex);
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
                         LOG.log(Level.SEVERE, "error processing similarity entry  " + ks, e);
+                        LOG.log(Level.SEVERE, "stacktrace: " + ExceptionUtils.getStackTrace(e).replaceAll("\n", " ").replaceAll("\\s+", " "));
                     }
                 }});
             }
