@@ -10,8 +10,9 @@ num_results=$2
 out=$3
 mb=$4
 shift 4
+args=(${@// /\\ })
 gold=dat/gold/combined.txt
 
 export MAVEN_OPTS="-Xmx${mb}M -ea -server"
-mvn compile
-mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity" -D exec.classpathScope=runtime  -D exec.args="$conf $gold $out $num_results $@"
+mvn compile &&
+mvn exec:java -D exec.mainClass="edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity" -D exec.classpathScope=runtime  -D exec.args="$conf $gold $out $num_results ${args[*]}"
