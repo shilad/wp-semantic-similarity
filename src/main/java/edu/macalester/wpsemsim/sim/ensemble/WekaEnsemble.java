@@ -2,6 +2,8 @@ package edu.macalester.wpsemsim.sim.ensemble;
 
 import edu.macalester.wpsemsim.normalize.*;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -19,13 +21,9 @@ public class WekaEnsemble implements Ensemble {
     // list of normalizers for each component.
     // Each component's normalizers are a map of normalize name to normalizer.
     private List<Map<String, Normalizer>> normalizers = new ArrayList<Map<String, Normalizer>>();
+    StringBuffer outputBuffer;
 
-    // Output file path
-    private File path;
-
-    public WekaEnsemble(File path) {
-        this.path = path;
-    }
+    public WekaEnsemble() {}
 
     @Override
     public void setComponents(List<SimilarityMetric> components) {
@@ -69,47 +67,47 @@ public class WekaEnsemble implements Ensemble {
     }
 
     public void writeArff(List<Example> examples) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(path));
-        writer.write("@relation similarities\n\n");
+        outputBuffer.setLength(0);
+        outputBuffer.append("@relation similarities\n\n");
         for (SimilarityMetric m : components) {
             String metricName = m.getName().toLowerCase().replaceAll("[^a-zA-Z]+", "");
-            writeArffHeader(writer, metricName + "1");
+            writeArffHeader(metricName + "1");
             if (examples.get(0).hasReverse()) {
-                writeArffHeader(writer, metricName + "2");
+                writeArffHeader(metricName + "2");
             }
     }
-        writer.write("@attribute sim real\n");
+        outputBuffer.append("@attribute sim real\n");
 
-        writer.write("@data\n");
+        outputBuffer.append("@data\n");
         for (Example x : examples) {
             assert(x.sims.size() == components.size());
             for (int i = 0; i < x.sims.size(); i++) {
-                writeArffEntry(writer, x.sims.get(i), normalizers.get(i));
+                writeArffEntry(x.sims.get(i), normalizers.get(i));
                 if (x.hasReverse()) {
-                    writeArffEntry(writer, x.reverseSims.get(i), normalizers.get(i));
+                    writeArffEntry(x.reverseSims.get(i), normalizers.get(i));
                 }
             }
-            writer.write("" + x.label.similarity + "\n");
+            outputBuffer.append("" + x.label.similarity + "\n");
         }
     }
 
-    public void writeArffHeader(BufferedWriter writer, String metricName) throws IOException {
-        writer.write("@attribute " +  metricName + "length integer\n");
-        writer.write("@attribute " +  metricName + "rank integer\n");
-        writer.write("@attribute " +  metricName + "min real\n");
-        writer.write("@attribute " +  metricName + "max real\n");
+    public void writeArffHeader(String metricName) throws IOException {
+        outputBuffer.append("@attribute " + metricName + "length integer\n");
+        outputBuffer.append("@attribute " + metricName + "rank integer\n");
+        outputBuffer.append("@attribute " + metricName + "min real\n");
+        outputBuffer.append("@attribute " + metricName + "max real\n");
         for (String nkey : normalizers.get(0).keySet()) {
-            writer.write("@attribute " +  metricName + nkey + " real\n");
+            outputBuffer.append("@attribute " + metricName + nkey + " real\n");
         }
     }
 
-    public void writeArffEntry(BufferedWriter writer, ComponentSim sim, Map<String, Normalizer> nmap) throws IOException {
-        writer.write(sim.length + ",");
-        writer.write("" + (sim.rank == -1 ? "?" : sim.rank) + ",");
-        writer.write("" + (Double.isNaN(sim.minSim) ? "?" : sim.minSim) + ",");
-        writer.write("" + (Double.isNaN(sim.maxSim) ? "?" : sim.maxSim) + ",");
+    public void writeArffEntry(ComponentSim sim, Map<String, Normalizer> nmap) throws IOException {
+        outputBuffer.append(sim.length + ",");
+        outputBuffer.append("" + (sim.rank == -1 ? "?" : sim.rank) + ",");
+        outputBuffer.append("" + (Double.isNaN(sim.minSim) ? "?" : sim.minSim) + ",");
+        outputBuffer.append("" + (Double.isNaN(sim.maxSim) ? "?" : sim.maxSim) + ",");
         for (Normalizer n: nmap.values()) {
-            writer.write("" + (Double.isNaN(sim.sim) ? "?" : n.normalize(sim.sim)) + ",");
+            outputBuffer.append("" + (Double.isNaN(sim.sim) ? "?" : n.normalize(sim.sim)) + ",");
         }
     }
 
@@ -117,7 +115,9 @@ public class WekaEnsemble implements Ensemble {
     public double predict(Example ex, boolean truncate) { throw new NoSuchMethodError(); }
 
     @Override
-    public void write(File directory) throws IOException {}
+    public void write(File directory) throws IOException {
+        FileUtils.write(new File(directory, "problem.arff"), outputBuffer);
+    }
 
     @Override
     public void read(File directory) throws IOException {}

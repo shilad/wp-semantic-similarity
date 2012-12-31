@@ -1,18 +1,14 @@
 package edu.macalester.wpsemsim.sim.ensemble;
 
-import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.sim.SupervisedSimilarityMetric;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import edu.macalester.wpsemsim.sim.utils.EnvConfigurator;
 import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.TIntSet;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -52,17 +48,17 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
 
     @Override
     public void trainSimilarity(List<KnownSim> gold) {
-        trainMostSimilar(gold, -1);
+        trainMostSimilar(gold, -1, null);
     }
 
     @Override
-    public void trainMostSimilar(List<KnownSim> gold, int numResults) {
-        train(gold, numResults);
+    public void trainMostSimilar(List<KnownSim> gold, int numResults, TIntSet validIds) {
+        train(gold, numResults, validIds);
     }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
-        Example ex = getComponentSimilarities(phrase1, phrase2, -1);
+        Example ex = getComponentSimilarities(phrase1, phrase2, -1, null);
         if (ex.getNumNotNan() >= minComponents) {
             return ensemble.predict(ex, true);
         } else {
@@ -175,9 +171,9 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
      * Trains the ensemble on a dataset.
      * @param gold Labeled training data.
      * @param numResults if less than or equal to 0 train similarity(),
-     *                   if greater than 0 train mostSimilar() with specified size of result lists.
+     * @param validIds
      */
-    public void train(final List<KnownSim> gold, final int numResults) {
+    public void train(final List<KnownSim> gold, final int numResults, final TIntSet validIds) {
         final ExecutorService exec = Executors.newFixedThreadPool(numThreads);
         final List<Example> examples = Collections.synchronizedList(new ArrayList<Example>());
         try {
@@ -190,7 +186,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                         if (finalI % 50 == 0) {
                             LOG.info("training for number " + finalI + " of " + gold.size());
                         }
-                        Example ex = getComponentSimilarities(ks.phrase1, ks.phrase2, numResults);
+                        Example ex = getComponentSimilarities(ks.phrase1, ks.phrase2, numResults, validIds);
                         if (ex.getNumNotNan() >= minComponents) {
                             examples.add(ex);
                         }
@@ -217,22 +213,24 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
      * Collects the similarities scores for a pair of phrases from all metrics.
      * We are training mostSimilar iff numResults > 0.
      *
+     *
      * @param phrase1
      * @param phrase2
      * @param numResults
+     * @param validIds
      * @return
      * @throws IOException
      * @throws ParseException
      */
-    protected Example getComponentSimilarities(String phrase1, String phrase2, int numResults) throws IOException, ParseException {
+    protected Example getComponentSimilarities(String phrase1, String phrase2, int numResults, TIntSet validIds) throws IOException, ParseException {
         Example result = (numResults > 0) ? Example.makeEmptyWithReverse() : Example.makeEmpty();
         for (int i = 0; i < components.size(); i++) {
             SimilarityMetric m = components.get(i);
             if (numResults <= 0) {
                 result.add(new ComponentSim(i, m.similarity(phrase1, phrase2)));
             } else {
-                result.add(getComponentSim(i, m, phrase1, phrase2, numResults),
-                           getComponentSim(i, m, phrase2, phrase1, numResults));
+                result.add(getComponentSim(i, m, phrase1, phrase2, numResults, validIds),
+                           getComponentSim(i, m, phrase2, phrase1, numResults, validIds));
             }
         }
         return result;
@@ -240,17 +238,19 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
 
     /**
      * Gets most similar for phrase 1, looks for concepts mapped to phrase 2
+     *
      * @param ci Index of the similarity metric in the components
      * @param metric
      * @param phrase1
      * @param phrase2
      * @param numResults
+     * @param validIds
      * @return
      * @throws IOException
      */
-    protected ComponentSim getComponentSim(int ci, SimilarityMetric metric, String phrase1, String phrase2, int numResults) throws IOException {
+    protected ComponentSim getComponentSim(int ci, SimilarityMetric metric, String phrase1, String phrase2, int numResults, TIntSet validIds) throws IOException {
         // get most similar lucene ids for phrase 1
-        DocScoreList top =  metric.mostSimilar(phrase1, numResults);
+        DocScoreList top =  metric.mostSimilar(phrase1, numResults, validIds);
         if (top == null || top.numDocs() == 0) {
             return new ComponentSim(ci, new DocScoreList(0), 0);
         }
@@ -285,47 +285,4 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     }
 
 
-    public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException, ClassNotFoundException {
-        if (args.length < 4) {
-            System.err.println(
-                    "usage: java " + EnsembleSimilarity.class.toString() +
-                    " path/to/sim/metric/conf.txt" +
-                    " path/to/gold/standard.txt" +
-                    " path/to/reg/model_output.txt" +
-                    " num_results" +
-                    " [sim1 sim2 ...]"
-            );
-            System.exit(1);
-        }
-        EnvConfigurator conf = new EnvConfigurator(
-                new ConfigurationFile(new File(args[0])));
-        File modelPath = new File(args[2]);
-        if (modelPath.exists()) {
-            FileUtils.forceDelete(modelPath);
-        }
-        modelPath.mkdirs();
-        conf.setShouldLoadMetrics(false);
-        conf.setDoEnsembles(false);
-        Env env = conf.loadEnv();
-        EnsembleSimilarity ensemble = new EnsembleSimilarity(
-                new WekaEnsemble(new File("dat/problem.arff")), env.getMainMapper(), env.getMainIndex()
-        );
-//        ensemble.setNumThreads(1);
-        ensemble.setMinComponents(0);
-        List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-        if (args.length == 4) {
-            conf.loadMetrics();
-            metrics = new ArrayList<SimilarityMetric>(env.getMetrics().values());
-        } else {
-            for (String name : ArrayUtils.subarray(args, 4, args.length)) {
-                metrics.add(conf.loadMetric(name));
-            }
-        }
-        ensemble.setComponents(metrics);
-        ensemble.trainMostSimilar(KnownSim.read(new File(args[1])), Integer.valueOf(args[3]));
-        ensemble.write(modelPath);
-
-        // test it!
-        ensemble.read(new File(args[2]));
-    }
 }

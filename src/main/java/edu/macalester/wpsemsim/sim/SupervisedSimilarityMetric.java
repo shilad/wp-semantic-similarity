@@ -2,6 +2,7 @@ package edu.macalester.wpsemsim.sim;
 
 import edu.macalester.wpsemsim.utils.KnownSim;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import gnu.trove.set.TIntSet;
 
 import java.util.List;
 
@@ -14,5 +15,5 @@ public interface SupervisedSimilarityMetric extends SimilarityMetric {
     public void trainSimilarity(List<KnownSim> labeled);
 
     // Train the mostSimilar() function
-    public void trainMostSimilar(List<KnownSim> labeled, int numResults);
+    public void trainMostSimilar(List<KnownSim> labeled, int numResults, TIntSet validIds);
 }
