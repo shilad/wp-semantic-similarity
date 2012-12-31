@@ -21,7 +21,7 @@ public class WekaEnsemble implements Ensemble {
     // list of normalizers for each component.
     // Each component's normalizers are a map of normalize name to normalizer.
     private List<Map<String, Normalizer>> normalizers = new ArrayList<Map<String, Normalizer>>();
-    StringBuffer outputBuffer;
+    StringBuffer outputBuffer = new StringBuffer();
 
     public WekaEnsemble() {}
 
