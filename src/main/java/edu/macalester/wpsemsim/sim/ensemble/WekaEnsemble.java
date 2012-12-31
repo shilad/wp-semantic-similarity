@@ -45,9 +45,11 @@ public class WekaEnsemble implements Ensemble {
             List<ComponentSim> allSims = new ArrayList<ComponentSim>(ex.sims);
             if (ex.hasReverse()) allSims.addAll(ex.reverseSims);
             for (ComponentSim s : allSims) {
-                for (float x : s.scores) {
-                    for (Normalizer n : normalizers.get(s.component).values()) {
-                        n.observe(x);
+                if (s.scores != null) {
+                    for (float x : s.scores) {
+                        for (Normalizer n : normalizers.get(s.component).values()) {
+                            n.observe(x);
+                        }
                     }
                 }
             }
