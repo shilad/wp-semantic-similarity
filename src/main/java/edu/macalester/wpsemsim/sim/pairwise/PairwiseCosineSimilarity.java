@@ -121,11 +121,13 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
         for (int id : vector.keys()) {
             float val1 = vector.get(id);
             SparseMatrixRow row2 = transpose.getRow(id);
-            for (int j = 0; j < row2.getNumCols(); j++) {
-                int id2 = row2.getColIndex(j);
-                if (validIds == null || validIds.contains(id2)) {
-                    float val2 = row2.getColValue(j);
-                    dots.adjustOrPutValue(id2, val1 * val2, val1 * val2);
+            if (row2 != null) {
+                for (int j = 0; j < row2.getNumCols(); j++) {
+                    int id2 = row2.getColIndex(j);
+                    if (validIds == null || validIds.contains(id2)) {
+                        float val2 = row2.getColValue(j);
+                        dots.adjustOrPutValue(id2, val1 * val2, val1 * val2);
+                    }
                 }
             }
         }
