@@ -125,7 +125,7 @@ public class EnsembleMain {
             validIds = readIds(cmd.getOptionValue("v"));
         }
 
-        if (metricNames.length == 0) {
+        if (metricNames == null || metricNames.length == 0) {
             LOG.info("building all metrics");
         } else {
             LOG.info("building metrics " + Arrays.toString(metricNames));
@@ -161,7 +161,7 @@ public class EnsembleMain {
         ensembleSim.setNumThreads(numThreads);
         ensembleSim.setMinComponents(0);
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-        if (metricNames.length == 0) {
+        if (metricNames == null || metricNames.length == 0) {
             conf.loadMetrics();
             metrics = new ArrayList<SimilarityMetric>(env.getMetrics().values());
         } else {
