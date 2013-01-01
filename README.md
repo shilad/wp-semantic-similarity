@@ -66,8 +66,18 @@ Instructions for building the semantic similarity network:
 
   This should take about a minute, and it writes a combined gold standard dataset from a variety of sources to dat/gold/combined.tab.txt.
 
-* Fit the combined model:
-  `TODO`
+* Fit the combined model
+
+```bash
+   ./bin/make-ensemble.sh 10100 
+                        -c conf/example-configuration.json 
+                        -e weka
+                        -g dat/gold/combined.filtered.txt 
+                        -o dat/weka.out 
+                        -r 10000 
+                        -t 35 
+                        -v ./dat/valid_ids.txt
+```
 
 * Generate the final pairwise similarity matrix:
   `TODO`
