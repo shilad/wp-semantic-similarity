@@ -187,6 +187,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                             LOG.info("training for number " + finalI + " of " + gold.size());
                         }
                         Example ex = getComponentSimilarities(ks.phrase1, ks.phrase2, numResults, validIds);
+                        ex.label = ks;
                         if (ex.getNumNotNan() >= minComponents) {
                             examples.add(ex);
                         }
