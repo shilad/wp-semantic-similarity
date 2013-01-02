@@ -20,7 +20,8 @@ public class PercentileNormalizer extends BaseNormalizer {
 
         // save two "fake" sample observations worth of wiggle room for low and high out of range values.
         for (int i = 0; i < sample.size(); i++) {
-            X.add(sample.get(i));
+            double fudge = max * 10E-8 * i;    // ensures monotonic increasing
+            X.add(sample.get(i) + fudge);
             Y.add((i + 1.0) / (sample.size() + 1));
         }
 
