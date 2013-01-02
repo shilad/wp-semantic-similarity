@@ -48,4 +48,9 @@ python src/main/python/combine_gold.py $SRC/*.* >dat/gold/combined.txt &&
 python src/main/python/filter_gold.py <dat/gold/combined.txt >dat/gold/combined.filtered.txt || 
 { echo "ERROR: combining datasets failed" >&2; exit 1;}
 
+python src/main/python/combine_gold.py $SRC/WikiSimi3000.tab |
+python src/main/python/filter_gold.py /combined.txt >dat/gold/combined.articles.txt || 
+{ echo "ERROR: combining datasets failed" >&2; exit 1;}
+
+
 echo "SUCCESS!"

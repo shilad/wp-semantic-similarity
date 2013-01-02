@@ -4,6 +4,7 @@ import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.concepts.DictionaryMapper;
 import edu.macalester.wpsemsim.concepts.LuceneMapper;
+import edu.macalester.wpsemsim.concepts.TitleMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.sim.ensemble.SvmEnsemble;
@@ -150,6 +151,8 @@ public class EnvConfigurator {
             mapper = getLuceneMapper(name);
         } else if (type.equals("ensemble")) {
             mapper = getEnsembleMapper(name);
+        } else if (type.equals("title")) {
+            mapper = getTitleMapper(name);
         } else {
             throw new ConfigurationException("unknown type for mapper " + name + ": " + type);
         }
@@ -340,6 +343,12 @@ public class EnvConfigurator {
         JSONObject params = configuration.getMapper(name);
         IndexHelper helper = loadIndex(requireString(params, "indexName"));
         return new LuceneMapper(helper);
+    }
+
+    private ConceptMapper getTitleMapper(String name) throws IOException, ConfigurationException {
+        JSONObject params = configuration.getMapper(name);
+        IndexHelper helper = loadIndex(requireString(params, "indexName"));
+        return new TitleMapper(helper);
     }
 
     private ConceptMapper getDictionaryMapper(String name) throws IOException, ConfigurationException {
