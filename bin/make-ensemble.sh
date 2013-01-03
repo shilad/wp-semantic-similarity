@@ -5,7 +5,7 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-mb=$4
+mb=$1
 shift
 args=(${@// /\\ })
 
