@@ -7,7 +7,6 @@ import java.util.Arrays;
 import static org.junit.Assert.*;
 
 public class TestNormalizer {
-
     @Test
     public void testPercent() {
         PercentileNormalizer p = new PercentileNormalizer();
@@ -29,6 +28,14 @@ public class TestNormalizer {
         assertEquals(p.unnormalize(0.37037), 4.0, 0.0001);
         assertEquals(p.unnormalize(0.88887), 11.2, 0.0001);
         assertEquals(p.unnormalize(0.88888888), 11.2, 0.0001);
+    }
 
+    @Test
+    public void testPercent2() {
+        PercentileNormalizer p = new PercentileNormalizer();
+        for (double x : Arrays.asList(1.0, 1.0, 3.2, 5.0, 7.9, 10.5, 11.2, 6.5)) {
+            p.observe(x);
+        }
+        p.observationsFinished();
     }
 }

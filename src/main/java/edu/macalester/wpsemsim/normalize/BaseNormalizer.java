@@ -54,4 +54,11 @@ public abstract class BaseNormalizer implements Serializable, Normalizer {
 
     public String toString() { return "min=" + min + ", max=" + max; }
 
+    public double getMin() {
+        return min;
+    }
+
+    public double getMax() {
+        return max;
+    }
 }

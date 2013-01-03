@@ -13,6 +13,9 @@ import java.util.List;
  * If this corresponds to {@link edu.macalester.wpsemsim.sim.SimilarityMetric#mostSimilar} reverse
  * sims will be null. If it corresponds to  {@link edu.macalester.wpsemsim.sim.SimilarityMetric#similarity}
  * then sims will capture similarity in one direction, reverse sims will be in the opposite direction.
+ *
+ * The component sims arrays are dense. They will always have size equal to the number of components.
+ * If reverseSims is not null, it's size will equal sims.
  */
 public class Example {
     KnownSim label;

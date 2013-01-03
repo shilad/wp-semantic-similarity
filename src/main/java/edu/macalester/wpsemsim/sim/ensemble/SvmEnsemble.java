@@ -23,9 +23,9 @@ public class SvmEnsemble implements Ensemble {
     private static final double P_EPSIONS[] = { 1.0, 0.5, 0.1, 0.01, 0.001 };
     private static final double P_CS[] = { 16, 8, 4, 2, 1, 0.5, 0.2, 0.1 };
 
+    private FeatureGenerator featureGenerator = new FeatureGenerator();
     private List<SimilarityMetric> components;
 
-    private BaseNormalizer componentStats[];
     private BaseNormalizer yStats = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
 
     private svm_model model;
@@ -63,12 +63,7 @@ public class SvmEnsemble implements Ensemble {
         }
         this.examples = examples;
 
-        calculateComponentStats();
-
-        for (int i = 0; i < componentStats.length; i++) {
-            BaseNormalizer s = componentStats[i];
-            LOG.info("component " + components.get(i).getName() + ": " + s);
-        }
+        featureGenerator.train(examples);
         LOG.info("Y: " + yStats);
         svm_problem prob = makeProblem();
         svm_parameter param = getParams(prob);
@@ -136,73 +131,19 @@ public class SvmEnsemble implements Ensemble {
     }
 
     protected svm_node[] simsToNodes(Example ex, boolean truncate) {
-//        assert(ex.sims.size() == components.size());
-        if (ex.hasReverse()) { assert(ex.sims.size() == ex.reverseSims.size()); }
+        if (!ex.hasReverse()) throw new UnsupportedOperationException();
 
-//        svm_node nodes[] = new svm_node[components.size()];
-        List<svm_node> nodes = new ArrayList<svm_node>();
-        for (int si = 0; si < ex.sims.size(); si++) {
-            ComponentSim cs1 = ex.sims.get(si);
-            ComponentSim cs2 = (ex.reverseSims == null) ? null : ex.reverseSims.get(si);
-            assert(cs2 == null || cs1.component == cs2.component);
-
-            svm_node n = new svm_node();
-            n.index = cs1.component;
-            n.value = Double.NaN;
-            BaseNormalizer s = componentStats[n.index];
-
-            if (ex.hasReverse()) {
-                if (cs1.hasValue() || cs2.hasValue()) {
-                    double s1 = cs1.hasValue() ? cs1.sim : s.min;
-                    double s2 = cs2.hasValue() ? cs2.sim : s.min;
-                    n.value = s.normalize((s1 + s2) / 2.0);
-                }
-            } else {
-                if (cs1.hasValue()) {
-                    n.value = s.normalize(cs1.sim);
-                }
-            }
-            if (!Double.isNaN(n.value)) {
-                nodes.add(n);
-            }
+        Map<Integer, Double> features = featureGenerator.generate(ex);
+        svm_node nodes[] = new svm_node[features.size()];
+        int ni = 0; // node index
+        for (int fi : features.keySet()) {
+            nodes[ni] = new svm_node();
+            nodes[ni].index = fi;
+            nodes[ni].value = features.get(fi);
+            ni++;
         }
-        return nodes.toArray(new svm_node[0]);
 
-        /* TODO: try imputing missing values
-        for (int i = 0; i < nodes.length; i++) {
-            if (nodes[i] == null) {
-                Stats s = componentStats[i];
-
-            }
-        }
         return nodes;
-        */
-    }
-
-    protected void calculateComponentStats() {
-        componentStats = new BaseNormalizer[components.size()];
-        for (int i = 0; i < components.size(); i++) {
-            componentStats[i] = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
-        }
-        yStats = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
-
-        for (Example x : examples) {
-            yStats.observe(x.label.similarity);
-            for (int i = 0; i < components.size(); i++) {
-                ComponentSim cs = x.sims.get(i);
-                componentStats[i].observe(cs.maxSim);
-                componentStats[i].observe(cs.minSim);
-                if (x.hasReverse()) {
-                    cs = x.reverseSims.get(i);
-                    componentStats[i].observe(cs.maxSim);
-                    componentStats[i].observe(cs.minSim);
-                }
-            }
-        }
-        yStats.observationsFinished();
-        for (BaseNormalizer normalizer : componentStats) {
-            normalizer.observationsFinished();
-        }
     }
 
     public svm_parameter getParams(svm_problem problem) {
@@ -272,13 +213,13 @@ public class SvmEnsemble implements Ensemble {
         out.close();
 
         out = new ObjectOutputStream(
-                new FileOutputStream(new File(directory, "stats.X")));
-        out.writeObject(componentStats);
+                new FileOutputStream(new File(directory, "stats.Y")));
+        out.writeObject(yStats);
         out.close();
 
         out = new ObjectOutputStream(
-                new FileOutputStream(new File(directory, "stats.Y")));
-        out.writeObject(yStats);
+                new FileOutputStream(new File(directory, "featureGenerator")));
+        out.writeObject(featureGenerator);
         out.close();
 
         String names = StringUtils.join(getComponentNames(), ", ");
@@ -312,13 +253,13 @@ public class SvmEnsemble implements Ensemble {
             in.close();
 
             in = new ObjectInputStream(
-                    new FileInputStream(new File(directory, "stats.X")));
-            componentStats = (BaseNormalizer[]) in.readObject();
+                    new FileInputStream(new File(directory, "stats.Y")));
+            yStats = (BaseNormalizer) in.readObject();
             in.close();
 
             in = new ObjectInputStream(
-                    new FileInputStream(new File(directory, "stats.Y")));
-            yStats = (BaseNormalizer) in.readObject();
+                    new FileInputStream(new File(directory, "featureGenerator")));
+            featureGenerator = (FeatureGenerator) in.readObject();
             in.close();
         } catch (ClassNotFoundException e) {
             throw new IOException(e);
