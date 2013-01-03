@@ -54,6 +54,7 @@ public class SvmEnsemble implements Ensemble {
     @Override
     public void setComponents(List<SimilarityMetric> components) {
         this.components = components;
+        featureGenerator.setComponents(components);
     }
 
     @Override
