@@ -110,7 +110,11 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
         }
         initIfNeeded();
         DocScoreList list = basedOn.mostSimilar(phrase, maxResults, idsInResults);
-        return mostSimilar(maxResults, validIds, list.asTroveMap());
+        if (list == null) {
+            return null;
+        } else {
+            return mostSimilar(maxResults, validIds, list.asTroveMap());
+        }
 
     }
 
