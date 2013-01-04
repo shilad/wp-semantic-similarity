@@ -61,7 +61,7 @@ public class FeatureGenerator implements Serializable {
         for (int i = 0; i < ex.sims.size(); i++) {
             ComponentSim cs1 = ex.sims.get(i);
             ComponentSim cs2 = ex.reverseSims.get(i);
-            if (cs1.hasValue() || cs2.hasValue()) {
+//            if (cs1.hasValue() || cs2.hasValue()) {
                 // range normalizer
                 BaseNormalizer rn = rangeNormalizers.get(i);
                 double r1 = cs1.hasValue() ? rn.normalize(cs1.sim) : rn.getMin();
@@ -79,9 +79,9 @@ public class FeatureGenerator implements Serializable {
                 int rank2 = cs2.hasValue() ? cs2.rank : numResults * 2;
                 features.put(fi++, rankToScore(0.5 * rank1 + 0.5 * rank2, numResults * 2));
                 features.put(fi++, rankToScore(Math.min(rank1, rank2), numResults * 2));
-            } else {
-                fi += 4;
-            }
+//            } else {
+//                fi += 4;
+//            }
         }
         assert(fi == components.size() * 4);
         return features;
