@@ -75,7 +75,7 @@ public class FeatureGenerator implements Serializable {
                 BaseNormalizer pn = percentNormalizers.get(i);
                 double p1 = cs1.hasValue() ? pn.normalize(cs1.sim) : pn.getMin();
                 double p2 = cs2.hasValue() ? pn.normalize(cs2.sim) : pn.getMin();
-                features.put(fi++, percentileToSvm(0.5 * p1 + 0.5 * p2));
+                features.put(fi++, percentileToScore(0.5 * p1 + 0.5 * p2));
 
                 // log rank (mean and min)
                 int rank1 = cs1.hasValue() ? cs1.rank : numResults * 2;
@@ -90,7 +90,7 @@ public class FeatureGenerator implements Serializable {
         return features;
     }
 
-    private List<String> featureNames() {
+    public List<String> getFeatureNames() {
         List<String> names = new ArrayList<String>();
         for (SimilarityMetric m : components) {
             String metricName = m.getName().toLowerCase().replaceAll("[^a-zA-Z]+", "");
@@ -102,7 +102,7 @@ public class FeatureGenerator implements Serializable {
         return names;
     }
 
-    private double percentileToSvm(double p) {
+    private double percentileToScore(double p) {
         return (p - 0.5) * 2;
     }
 
