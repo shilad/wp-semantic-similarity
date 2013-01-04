@@ -26,7 +26,7 @@ public class SvmEnsemble implements Ensemble {
     private FeatureGenerator featureGenerator = new FeatureGenerator();
     private List<SimilarityMetric> components;
 
-    private BaseNormalizer yStats = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
+    private BaseNormalizer yNorm = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
 
     private svm_model model;
     private svm_parameter param;
@@ -64,8 +64,16 @@ public class SvmEnsemble implements Ensemble {
         }
         this.examples = examples;
 
+        // train the y normalizer
+        yNorm = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
+        for (Example x : examples) {
+            yNorm.observe(x.label.similarity);
+        }
+        yNorm.observationsFinished();
+
         featureGenerator.train(examples);
-        LOG.info("Y: " + yStats);
+        LOG.info("Y: " + yNorm);
+
         svm_problem prob = makeProblem();
         svm_parameter param = getParams(prob);
 
@@ -107,7 +115,7 @@ public class SvmEnsemble implements Ensemble {
         assert(ex.sims.size() == components.size());
         svm_node nodes[] = simsToNodes(ex, truncate);
         double p = svm.svm_predict(model, nodes);
-        return yStats.unnormalize(p);
+        return yNorm.unnormalize(p);
     }
 
 
@@ -123,7 +131,7 @@ public class SvmEnsemble implements Ensemble {
             assert(hasReverse == x.hasReverse());
             num_cells += x.getNumNotNan();
             prob.x[i] = simsToNodes(x, false);
-            prob.y[i] = yStats.normalize(x.label.similarity);
+            prob.y[i] = yNorm.normalize(x.label.similarity);
             i++;
         }
         LOG.info("overall sparsity is " + 1.0 * num_cells / (examples.size() * components.size()));
@@ -215,7 +223,7 @@ public class SvmEnsemble implements Ensemble {
 
         out = new ObjectOutputStream(
                 new FileOutputStream(new File(directory, "stats.Y")));
-        out.writeObject(yStats);
+        out.writeObject(yNorm);
         out.close();
 
         out = new ObjectOutputStream(
@@ -255,7 +263,7 @@ public class SvmEnsemble implements Ensemble {
 
             in = new ObjectInputStream(
                     new FileInputStream(new File(directory, "stats.Y")));
-            yStats = (BaseNormalizer) in.readObject();
+            yNorm = (BaseNormalizer) in.readObject();
             in.close();
 
             in = new ObjectInputStream(

@@ -66,24 +66,34 @@ public class FeatureGenerator implements Serializable {
                 BaseNormalizer rn = rangeNormalizers.get(i);
                 double r1 = cs1.hasValue() ? rn.normalize(cs1.sim) : rn.getMin();
                 double r2 = cs2.hasValue() ? rn.normalize(cs2.sim) : rn.getMin();
-                features.put(fi++, 0.5 * r1 + 0.5 * r2);
+                features.put(fi++, percentileToSvm(0.5 * r1 + 0.5 * r2));
 
                 // percent normalizer
                 BaseNormalizer pn = percentNormalizers.get(i);
                 double p1 = cs1.hasValue() ? pn.normalize(cs1.sim) : pn.getMin();
                 double p2 = cs2.hasValue() ? pn.normalize(cs2.sim) : pn.getMin();
-                features.put(fi++, 0.5 * p1 + 0.5 * p2);
+                features.put(fi++, percentileToSvm(0.5 * p1 + 0.5 * p2));
 
                 // log rank (mean and min)
-                double lr1 = Math.log(1 + (cs1.hasValue() ? cs1.rank : numResults * 2));
-                double lr2 = Math.log(1 + (cs2.hasValue() ? cs2.rank : numResults * 2));
-                features.put(fi++, 0.5 * lr1 + 0.5 * lr2);
-                features.put(fi++, Math.min(lr1, lr2));
+                int rank1 = cs1.hasValue() ? cs1.rank : numResults * 2;
+                int rank2 = cs2.hasValue() ? cs2.rank : numResults * 2;
+                features.put(fi++, rankToScore(0.5 * rank1 + 0.5 * rank2, numResults * 2));
+                features.put(fi++, rankToScore(Math.min(rank1, rank2), numResults * 2));
             } else {
                 fi += 4;
             }
         }
         assert(fi == components.size() * 4);
         return features;
+    }
+
+    private double percentileToSvm(double p) {
+        return (p - 0.5) * 2;
+    }
+
+    private double rankToScore(double rank, int maxRank) {
+        double maxLog = Math.log(maxRank + 2);
+        double log = Math.log(rank + 1);
+        return ((maxLog - log) / maxLog - 0.5) * 2;
     }
 }
