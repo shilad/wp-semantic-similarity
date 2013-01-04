@@ -4,17 +4,24 @@ import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 
 /**
  * This class is called percentile normalizer, but it returns normalized values in [0,1].
  */
 public class PercentileNormalizer extends BaseNormalizer {
-    protected PolynomialSplineFunction interpolator;
+    protected transient PolynomialSplineFunction interpolator;
 
     @Override
     public void observationsFinished() {
         super.observationsFinished();
+        makeInterpolater();
+    }
 
+    protected void makeInterpolater() {
         TDoubleArrayList X = new TDoubleArrayList();
         TDoubleArrayList Y = new TDoubleArrayList();
 
@@ -26,6 +33,16 @@ public class PercentileNormalizer extends BaseNormalizer {
         }
 
         interpolator = new SplineInterpolator().interpolate(X.toArray(), Y.toArray());
+    }
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        makeInterpolater();
     }
 
     @Override
@@ -57,9 +74,7 @@ public class PercentileNormalizer extends BaseNormalizer {
             return sMax + (1 - Math.exp(-(y - (1 - yDelta)))) * halfLife;
         } else {
             // transform x
-            System.out.println("y was " + y + " numObs is " + sample.size());
             y = (y - yDelta) / (1.0 - 2 * yDelta);
-            System.out.println("y translated to " + y);
             return stats.getPercentile(y * 100.0);
         }
     }
