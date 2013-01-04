@@ -54,6 +54,9 @@ public class FeatureGenerator implements Serializable {
         if (!ex.hasReverse()) {
             throw new UnsupportedOperationException();  // TODO: fixme
         }
+        if (ex.sims.size() != components.size()) {
+            throw new IllegalStateException();
+        }
 
         LinkedHashMap<Integer, Double> features = new LinkedHashMap<Integer, Double>();
         int fi = 0; // feature index
@@ -66,7 +69,7 @@ public class FeatureGenerator implements Serializable {
                 BaseNormalizer rn = rangeNormalizers.get(i);
                 double r1 = cs1.hasValue() ? rn.normalize(cs1.sim) : rn.getMin();
                 double r2 = cs2.hasValue() ? rn.normalize(cs2.sim) : rn.getMin();
-                features.put(fi++, percentileToSvm(0.5 * r1 + 0.5 * r2));
+                features.put(fi++, 0.5 * r1 + 0.5 * r2);
 
                 // percent normalizer
                 BaseNormalizer pn = percentNormalizers.get(i);
@@ -85,6 +88,18 @@ public class FeatureGenerator implements Serializable {
         }
         assert(fi == components.size() * 4);
         return features;
+    }
+
+    private List<String> featureNames() {
+        List<String> names = new ArrayList<String>();
+        for (SimilarityMetric m : components) {
+            String metricName = m.getName().toLowerCase().replaceAll("[^a-zA-Z]+", "");
+            names.add(metricName + "-range");
+            names.add(metricName + "-percent");
+            names.add(metricName + "-rankmean");
+            names.add(metricName + "-rankmin");
+        }
+        return names;
     }
 
     private double percentileToSvm(double p) {
