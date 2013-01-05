@@ -1,6 +1,8 @@
 package edu.macalester.wpsemsim.normalize;
 
 import gnu.trove.list.array.TDoubleArrayList;
+import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
+import org.apache.commons.math3.analysis.interpolation.LoessInterpolator;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
@@ -32,7 +34,7 @@ public class PercentileNormalizer extends BaseNormalizer {
             Y.add((i + 1.0) / (sample.size() + 1));
         }
 
-        interpolator = new SplineInterpolator().interpolate(X.toArray(), Y.toArray());
+        interpolator = new LinearInterpolator().interpolate(X.toArray(), Y.toArray());
     }
 
     private void writeObject(ObjectOutputStream out) throws IOException {

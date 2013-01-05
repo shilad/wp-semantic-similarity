@@ -38,8 +38,10 @@ public class FeatureGenerator implements Serializable {
                 numResults = Math.max(numResults, s.length);
                 if (s.scores != null) {
                     for (float x : s.scores) {
-                        rangeNormalizers.get(s.component).observe(x);
-                        percentNormalizers.get(s.component).observe(x);
+                        if (!Double.isNaN(x) && !Double.isInfinite(x)) {
+                            rangeNormalizers.get(s.component).observe(x);
+                            percentNormalizers.get(s.component).observe(x);
+                        }
                     }
                 }
             }
@@ -64,15 +66,16 @@ public class FeatureGenerator implements Serializable {
         for (int i = 0; i < ex.sims.size(); i++) {
             ComponentSim cs1 = ex.sims.get(i);
             ComponentSim cs2 = ex.reverseSims.get(i);
+            assert(cs1.component == cs2.component);
 //            if (cs1.hasValue() || cs2.hasValue()) {
                 // range normalizer
-                BaseNormalizer rn = rangeNormalizers.get(i);
+                BaseNormalizer rn = rangeNormalizers.get(cs1.component);
                 double r1 = cs1.hasValue() ? rn.normalize(cs1.sim) : rn.getMin();
                 double r2 = cs2.hasValue() ? rn.normalize(cs2.sim) : rn.getMin();
                 features.put(fi++, 0.5 * r1 + 0.5 * r2);
 
                 // percent normalizer
-                BaseNormalizer pn = percentNormalizers.get(i);
+                BaseNormalizer pn = percentNormalizers.get(cs1.component);
                 double p1 = cs1.hasValue() ? pn.normalize(cs1.sim) : pn.getMin();
                 double p2 = cs2.hasValue() ? pn.normalize(cs2.sim) : pn.getMin();
                 features.put(fi++, percentileToScore(0.5 * p1 + 0.5 * p2));
