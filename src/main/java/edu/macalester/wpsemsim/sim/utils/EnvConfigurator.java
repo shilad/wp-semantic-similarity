@@ -234,8 +234,10 @@ public class EnvConfigurator {
     private SimilarityMetric loadEnsembleMetric(String key) throws IOException, ConfigurationException {
         info("loading ensemble metric " + key);
         Map<String, Object> params = (Map<String, Object>) configuration.getMetric(key);
+        setDoEnsembles(false);
+        List<SimilarityMetric> metrics = loadMetrics();
         EnsembleSimilarity similarity = new EnsembleSimilarity(new SvmEnsemble(), loadMainMapper(), env.getMainIndex());
-        similarity.setComponents(new ArrayList<SimilarityMetric>(env.getMetrics().values()));
+        similarity.setComponents(metrics);
         similarity.read(requireDirectory(params, "model"));
         similarity.setName(key);
         if (params.containsKey("minComponents")) {
