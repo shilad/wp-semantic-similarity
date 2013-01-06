@@ -16,8 +16,6 @@ import java.util.logging.Logger;
  */
 public class LinearEnsemble implements Ensemble {
     private static final Logger LOG = Logger.getLogger(LinearEnsemble.class.getName());
-    private static final Double MIN_VALUE = -1.0;
-    private static final Double MAX_VALUE = +1.0;
 
     private FeatureGenerator featureGenerator = new FeatureGenerator();
     private List<SimilarityMetric> components;

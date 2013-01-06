@@ -86,6 +86,12 @@ public class EnsembleMain {
                 .withLongOpt("validIds")
                 .withDescription("Ids that can be included in results list.")
                 .create('v'));
+        options.addOption(new DefaultOptionBuilder()
+                .withLongOpt("articles")
+                .withDescription("Query phrases are article titles")
+                .create('a'));
+
+
 
         CommandLine cmd;
 
