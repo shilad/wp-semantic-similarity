@@ -87,7 +87,9 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                     if (!features.containsKey(ds.getId())) {
                         features.put(ds.getId(), Example.makeEmpty());
                     }
-                    features.get(ds.getId()).add(new ComponentSim(i, top, j));
+//                    features.get(ds.getId()).add(new ComponentSim(i, top, j));
+                    // HACK!
+                    features.get(ds.getId()).add(new ComponentSim(i, top, j), new ComponentSim(i, top, j));
                 }
             }
         }
