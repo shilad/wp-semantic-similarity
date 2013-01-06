@@ -51,7 +51,7 @@ public class SimilarityConsole {
             }
             String phrases[] = line.split(",");
             if (phrases.length == 1) {
-                DocScoreList results = metric.mostSimilar(phrases[0].trim(), 10000);
+                DocScoreList results = metric.mostSimilar(phrases[0].trim(), 2000);
                 if (results.numDocs() > 500) {
                     results.truncate(500);
                 }
