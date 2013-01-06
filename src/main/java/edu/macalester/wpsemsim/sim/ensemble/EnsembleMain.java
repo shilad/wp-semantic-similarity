@@ -67,7 +67,7 @@ public class EnsembleMain {
                 .isRequired()
                 .hasArg()
                 .withLongOpt("ensemble")
-                .withDescription("Ensemble type ('weka' or 'svm').")
+                .withDescription("Ensemble type ('weka', 'svm', or 'linear').")
                 .hasArgs()
                 .create('e'));
         options.addOption(new DefaultOptionBuilder()
@@ -100,7 +100,7 @@ public class EnsembleMain {
             return;
         }
         String ensembleType = cmd.getOptionValue("e");
-        if (!ensembleType.equals("svm") && !ensembleType.equals("weka")) {
+        if (Arrays.asList("svm", "linear", "weka").contains(ensembleType)) {
             System.err.println( "Invalid ensemble type: " + ensembleType);
             new HelpFormatter().printHelp( "EnsembleMain", options );
             return;
@@ -149,6 +149,8 @@ public class EnsembleMain {
             e = new SvmEnsemble();
         } else if (ensembleType.equals("weka")) {
             e = new WekaEnsemble();
+        } else if (ensembleType.equals("linear")) {
+            e = new LinearEnsemble();
         } else {
             throw new IllegalStateException();
         }
