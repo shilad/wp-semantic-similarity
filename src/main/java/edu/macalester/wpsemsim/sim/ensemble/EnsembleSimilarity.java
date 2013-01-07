@@ -85,7 +85,8 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                 DocScore ds = top.get(j);
                 if (validIds == null || validIds.contains(ds.getId())) {
                     if (!features.containsKey(ds.getId())) {
-                        features.put(ds.getId(), Example.makeEmpty());
+//                        features.put(ds.getId(), Example.makeEmpty());
+                        features.put(ds.getId(), Example.makeEmptyWithReverse());
                     }
 //                    features.get(ds.getId()).add(new ComponentSim(i, top, j));
                     // HACK!
