@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 public class LinearEnsemble implements Ensemble {
     private static final Logger LOG = Logger.getLogger(LinearEnsemble.class.getName());
 
-    private FeatureGenerator featureGenerator = new FeatureGenerator();
+    private FeatureGenerator featureGenerator = new SimilarityFeatureGenerator();
     private List<SimilarityMetric> components;
     private int numFeatures;
     private double[] coefficients;
@@ -37,7 +37,12 @@ public class LinearEnsemble implements Ensemble {
     }
 
     @Override
-    public void train(List<Example> examples) {
+    public void trainSimilarity(List<Example> examples) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void trainMostSimilar(List<Example> examples) {
         if (examples.isEmpty()) {
             throw new IllegalArgumentException("no examples to train on!");
         }

@@ -26,6 +26,10 @@ import java.util.logging.Logger;
  * A supervised machine learner that predicts semantic similarity based
  * on a collection of underlying component similarity metrics.
  *
+ * TODO:
+ * For now we only train mostSimilar.
+ * Training similarity() would not be difficult, but it is unimplemented.
+ *
  */
 public class EnsembleSimilarity extends BaseSimilarityMetric implements SupervisedSimilarityMetric {
     private static final Logger LOG = Logger.getLogger(EnsembleSimilarity.class.getName());
@@ -48,22 +52,21 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
 
     @Override
     public void trainSimilarity(List<KnownSim> gold) {
-        trainMostSimilar(gold, -1, null);
-    }
-
-    @Override
-    public void trainMostSimilar(List<KnownSim> gold, int numResults, TIntSet validIds) {
-        train(gold, numResults, validIds);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+        throw new UnsupportedOperationException();
+
+        /*
         Example ex = getComponentSimilarities(phrase1, phrase2, -1, null);
         if (ex.getNumNotNan() >= minComponents) {
             return ensemble.predict(ex, true);
         } else {
             return Double.NaN;
         }
+        */
     }
 
     @Override
@@ -176,7 +179,8 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
      * @param numResults if less than or equal to 0 train similarity(),
      * @param validIds
      */
-    public void train(final List<KnownSim> gold, final int numResults, final TIntSet validIds) {
+    @Override
+    public void trainMostSimilar(final List<KnownSim> gold, final int numResults, final TIntSet validIds) {
         final ExecutorService exec = Executors.newFixedThreadPool(numThreads);
         final List<Example> examples = Collections.synchronizedList(new ArrayList<Example>());
         try {

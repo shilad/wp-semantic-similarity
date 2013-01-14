@@ -23,7 +23,8 @@ public class SvmEnsemble implements Ensemble {
     private static final double P_EPSIONS[] = { 1.0, 0.5, 0.1, 0.01, 0.001 };
     private static final double P_CS[] = { 16, 8, 4, 2, 1, 0.5, 0.2, 0.1 };
 
-    private FeatureGenerator featureGenerator = new FeatureGenerator();
+    // TODO: Plug in SimilarityFeatureGenerator where appropriate
+    private FeatureGenerator featureGenerator = new MostSimilarFeatureGenerator();
     private List<SimilarityMetric> components;
 
     private BaseNormalizer yNorm = new RangeNormalizer(MIN_VALUE, MAX_VALUE, false);
@@ -58,7 +59,12 @@ public class SvmEnsemble implements Ensemble {
     }
 
     @Override
-    public void train(List<Example> examples) {
+    public void trainSimilarity(List<Example> examples) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void trainMostSimilar(List<Example> examples) {
         if (examples.isEmpty()) {
             throw new IllegalArgumentException("no examples to train on!");
         }

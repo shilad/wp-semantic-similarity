@@ -16,7 +16,9 @@ import java.util.List;
 public interface Ensemble {
     void setComponents(List<SimilarityMetric> components);
 
-    void train(List<Example> examples);
+    void trainMostSimilar(List<Example> examples);
+
+    void trainSimilarity(List<Example> examples);
 
     double predict(Example ex, boolean truncate);
 

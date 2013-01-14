@@ -1,13 +1,9 @@
 package edu.macalester.wpsemsim.sim.ensemble;
 
-import edu.macalester.wpsemsim.normalize.*;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -17,7 +13,7 @@ import java.util.*;
  */
 public class WekaEnsemble implements Ensemble {
     private List<SimilarityMetric> components;
-    private FeatureGenerator generator = new FeatureGenerator();
+    private FeatureGenerator generator = new SimilarityFeatureGenerator();
 
     StringBuffer outputBuffer = new StringBuffer();
 
@@ -31,7 +27,12 @@ public class WekaEnsemble implements Ensemble {
     }
 
     @Override
-    public void train(List<Example> examples) {
+    public void trainSimilarity(List<Example> examples) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void trainMostSimilar(List<Example> examples) {
         generator.train(examples);
 
         try {
