@@ -213,7 +213,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
                 LOG.log(Level.WARNING, "error while awaiting termination:", e);
             }
         }
-        ensemble.train(examples);
+        ensemble.trainMostSimilar(examples);
     }
 
 

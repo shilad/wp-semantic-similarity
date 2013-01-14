@@ -12,8 +12,7 @@ import java.util.Random;
  * Generates numeric features for a component similarity example.
  *
  * Since it is targeted towards SimilarityMetric.mostSimilar(), it presumes
- * we only have scores for one phrase or article. The other is used for training,
- * but is otherwise unknown.
+ * it will have only one ranked list of similarities.
  */
 public class MostSimilarFeatureGenerator extends FeatureGenerator {
     Random random = new Random();
