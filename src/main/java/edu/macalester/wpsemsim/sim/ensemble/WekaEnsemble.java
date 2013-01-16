@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class WekaEnsemble implements Ensemble {
     private List<SimilarityMetric> components;
-    private FeatureGenerator generator = new SimilarityFeatureGenerator();
+    private FeatureGenerator generator = new MostSimilarFeatureGenerator();
 
     StringBuffer outputBuffer = new StringBuffer();
 
