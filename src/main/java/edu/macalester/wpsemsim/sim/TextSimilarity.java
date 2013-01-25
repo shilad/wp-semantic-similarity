@@ -63,7 +63,7 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double rawSimilarity(String phrase1, String phrase2) throws IOException, ParseException {
         if (!useInternalMapper) {
             return super.similarity(phrase1, phrase2);
         }
@@ -145,7 +145,7 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
     }
 
     @Override
-    public double similarity(int wpId1, int wpId2) throws IOException {
+    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
         int doc1 = helper.wpIdToLuceneId(wpId1);
         int doc2 = helper.wpIdToLuceneId(wpId2);
         if (doc1 < 0 || doc2 < 0) {

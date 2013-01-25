@@ -76,7 +76,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double rawSimilarity(String phrase1, String phrase2) throws IOException, ParseException {
         TIntDoubleHashMap scores1 = getConceptVector(phrase1, null);
         TIntDoubleHashMap scores2 = getConceptVector(phrase2, null);
         return Math.log(SimUtils.cosineSimilarity(scores1, scores2) + 0.001);
@@ -187,7 +187,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     }
 
     @Override
-    public double similarity(int wpId1, int wpId2) throws IOException {
+    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
         int doc1 = esaHelper.wpIdToLuceneId(wpId1);
         int doc2 = esaHelper.wpIdToLuceneId(wpId2);
 

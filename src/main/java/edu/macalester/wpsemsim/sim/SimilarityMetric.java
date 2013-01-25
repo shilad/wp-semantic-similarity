@@ -1,16 +1,26 @@
 package edu.macalester.wpsemsim.sim;
 
+import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.utils.DocScoreList;
+import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.set.TIntSet;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
-import org.apache.lucene.search.Filter;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Estimates the similarity between Wikipedia pages, phrases, or both.
  */
 public interface SimilarityMetric {
+
+    // sets the normalizer for the metric
+    public void setNormalizer(Normalizer n);
+    // Train the similarity() function
+    public void trainSimilarity(List<KnownSim> labeled);
+
+    // Train the mostSimilar() function
+    public void trainMostSimilar(List<KnownSim> labeled, int numResults, TIntSet validIds);
 
     /**
      * A unique, human-readable name for the metric.

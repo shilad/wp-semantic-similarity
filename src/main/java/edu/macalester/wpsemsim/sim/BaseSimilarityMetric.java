@@ -2,14 +2,17 @@ package edu.macalester.wpsemsim.sim;
 
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
+import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.utils.DocScoreList;
+import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.set.TIntSet;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.logging.Logger;
 
 public abstract class BaseSimilarityMetric implements SimilarityMetric {
@@ -30,10 +33,59 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         }
     }
 
+    private Normalizer normalizer= new IdentityNormalizer();
 
+    public void trainNormalizer(List<KnownSim> gold) throws IOException{
+        if (!normalizer.needsTraining()) return;
+        if (!normalizer.isSupervised()){
+            trainNormalizer();
+        }
+        for (KnownSim ks:gold){
+            try{
+                double sim = rawSimilarity(ks.phrase1,ks.phrase2);
+                if (!Double.isNaN(sim) && !Double.isInfinite(sim)){
+                    normalizer.observe(sim, ks.similarity);
+                }
+            } catch (Exception e){}
+        }
+        normalizer.observationsFinished();
+    };
+
+    public void trainNormalizer() throws IOException{
+        if (!normalizer.needsTraining()) return;
+        if (normalizer.isSupervised()) {
+            //TODO: don't hardcode path, get from config file?
+            trainNormalizer(KnownSim.read(new File("dat/gold/combined.filtered.txt")));
+        }
+        int[] wpids = helper.getWpIds();
+        for (int i=0; i<wpids.length;i++){
+            for (int j=0;j<i;j++){
+                normalizer.observe(rawSimilarity(wpids[i],wpids[j]));
+            }
+        }
+        normalizer.observationsFinished();
+    }
+
+    public void setNormalizer(Normalizer n){
+        normalizer =n;
+    }
+
+    @Override
+    public void trainSimilarity(List<KnownSim> labeled){
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void trainMostSimilar(List<KnownSim> labeled, int numResults, TIntSet validIds){
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+        return normalizer.normalize(rawSimilarity(phrase1,phrase2));
+    }
+
+    public double rawSimilarity(String phrase1, String phrase2) throws IOException, ParseException {
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
@@ -77,7 +129,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 if (wpId2 < 0) {
                     continue;
                 }
-                double sim = similarity(wpId1, wpId2);
+                double sim = rawSimilarity(wpId1, wpId2);
                 if (Double.isInfinite(sim) || Double.isNaN(sim)) {
 //                        LOG.info("sim between '" + article1 + "' and '" + article2 + "' is NAN or INF");
                     continue;
@@ -111,7 +163,11 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     }
 
     @Override
-    public abstract double similarity(int wpId1, int wpId2) throws IOException;
+    public double similarity(int wpId1, int wpId2) throws IOException{
+        return normalizer.normalize(rawSimilarity(wpId1,wpId2));
+    }
+
+    public abstract double rawSimilarity(int wpId1, int wpId2) throws IOException;
 
     @Override
     public abstract DocScoreList mostSimilar(int wpId1, int maxResults, TIntSet possibleWpIds) throws IOException;

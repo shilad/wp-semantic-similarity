@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +22,7 @@ public class Env {
     private Map<String, ConceptMapper> mappers = new HashMap<String, ConceptMapper>();
     private Map<String, SimilarityMetric> metrics = new HashMap<String, SimilarityMetric>();
     private Map<String, IndexHelper> indexes = new HashMap<String, IndexHelper>();
+    private List<KnownSim> gold;
 
     public Env(ConfigurationFile file) { this.config = file; }
 
@@ -70,5 +72,13 @@ public class Env {
 
     public Map<String, SimilarityMetric> getMetrics() {
         return metrics;
+    }
+
+    public List<KnownSim> getGold(){
+        return gold;
+    }
+
+    public void setGold(List<KnownSim> g){
+        gold=g;
     }
 }

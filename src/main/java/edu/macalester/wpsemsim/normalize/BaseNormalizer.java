@@ -27,10 +27,26 @@ public abstract class BaseNormalizer implements Serializable, Normalizer {
     protected int numObservations = 0;
     protected Random random = new Random();
 
+    private boolean Supervised=false;
+    private boolean NeedsTraining=true;
+
+    public boolean isSupervised(){
+        return Supervised;
+    };
+
+    public boolean needsTraining(){
+        return NeedsTraining;
+    }
+
     /**
      * To meet the serializable contract.
      */
     protected BaseNormalizer() {}
+
+    @Override
+    public void observe(double x, double y){
+        observe(x);
+    }
 
     @Override
     public void observe(double x) {

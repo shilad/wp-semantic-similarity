@@ -72,6 +72,10 @@ public class ConfigurationFile {
     public File getPath() {
         return file;
     }
+
+    public JSONObject getGold(){
+        return get("gold");
+    }
     /**
      * Gets the configuration for all indexes.
      * @return
