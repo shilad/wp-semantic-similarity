@@ -12,27 +12,32 @@ import java.util.List;
  * Time: 1:29 PM
  * To change this template use File | Settings | File Templates.
  */
-public class PolinomialInterpolatorNormalizer extends BaseNormalizer {
+public class PolynomialInterpolatorNormalizer extends BaseNormalizer {
     private List<double[]> allPoints=new ArrayList<double[]>();
 
-    private int Degree=1;
+    private int degree=1;
     private boolean finalized=false;
 
-    private boolean Supervised=true;
+    private boolean supervised=true;
 
-    // for c_0 +c_1 x + c_2 x^2 +c_3 x^3 ...
-    // model of form {upper bound, c_0, c_1, c_2, c_3, ...}
+    /* for c_0 +c_1 x + c_2 x^2 +c_3 x^3 ...
+     * model of form [upper bound, c_0, c_1, c_2, c_3, ...]
+     * the actual array is an array of coefficients
+     */
     private double[][] model;
 
+    /* nodes[][] is an array of x,y pairs representing fixed points in the interpolation.
+     * Each of these is computed as the average of a number points
+     */
     private double[][] nodes;
 
     public int getDegree(){
-        return Degree;
+        return degree;
     }
 
     public void setDegree(int x){
-        if (x != Degree){
-            Degree=x;
+        if (x != degree){
+            degree=x;
             if (finalized){
                 mkModel();
             }
@@ -97,16 +102,20 @@ public class PolinomialInterpolatorNormalizer extends BaseNormalizer {
         return Double.NaN;
     }
 
-    public void mkModel(){
+    public void mkModel(){  //currently only linear implemented. TODO: implements higher degree models
         int nb = modeCount(allPoints);
         nb = Math.max((int) Math.ceil(Math.min(allPoints.size() / 50, allPoints.size() / ((nb + 1) / 2))), 4);
+        //calculates the number of bins such that there are at least 50 points per bin
+        //at least mode/2 +1 points per bin (prevents bins w/ same x)
+        //at least 3 bins
         double[][] avgPoints=new double[nb][2];
         int diff=(int) Math.ceil(((double)allPoints.size())/((double) nb));
         for (int i=0; i<avgPoints.length;i++){
             avgPoints[i]=avgPoint(allPoints.subList(i*diff,(i+1)*diff));
         }
+        //calculates average point for each bin
         nodes=avgPoints;
-        if (Degree==1){
+        if (degree==1){     //constructs a linear model using basic spline fitting
             double[][] mod = new double[avgPoints.length-1][3];
             for (int i=0; i<avgPoints.length-1;i++){
                 mod[i][0]=avgPoints[i+1][0];
@@ -120,7 +129,7 @@ public class PolinomialInterpolatorNormalizer extends BaseNormalizer {
         }
     }
 
-    public int modeCount(List<double[]> points){
+    public int modeCount(List<double[]> points){    //TODO: use TDoubleIntHashMap for O(n)
         int maxCount=0;
         for (int i=0; i< points.size();i++){
             int count=0;
