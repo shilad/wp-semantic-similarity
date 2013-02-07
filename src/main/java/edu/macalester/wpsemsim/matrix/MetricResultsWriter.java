@@ -15,12 +15,18 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-//outputs file in format: phrase1 \t phrase2 \t metric_score \t gold_score
+/* *
+ * MetricResultsWriter
+ * writes out a file containing calculated similarity using a given metric vs the gold score
+ * file formatted as tab seperated values
+ * each line has the form:
+ * phrase1 \t phrase2 \t <calculated score> \t <gold score>
+ */
 
-public class TSVMatrixWriter {
-    public static Logger LOG = Logger.getLogger(TSVMatrixWriter.class.getName());
+public class MetricResultsWriter {
+    public static Logger LOG = Logger.getLogger(MetricResultsWriter.class.getName());
 
-    public TSVMatrixWriter(File goldStandard) throws  IOException{
+    public MetricResultsWriter(File goldStandard) throws  IOException{
         this.gold = KnownSim.read(goldStandard);
     }
 
@@ -66,7 +72,7 @@ public class TSVMatrixWriter {
                 new ConfigurationFile(new File(args[0])));
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
-        TSVMatrixWriter twrite = new TSVMatrixWriter(
+        MetricResultsWriter twrite = new MetricResultsWriter(
                 new File(args[1])
         );
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
