@@ -1,18 +1,26 @@
 package edu.macalester.wpsemsim.normalize;
 
+import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
+ * Creates a Normalizer based on a polinomial spline fitting to binned points.
+ * In theory, it could use any polinomial, but only the linear case is implemented.
+ *
  * Created with IntelliJ IDEA.
  * User: aaron
  * Date: 1/23/13
  * Time: 1:29 PM
  * To change this template use File | Settings | File Templates.
  */
+
 public class PolynomialInterpolatorNormalizer extends BaseNormalizer {
+    private static Logger LOG = Logger.getLogger(BaseSimilarityMetric.class.getName());
     private List<double[]> allPoints=new ArrayList<double[]>();
 
     private int degree=1;
@@ -81,7 +89,7 @@ public class PolynomialInterpolatorNormalizer extends BaseNormalizer {
 
     @Override
     public double normalize(double x) {
-        return Math.max(Math.min(interpolate(x), 1.0), 0);  //To change body of implemented methods use File | Settings | File Templates.
+        return Math.max(Math.min(interpolate(x), 1.0), 0.0);  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
@@ -99,11 +107,13 @@ public class PolynomialInterpolatorNormalizer extends BaseNormalizer {
                 return fit;
             }
         }
+        LOG.warning("Model does not return a valid fit for:"+raw);
         return Double.NaN;
     }
 
     public void mkModel(){  //currently only linear implemented. TODO: implements higher degree models
         int nb = modeCount(allPoints);
+        //TODO: make this more readable
         nb = Math.max((int) Math.ceil(Math.min(allPoints.size() / 50, allPoints.size() / ((nb + 1) / 2))), 4);
         //calculates the number of bins such that there are at least 50 points per bin
         //at least mode/2 +1 points per bin (prevents bins w/ same x)

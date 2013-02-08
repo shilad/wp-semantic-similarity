@@ -37,6 +37,12 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
 
     public void trainNormalizer(List<KnownSim> gold) throws IOException{
         if (!normalizer.needsTraining()) return;
+
+        //TODO:Move this code to trainMostSimilar() and trainSimilarity().
+        //TODO:Specific implementations (SVMEnsemble) should call super.trainMostSimilar().
+        //TODO:Make sure to train using the correct method (similarity() for trainSimilarity() and mostSimilar()
+        // for trainMostSimilar()). The reasoning is that a metric may output different scores for each.
+
         if (!normalizer.isSupervised()){
             trainNormalizer();
         }
