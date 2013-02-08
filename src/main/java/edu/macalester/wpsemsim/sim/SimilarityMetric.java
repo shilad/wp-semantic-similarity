@@ -14,12 +14,19 @@ import java.util.List;
  */
 public interface SimilarityMetric {
 
-    // sets the normalizer for the metric
+    /**
+     * sets the normalizer for the metric
+     */
     public void setNormalizer(Normalizer n);
-    // Train the similarity() function
+
+    /**
+     * Train the similarity() function
+     */
     public void trainSimilarity(List<KnownSim> labeled);
 
-    // Train the mostSimilar() function
+    /**
+     * Train the mostSimilar() function
+     */
     public void trainMostSimilar(List<KnownSim> labeled, int numResults, TIntSet validIds);
 
     /**
