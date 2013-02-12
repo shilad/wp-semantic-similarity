@@ -7,22 +7,25 @@ import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.concepts.TitleMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
-import edu.macalester.wpsemsim.sim.ensemble.SvmEnsemble;
-import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
-import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
+import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.sim.LinkSimilarity;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.sim.TextSimilarity;
-import edu.macalester.wpsemsim.sim.category.CategorySimilarity;
 import edu.macalester.wpsemsim.sim.category.CategoryGraph;
+import edu.macalester.wpsemsim.sim.category.CategorySimilarity;
 import edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity;
+import edu.macalester.wpsemsim.sim.ensemble.SvmEnsemble;
+import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
+import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.Env;
+import edu.macalester.wpsemsim.utils.KnownSim;
 import org.json.simple.JSONObject;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -42,6 +45,7 @@ public class EnvConfigurator {
     private boolean shouldLoadIndexes = true;
     private boolean shouldLoadMappers = true;
     private boolean shouldLoadMetrics = true;
+    private boolean shouldLoadGold = true;
     protected Env env;
 
 
@@ -69,6 +73,9 @@ public class EnvConfigurator {
         }
         if (shouldLoadMetrics) {
             loadMetrics();
+        }
+        if (shouldLoadGold) {
+            loadGold();
         }
         return env;
     }
@@ -227,6 +234,13 @@ public class EnvConfigurator {
             throw new ConfigurationException("Unknown metric type: " + type);
         }
         metric.setName(name);
+        JSONObject params = configuration.getMetric(name);
+        if (params.containsKey("normalizer")){
+            Normalizer norm = parseNormalizer(requireString(params,"normalizer"));
+            if (!norm.equals(null)){
+                metric.setNormalizer(norm);
+            }
+        }
         env.addMetric(name, metric);
         return metric;
     }
@@ -394,5 +408,26 @@ public class EnvConfigurator {
 
     public void setShouldLoadMetrics(boolean shouldLoadMetrics) {
         this.shouldLoadMetrics = shouldLoadMetrics;
+    }
+
+    private Normalizer parseNormalizer(String normname){
+        Normalizer norm;
+        if (normname.equals("")){
+            return null;
+        }
+        try {
+            norm = (Normalizer) Class.forName("edu.macalester.wpsemsim.normalize."+normname+"Normalizer").newInstance();
+        }catch (Exception e){
+            norm = null;
+        }
+        return norm;
+    }
+
+    private List<KnownSim> loadGold() throws ConfigurationException, IOException {
+        JSONObject params = configuration.getGold();
+        String path = requireString(params, "path");
+        List<KnownSim> g = KnownSim.read(new File(path));
+        env.setGold(g);
+        return g;
     }
 }

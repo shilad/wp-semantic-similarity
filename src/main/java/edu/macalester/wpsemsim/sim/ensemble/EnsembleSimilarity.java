@@ -1,12 +1,13 @@
 package edu.macalester.wpsemsim.sim.ensemble;
 
-import edu.macalester.wpsemsim.sim.SupervisedSimilarityMetric;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import edu.macalester.wpsemsim.utils.*;
+import edu.macalester.wpsemsim.utils.DocScore;
+import edu.macalester.wpsemsim.utils.DocScoreList;
+import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.TIntSet;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -14,7 +15,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,7 +33,7 @@ import java.util.logging.Logger;
  * Training similarity() would not be difficult, but it is unimplemented.
  *
  */
-public class EnsembleSimilarity extends BaseSimilarityMetric implements SupervisedSimilarityMetric {
+public class EnsembleSimilarity extends BaseSimilarityMetric implements SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(EnsembleSimilarity.class.getName());
 
     private int numThreads = Runtime.getRuntime().availableProcessors();
@@ -56,7 +58,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double rawSimilarity(String phrase1, String phrase2) throws IOException, ParseException {
         throw new UnsupportedOperationException();
 
         /*
@@ -70,7 +72,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Supervis
     }
 
     @Override
-    public double similarity(int wpId1, int wpId2) throws IOException {
+    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
         throw new UnsupportedOperationException();
     }
 

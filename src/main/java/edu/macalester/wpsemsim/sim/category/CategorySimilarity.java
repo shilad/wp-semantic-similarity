@@ -66,7 +66,7 @@ public class CategorySimilarity extends BaseSimilarityMetric {
 
 
     @Override
-    public double similarity(int wpId1, int wpId2) throws IOException {
+    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
         if (wpId1 == wpId2) { return distanceToScore(0.0); }     // hack
 
         int id1 = helper.wpIdToLuceneId(wpId1);

@@ -12,6 +12,10 @@
 //        }
     },
 
+    "gold" : {
+            "path" : "dat/gold/combined.filtered.txt",
+    },
+
     "indexes" : {
         "inputDir" : "dat/wikipedia",
         "outputDir" : "dat/lucene",

@@ -44,12 +44,12 @@ wget -P $DL http://sigwp.org/wikisimi/WikiSimi3000_1.csv &&
 cp -p $DL/WikiSimi3000_1.csv  $SRC/WikiSimi3000.tab ||
 { echo "ERROR: preparing wikisimi dataset failed" >&2; exit 1;}
 
-python src/main/python/combine_gold.py $SRC/*.* >dat/gold/combined.txt &&
-python src/main/python/filter_gold.py <dat/gold/combined.txt >dat/gold/combined.filtered.txt || 
+python2 src/main/python/combine_gold.py $SRC/*.* >dat/gold/combined.txt &&
+python2 src/main/python/filter_gold.py <dat/gold/combined.txt >dat/gold/combined.filtered.txt ||
 { echo "ERROR: combining datasets failed" >&2; exit 1;}
 
-python src/main/python/combine_gold.py $SRC/WikiSimi3000.tab |
-python src/main/python/filter_gold.py /combined.txt >dat/gold/combined.articles.txt || 
+python2 src/main/python/combine_gold.py $SRC/WikiSimi3000.tab |
+python2 src/main/python/filter_gold.py /combined.txt >dat/gold/combined.articles.txt ||
 { echo "ERROR: combining datasets failed" >&2; exit 1;}
 
 

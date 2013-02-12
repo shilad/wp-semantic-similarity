@@ -7,9 +7,7 @@ import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiFields;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
@@ -23,7 +21,7 @@ public class MilneWittenInLinkSimilarity extends BaseSimilarityMetric{
     }
 
     @Override
-    public double similarity(int wpId1, int wpId2) throws IOException {
+    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
         TIntSet A = getInLinks(wpId1);
         TIntSet B = getInLinks(wpId2);
         if (A == null || B == null) {
