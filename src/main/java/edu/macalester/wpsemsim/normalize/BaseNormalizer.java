@@ -3,7 +3,7 @@ package edu.macalester.wpsemsim.normalize;
 import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.Random;
 
 /**
@@ -24,13 +24,30 @@ public abstract class BaseNormalizer implements Serializable, Normalizer {
     protected TDoubleArrayList sample = new TDoubleArrayList();
     protected DescriptiveStatistics stats;
 
-    protected int numObservations = 0;
+    protected Integer numObservations = 0;
     protected Random random = new Random();
+
+    private boolean supervised=false;
+    private boolean needsTraining=true;
+    private String saveFile;
+
+    public boolean isSupervised(){
+        return supervised;
+    };
+
+    public boolean needsTraining(){
+        return needsTraining;
+    }
 
     /**
      * To meet the serializable contract.
      */
     protected BaseNormalizer() {}
+
+    @Override
+    public void observe(double x, double y){
+        observe(x);
+    }
 
     @Override
     public void observe(double x) {

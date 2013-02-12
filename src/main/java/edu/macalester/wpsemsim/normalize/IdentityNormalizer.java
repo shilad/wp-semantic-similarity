@@ -1,12 +1,16 @@
 package edu.macalester.wpsemsim.normalize;
 
-public class IdentityNormalizer implements Normalizer{
+public class IdentityNormalizer extends BaseNormalizer{
+    private boolean NeedsTraining=false;
 
     @Override
     public double normalize(double x) { return x; }
 
     @Override
     public double unnormalize(double x) { return x; }
+
+    @Override
+    public void observe(double x, double y){}
 
     @Override
     public void observe(double x) {}

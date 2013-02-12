@@ -7,6 +7,10 @@
         }
     },
 
+    "gold" : {
+        "path" : "dat/gold/combined.filtered.txt"
+    },
+
     "indexes" : {
         "inputDir" : "dat/test/dump",
         "outputDir" : "DAT/lucene",

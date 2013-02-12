@@ -61,7 +61,7 @@ public class LinkSimilarity extends BaseSimilarityMetric{
     }
 
     @Override
-    public double similarity(int wpId1, int wpId2) throws IOException {
+    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
         TIntSet A = getLinks(wpId1);
         TIntSet B = getLinks(wpId2);
         if (A == null || B == null) {

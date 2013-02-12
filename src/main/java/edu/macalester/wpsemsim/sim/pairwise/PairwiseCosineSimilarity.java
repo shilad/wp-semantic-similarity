@@ -59,7 +59,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
     }
 
     @Override
-    public double similarity(int wpId1, int wpId2) throws IOException {
+    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
         SparseMatrixRow row1 = matrix.getRow(wpId1);
         if (row1 == null) {
 //            LOG.info("unknown wpId: " + wpId1);
@@ -74,7 +74,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double rawSimilarity(String phrase1, String phrase2) throws IOException, ParseException {
         if (!buildPhraseVectors) {
             return super.similarity(phrase1, phrase2);
         }

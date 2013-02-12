@@ -31,8 +31,8 @@ Instructions for building the semantic similarity network:
 * Create the lucene index. Both steps should take an hour or two:
 
 ```bash
-  ./bin/index.sh conf/example.configuration.json jvm_MBs esa
-  ./bin/index.sh conf/example.configuration.json jvm_MBs text cats links main
+  ./bin/index.sh conf/example-configuration.json jvm_MBs esa
+  ./bin/index.sh conf/example-configuration.json jvm_MBs text cats links main
 ```
 
 * Create the concept mapper index, which is used to map phrases to Wikipedia articles. Download dictionary.bz2 from http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/dictionary.bz2, then run:
@@ -47,9 +47,9 @@ Instructions for building the semantic similarity network:
 
 ```bash
   ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n esa -o dat/esa-sims.matrix -r 500 -v dat/valid_ids.txt
-  ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n text -o dat/text-sims.matrix -r 500 -v dat/valid_ids.txt
-  ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n links -o dat/link-sims.matrix -r 500 -v dat/valid_ids.txt
-  ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n inlinks -o dat/inlink-sims.matrix -r 500 -v dat/valid_ids.txt
+  ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-text -o dat/text-sims.matrix -r 500 -v dat/valid_ids.txt
+  ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-links -o dat/link-sims.matrix -r 500 -v dat/valid_ids.txt
+  ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-inlinks -o dat/inlink-sims.matrix -r 500 -v dat/valid_ids.txt
 ```
   
   The text and esa jobs will take quite a while - many hours.
