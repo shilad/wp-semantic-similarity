@@ -15,7 +15,7 @@ import java.util.Random;
  * it will have only one ranked list of similarities.
  */
 public class MostSimilarFeatureGenerator extends FeatureGenerator {
-    Random random = new Random();
+    protected Random random = new Random();
 
     @Override
     public LinkedHashMap<Integer, Double> generate(Example ex) {
@@ -63,6 +63,16 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
             names.add(metricName + "-rank");
         }
         return names;
+    }
+
+    @Override
+    public String featureNameToMetricName(String featureName) {
+        int i = featureName.lastIndexOf("-");
+        if (i >= 0) {
+            return featureName.substring(0, i);
+        } else {
+            return featureName;
+        }
     }
 
 }

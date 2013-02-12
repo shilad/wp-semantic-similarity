@@ -274,7 +274,7 @@ public class SvmEnsemble implements Ensemble {
 
             in = new ObjectInputStream(
                     new FileInputStream(new File(directory, "featureGenerator")));
-            featureGenerator = (FeatureGenerator) in.readObject();
+            featureGenerator = FeatureGenerator.read(in, components);
             if (components != null) {
                 featureGenerator.setComponents(components);
             }

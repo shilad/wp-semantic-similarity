@@ -69,4 +69,14 @@ public class SimilarityFeatureGenerator extends FeatureGenerator {
         return names;
     }
 
+    @Override
+    public String featureNameToMetricName(String featureName) {
+        int i = featureName.lastIndexOf("-");
+        if (i >= 0) {
+            return featureName.substring(0, i);
+        } else {
+            return featureName;
+        }
+    }
+
 }
