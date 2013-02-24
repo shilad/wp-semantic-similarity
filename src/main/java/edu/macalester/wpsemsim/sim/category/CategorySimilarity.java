@@ -61,13 +61,13 @@ public class CategorySimilarity extends BaseSimilarityMetric {
         for (int pageId: bfs.getPageDistances().keys()) {
             results.set(i++, pageId, distanceToScore(bfs.getPageDistances().get(pageId)));
         }
-        return results;
+        return normalize(results);
     }
 
 
     @Override
-    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
-        if (wpId1 == wpId2) { return distanceToScore(0.0); }     // hack
+    public double similarity(int wpId1, int wpId2) throws IOException {
+        if (wpId1 == wpId2) { return normalize(distanceToScore(0.0)); }     // hack
 
         int id1 = helper.wpIdToLuceneId(wpId1);
         int id2 = helper.wpIdToLuceneId(wpId2);
@@ -116,7 +116,7 @@ public class CategorySimilarity extends BaseSimilarityMetric {
             }
         }
 
-        return distanceToScore(shortestDistance);
+        return normalize(distanceToScore(shortestDistance));
     }
 
     public static void main(String args[]) throws IOException, InterruptedException, CompressorException {

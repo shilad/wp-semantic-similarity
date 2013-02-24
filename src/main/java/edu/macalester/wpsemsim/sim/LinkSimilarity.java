@@ -61,7 +61,7 @@ public class LinkSimilarity extends BaseSimilarityMetric{
     }
 
     @Override
-    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
+    public double similarity(int wpId1, int wpId2) throws IOException {
         TIntSet A = getLinks(wpId1);
         TIntSet B = getLinks(wpId2);
         if (A == null || B == null) {
@@ -70,7 +70,7 @@ public class LinkSimilarity extends BaseSimilarityMetric{
         TIntSet I = new TIntHashSet(A); I.retainAll(B); // intersection
         TIntSet U = new TIntHashSet(A); U.addAll(B);    // union
         if (I.size() == 0) {
-            return 0;
+            return normalize(0);
         }
 
         double val;
@@ -89,7 +89,7 @@ public class LinkSimilarity extends BaseSimilarityMetric{
         }
 
 //        System.err.println("val is " + val);
-        return val;
+        return normalize(val);
     }
 
     /**
@@ -236,6 +236,6 @@ public class LinkSimilarity extends BaseSimilarityMetric{
                     linkHelper.luceneIdToWpId(sd.doc),
                     transformLuceneScore(similarDocs.scoreDocs[i].score));
         }
-        return scores;
+        return normalize(scores);
     }
 }

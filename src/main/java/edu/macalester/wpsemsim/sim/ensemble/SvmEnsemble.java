@@ -120,8 +120,7 @@ public class SvmEnsemble implements Ensemble {
     public double predict(Example ex, boolean truncate) {
         assert(ex.sims.size() == components.size());
         svm_node nodes[] = simsToNodes(ex, truncate);
-        double p = svm.svm_predict(model, nodes);
-        return yNorm.unnormalize(p);
+        return svm.svm_predict(model, nodes);
     }
 
 
@@ -274,7 +273,7 @@ public class SvmEnsemble implements Ensemble {
 
             in = new ObjectInputStream(
                     new FileInputStream(new File(directory, "featureGenerator")));
-            featureGenerator = FeatureGenerator.read(in, components);
+            featureGenerator = FeatureGenerator.read(in, components, false);
             if (components != null) {
                 featureGenerator.setComponents(components);
             }

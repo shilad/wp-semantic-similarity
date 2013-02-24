@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Logger;
 
 public class KnownSim {
@@ -25,6 +26,17 @@ public class KnownSim {
                 ", phrase2='" + phrase2 + '\'' +
                 ", similarity=" + similarity +
                 '}';
+    }
+
+    /**
+     * Swaps phrase1 and phrase2 50% of the time
+     */
+    public void maybeSwap() {
+        if (Math.random() > 0.5) {
+            String t = phrase1;
+            phrase1 = phrase2;
+            phrase2 = t;
+        }
     }
 
     public static final Logger LOG = Logger.getLogger(KnownSim.class.getName());

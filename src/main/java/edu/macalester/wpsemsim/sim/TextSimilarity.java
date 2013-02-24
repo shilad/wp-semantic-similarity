@@ -63,7 +63,7 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
     }
 
     @Override
-    public double rawSimilarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
         if (!useInternalMapper) {
             return super.similarity(phrase1, phrase2);
         }
@@ -118,7 +118,7 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
         if (yDotY == 0.0) {
             return Double.NaN;
         } else {
-            return xDotY / Math.sqrt(xDotX * yDotY);
+            return normalize(xDotY / Math.sqrt(xDotX * yDotY));
         }
     }
 
@@ -141,11 +141,11 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
 //                " luceneId=" + luceneId +
 //                " maxResults=" + maxResults +
 //                " results=" + similarDocs.scoreDocs.length);
-        return scores;
+        return normalize(scores);
     }
 
     @Override
-    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
+    public double similarity(int wpId1, int wpId2) throws IOException {
         int doc1 = helper.wpIdToLuceneId(wpId1);
         int doc2 = helper.wpIdToLuceneId(wpId2);
         if (doc1 < 0 || doc2 < 0) {
@@ -156,11 +156,11 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
         MoreLikeThis mlt = getMoreLikeThis();
         TopDocs similarDocs = searcher.search(mlt.like(doc1), new FieldCacheTermsFilter("id", "" + wpId2), 1);
         if (similarDocs.scoreDocs.length == 0) {
-            return 0;
+            return normalize(0);
         } else {
             assert(similarDocs.scoreDocs.length == 1);
             assert(similarDocs.scoreDocs[0].doc == doc2);
-            return similarDocs.scoreDocs[0].score;
+            return normalize(similarDocs.scoreDocs[0].score);
         }
     }
 

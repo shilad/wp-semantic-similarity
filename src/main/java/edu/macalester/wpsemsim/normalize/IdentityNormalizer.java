@@ -7,9 +7,6 @@ public class IdentityNormalizer extends BaseNormalizer{
     public double normalize(double x) { return x; }
 
     @Override
-    public double unnormalize(double x) { return x; }
-
-    @Override
     public void observe(double x, double y){}
 
     @Override

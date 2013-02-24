@@ -1,7 +1,9 @@
 package edu.macalester.wpsemsim.normalize;
 
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
+import gnu.trove.map.hash.TDoubleIntHashMap;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -11,12 +13,6 @@ import java.util.logging.Logger;
 /**
  * Creates a Normalizer based on a polinomial spline fitting to binned points.
  * In theory, it could use any polinomial, but only the linear case is implemented.
- *
- * Created with IntelliJ IDEA.
- * User: aaron
- * Date: 1/23/13
- * Time: 1:29 PM
- * To change this template use File | Settings | File Templates.
  */
 
 public class PolynomialInterpolatorNormalizer extends BaseNormalizer {
@@ -92,11 +88,6 @@ public class PolynomialInterpolatorNormalizer extends BaseNormalizer {
         return Math.max(Math.min(interpolate(x), 1.0), 0.0);  //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    @Override
-    public double unnormalize(double x) {
-        return normalize(x);  //To change body of implemented methods use File | Settings | File Templates.
-    }
-
     public double interpolate(double raw){
         for (double[] i:model){
             if(raw<i[0]){
@@ -140,15 +131,11 @@ public class PolynomialInterpolatorNormalizer extends BaseNormalizer {
     }
 
     public int modeCount(List<double[]> points){    //TODO: use TDoubleIntHashMap for O(n)
+        TDoubleIntHashMap hist = new TDoubleIntHashMap();
         int maxCount=0;
-        for (int i=0; i< points.size();i++){
-            int count=0;
-            for (int j=0; j<points.size();j++){
-                if (points.get(i)[0]==points.get(j)[0]) count++;
-            }
-            if (count>maxCount){
-                maxCount=count;
-            }
+        for (double p[] : points) {
+            int n = hist.adjustOrPutValue(p[0], 1, 1);
+            maxCount = Math.max(n, maxCount);
         }
         return maxCount;
     }
@@ -169,5 +156,21 @@ public class PolynomialInterpolatorNormalizer extends BaseNormalizer {
             sum+=i;
         }
         return sum/((double) nums.length);
+    }
+
+
+    public static void save(PolynomialInterpolatorNormalizer norm, File file) throws IOException {
+        FileOutputStream fout=new FileOutputStream(file);
+        ObjectOutputStream oout=new ObjectOutputStream(fout);
+        oout.writeObject(norm);
+        oout.close();
+        fout.close();
+    }
+    
+    public static PolynomialInterpolatorNormalizer load(File file) throws IOException, ClassNotFoundException {
+        FileInputStream fin = new FileInputStream(file);
+        ObjectInputStream oin = new ObjectInputStream(fin);
+        PolynomialInterpolatorNormalizer norm = (PolynomialInterpolatorNormalizer) oin.readObject();
+        return norm;
     }
 }

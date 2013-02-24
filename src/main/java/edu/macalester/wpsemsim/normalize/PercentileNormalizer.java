@@ -63,24 +63,6 @@ public class PercentileNormalizer extends BaseNormalizer {
         }
     }
 
-    @Override
-    public double unnormalize(double y) {
-        double sMin = sample.get(0);
-        double sMax = sample.get(sample.size() - 1);
-        double halfLife = (sMax - sMin) / 4.0;
-        double yDelta = 1.0 / (sample.size() + 1);
-
-        if (y < yDelta) {
-            return sMin - (1 - Math.exp(y - yDelta)) * halfLife;
-        } else if (y > 1.0 - yDelta) {
-            return sMax + (1 - Math.exp(-(y - (1 - yDelta)))) * halfLife;
-        } else {
-            // transform x
-            y = (y - yDelta) / (1.0 - 2 * yDelta);
-            return stats.getPercentile(y * 100.0);
-        }
-    }
-
     public static double toAsymptote(double xDelta, double xHalfLife, double y0, double yInf) {
         assert(xDelta > 0);
         double hl = xDelta / xHalfLife;

@@ -76,10 +76,10 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     }
 
     @Override
-    public double rawSimilarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
         TIntDoubleHashMap scores1 = getConceptVector(phrase1, null);
         TIntDoubleHashMap scores2 = getConceptVector(phrase2, null);
-        return Math.log(SimUtils.cosineSimilarity(scores1, scores2) + 0.001);
+        return normalize(Math.log(SimUtils.cosineSimilarity(scores1, scores2) + 0.001));
     }
 
     private Map<String, TIntDoubleHashMap> phraseCache = new HashMap<String, TIntDoubleHashMap>();
@@ -164,7 +164,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
                     esaHelper.luceneIdToWpId(sd.doc),
                     similarDocs.scoreDocs[i].score);
         }
-        return scores;
+        return normalize(scores);
     }
 
     @Override
@@ -183,22 +183,22 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
                     esaHelper.luceneIdToWpId(luceneIds[i]),
                     scores.get(luceneIds[i]));
         }
-        return result;
+        return normalize(result);
     }
 
     @Override
-    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
+    public double similarity(int wpId1, int wpId2) throws IOException {
         int doc1 = esaHelper.wpIdToLuceneId(wpId1);
         int doc2 = esaHelper.wpIdToLuceneId(wpId2);
 
         MoreLikeThis mlt = getMoreLikeThis();
         TopDocs similarDocs = searcher.search(mlt.like(doc1), null, 1);
         if (similarDocs.scoreDocs.length == 0) {
-            return 0;
+            return normalize(0);
         } else {
             assert(similarDocs.scoreDocs.length == 1);
             assert(similarDocs.scoreDocs[0].doc == doc2);
-            return similarDocs.scoreDocs[0].score;
+            return normalize(similarDocs.scoreDocs[0].score);
         }
     }
 

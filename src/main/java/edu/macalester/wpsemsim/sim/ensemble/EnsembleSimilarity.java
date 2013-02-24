@@ -4,6 +4,7 @@ import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
+import edu.macalester.wpsemsim.sim.SimScore;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.DocScoreList;
@@ -58,7 +59,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
     }
 
     @Override
-    public double rawSimilarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
         throw new UnsupportedOperationException();
 
         /*
@@ -72,7 +73,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
     }
 
     @Override
-    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
+    public double similarity(int wpId1, int wpId2) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -93,9 +94,9 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
 //                        features.put(ds.getId(), Example.makeEmpty());
                         features.put(ds.getId(), Example.makeEmptyWithReverse());
                     }
-//                    features.get(ds.getId()).add(new ComponentSim(i, top, j));
+//                    features.get(ds.getId()).add(new SimScore(i, top, j));
                     // HACK!
-                    features.get(ds.getId()).add(new ComponentSim(i, top, j), new ComponentSim(i, top, j));
+                    features.get(ds.getId()).add(new SimScore(i, top, j), new SimScore(i, top, j));
                 }
             }
         }
@@ -119,7 +120,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
         if (list.numDocs() > maxResults) {
             list.truncate(maxResults);
         }
-        return list;
+        return normalize(list);
     }
 
     /**
@@ -216,6 +217,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
             }
         }
         ensemble.trainMostSimilar(examples);
+        trainMostSimilarNormalizer(gold, numResults, validIds);
     }
 
 
@@ -237,7 +239,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
         for (int i = 0; i < components.size(); i++) {
             SimilarityMetric m = components.get(i);
             if (numResults <= 0) {
-                result.add(new ComponentSim(i, m.similarity(phrase1, phrase2)));
+                result.add(new SimScore(i, m.similarity(phrase1, phrase2)));
             } else {
                 result.add(getComponentSim(i, m, phrase1, phrase2, numResults, validIds),
                            getComponentSim(i, m, phrase2, phrase1, numResults, validIds));
@@ -258,11 +260,11 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
      * @return
      * @throws IOException
      */
-    protected ComponentSim getComponentSim(int ci, SimilarityMetric metric, String phrase1, String phrase2, int numResults, TIntSet validIds) throws IOException {
+    protected SimScore getComponentSim(int ci, SimilarityMetric metric, String phrase1, String phrase2, int numResults, TIntSet validIds) throws IOException {
         // get most similar lucene ids for phrase 1
         DocScoreList top =  metric.mostSimilar(phrase1, numResults, validIds);
         if (top == null || top.numDocs() == 0) {
-            return new ComponentSim(ci, new DocScoreList(0), 0);
+            return new SimScore(ci, new DocScoreList(0), 0);
         }
 
         // build up mapping between lucene ids and likelihood of id representing phrase2.
@@ -291,7 +293,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
                 }
             }
         }
-        return new ComponentSim(ci, top, bestRank);
+        return new SimScore(ci, top, bestRank);
     }
 
 

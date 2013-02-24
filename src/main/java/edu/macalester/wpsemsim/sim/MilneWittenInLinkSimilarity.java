@@ -20,8 +20,9 @@ public class MilneWittenInLinkSimilarity extends BaseSimilarityMetric{
         this.linkHelper = linkHelper;
     }
 
+    //TODO: normalize!
     @Override
-    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
+    public double similarity(int wpId1, int wpId2) throws IOException {
         TIntSet A = getInLinks(wpId1);
         TIntSet B = getInLinks(wpId2);
         if (A == null || B == null) {

@@ -31,12 +31,6 @@ public class TestNormalizer {
         assertTrue(p.normalize(20) > 0.888888);
         assertTrue(p.normalize(20) < 1.0);
         assertTrue(p.normalize(20) < p.normalize(200));
-
-        assertEquals(p.unnormalize(0.11111111), 1.0, 0.0001);
-        assertEquals(p.unnormalize(0.111112), 1.0, 0.0001);
-        assertEquals(p.unnormalize(0.37037), 4.0, 0.0001);
-        assertEquals(p.unnormalize(0.88887), 11.2, 0.0001);
-        assertEquals(p.unnormalize(0.88888888), 11.2, 0.0001);
     }
 
     @Test
@@ -71,17 +65,11 @@ public class TestNormalizer {
         assertTrue(p.normalize(20) > 0.888888);
         assertTrue(p.normalize(20) < 1.0);
         assertTrue(p.normalize(20) < p.normalize(200));
-
-        assertEquals(p.unnormalize(0.11111111), 1.0, 0.0001);
-        assertEquals(p.unnormalize(0.111112), 1.0, 0.0001);
-        assertEquals(p.unnormalize(0.37037), 4.0, 0.0001);
-        assertEquals(p.unnormalize(0.88887), 11.2, 0.0001);
-        assertEquals(p.unnormalize(0.88888888), 11.2, 0.0001);
     }
 
     @Test
     public void testPolyInterp(){
-        PolinomialInterpolatorNormalizer polyInterp = new PolinomialInterpolatorNormalizer();
+        PolynomialInterpolatorNormalizer polyInterp = new PolynomialInterpolatorNormalizer();
         List<double[]> points= new ArrayList<double[]>();
         points.add(new double[]{0,0});
         points.add(new double[]{1.5,0.5});

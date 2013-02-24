@@ -3,6 +3,7 @@ package edu.macalester.wpsemsim.sim.ensemble;
 import edu.macalester.wpsemsim.normalize.BaseNormalizer;
 import edu.macalester.wpsemsim.normalize.PercentileNormalizer;
 import edu.macalester.wpsemsim.normalize.RangeNormalizer;
+import edu.macalester.wpsemsim.sim.SimScore;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 
 import java.io.IOException;
@@ -103,12 +104,12 @@ public abstract class FeatureGenerator implements Serializable {
             percentNormalizers.add(new PercentileNormalizer());
         }
         for (Example ex : examples) {
-            List<ComponentSim> allSims = new ArrayList<ComponentSim>(ex.sims);
+            List<SimScore> allSims = new ArrayList<SimScore>(ex.sims);
             if (ex.hasReverse()) allSims.addAll(ex.reverseSims);
-            for (ComponentSim s : allSims) {
+            for (SimScore s : allSims) {
                 numResults = Math.max(numResults, s.length);
-                if (s.scores != null) {
-                    for (float x : s.scores) {
+                if (s.listSims != null) {
+                    for (float x : s.listSims) {
                         if (!Double.isNaN(x) && !Double.isInfinite(x)) {
                             rangeNormalizers.get(s.component).observe(x);
                             percentNormalizers.get(s.component).observe(x);

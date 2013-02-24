@@ -15,7 +15,7 @@ import java.util.List;
 public interface SimilarityMetric {
 
     /**
-     * sets the normalizer for the metric
+     * Sets the normalizer for the metric
      */
     public void setNormalizer(Normalizer n);
 

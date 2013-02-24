@@ -1,7 +1,7 @@
 package edu.macalester.wpsemsim.sim.ensemble;
 
+import edu.macalester.wpsemsim.sim.SimScore;
 import edu.macalester.wpsemsim.utils.KnownSim;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,32 +19,32 @@ import java.util.List;
  */
 public class Example {
     KnownSim label;
-    List<ComponentSim> sims;
-    List<ComponentSim> reverseSims;
+    List<SimScore> sims;
+    List<SimScore> reverseSims;
 
-    public Example(KnownSim label, List<ComponentSim> sims) {
+    public Example(KnownSim label, List<SimScore> sims) {
         this(label, sims, null);
     }
 
-    public Example(List<ComponentSim> sims) {
+    public Example(List<SimScore> sims) {
         this(null, sims, null);
     }
-    public Example(List<ComponentSim> sims, List<ComponentSim> reverseSims) {
+    public Example(List<SimScore> sims, List<SimScore> reverseSims) {
         this(null, sims, reverseSims);
     }
 
-    public Example(KnownSim label, List<ComponentSim> sims, List<ComponentSim> reverseSims) {
+    public Example(KnownSim label, List<SimScore> sims, List<SimScore> reverseSims) {
         this.label = label;
         this.sims = sims;
         this.reverseSims = reverseSims;
     }
 
-    public void add(ComponentSim sim) {
+    public void add(SimScore sim) {
         assert(reverseSims == null);
         this.sims.add(sim);
     }
 
-    public void add(ComponentSim sim, ComponentSim reverse) {
+    public void add(SimScore sim, SimScore reverse) {
         this.sims.add(sim);
         this.reverseSims.add(reverse);
     }
@@ -54,8 +54,8 @@ public class Example {
     }
 
     /*
-    public Example toDense(List<ComponentSim> ifMissing) {
-        List<ComponentSim> dense = new ArrayList<ComponentSim>();
+    public Example toDense(List<SimScore> ifMissing) {
+        List<SimScore> dense = new ArrayList<SimScore>();
         int j = 0;
         for (int i = 0; i < ifMissing.size(); i++) {
             if (j < sims.size() && sims.get(j).component == i) {
@@ -84,9 +84,9 @@ public class Example {
     }
 
     public static Example makeEmpty() {
-        return new Example(new ArrayList<ComponentSim>());
+        return new Example(new ArrayList<SimScore>());
     }
     public static Example makeEmptyWithReverse() {
-        return new Example(new ArrayList<ComponentSim>(), new ArrayList<ComponentSim>());
+        return new Example(new ArrayList<SimScore>(), new ArrayList<SimScore>());
     }
 }

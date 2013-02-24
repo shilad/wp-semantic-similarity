@@ -1,13 +1,15 @@
-package edu.macalester.wpsemsim.sim.ensemble;
+package edu.macalester.wpsemsim.sim;
 
 import edu.macalester.wpsemsim.utils.DocScoreList;
 
 /**
  * A single similarity metric's similarity score.
+ *
  * Can represent output from either mostSimilar() or similarity().
+ *
  * If output is from similarity(), rank = -1 and length = 0.
  */
-public class ComponentSim {
+public class SimScore {
     public int component;
 
     // rank of phrase2 in sim list
@@ -17,22 +19,22 @@ public class ComponentSim {
     public double maxSim = Double.NaN;
     public double minSim = Double.NaN;
 
-    // actual value in sim list
+    // actual similarity value
     public double sim = Double.NaN;
 
     // length of list
     public int length = 0;
 
-    // scores TODO: is this safe, or too much memory?
-    public float scores[];
+    // TODO: is this safe, or too much memory?
+    public float listSims[];
 
 
-    public ComponentSim(int component, double sim) {
+    public SimScore(int component, double sim) {
         this.component = component;
         this.sim = sim;
     }
 
-    public ComponentSim(int component, DocScoreList list, int rank) {
+    public SimScore(int component, DocScoreList list, int rank) {
         this.component = component;
         length = list.numDocs();
         if (length > 0) {
@@ -42,7 +44,7 @@ public class ComponentSim {
             if (rank >= 0) {
                 sim = list.getScore(rank);
             }
-            scores = list.getScoresAsFloat();
+            listSims = list.getScoresAsFloat();
         }
     }
 
@@ -52,7 +54,7 @@ public class ComponentSim {
 
     @Override
     public String toString() {
-        return "ComponentSim{" +
+        return "SimScore{" +
                 "component=" + component +
                 ", rank=" + rank +
                 ", maxSim=" + maxSim +

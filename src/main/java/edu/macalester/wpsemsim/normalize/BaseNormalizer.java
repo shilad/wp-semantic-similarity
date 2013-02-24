@@ -78,4 +78,6 @@ public abstract class BaseNormalizer implements Serializable, Normalizer {
     public double getMax() {
         return max;
     }
+
+
 }

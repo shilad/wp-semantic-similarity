@@ -59,22 +59,21 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
     }
 
     @Override
-    public double rawSimilarity(int wpId1, int wpId2) throws IOException {
+    public double similarity(int wpId1, int wpId2) throws IOException {
+        double sim = 0;
         SparseMatrixRow row1 = matrix.getRow(wpId1);
-        if (row1 == null) {
-//            LOG.info("unknown wpId: " + wpId1);
-            return 0;
+        if (row1 != null) {
+            SparseMatrixRow row2 = matrix.getRow(wpId2);
+            if (row2 != null) {
+                    sim = cosineSimilarity(row1.asTroveMap(), row2.asTroveMap());
+            }
         }
-        SparseMatrixRow row2 = matrix.getRow(wpId2);
-        if (row2 == null) {
-//            LOG.info("unknown wpId: " + wpId2);
-            return 0;
-        }
-        return cosineSimilarity(row1.asTroveMap(), row2.asTroveMap());
+        return normalize(sim);
+
     }
 
     @Override
-    public double rawSimilarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
         if (!buildPhraseVectors) {
             return super.similarity(phrase1, phrase2);
         }
@@ -86,7 +85,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
         DocScoreList list2 = basedOn.mostSimilar(phrase2, maxResults, idsInResults);
         list1.makeUnitLength();
         list2.makeUnitLength();
-        return cosineSimilarity(list1.asTroveMap(), list2.asTroveMap());
+        return normalize(cosineSimilarity(list1.asTroveMap(), list2.asTroveMap()));
     }
 
     @Override
@@ -146,7 +145,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
             leaderboard.tallyScore(id, sim);
         }
 
-        return leaderboard.getTop();
+        return normalize(leaderboard.getTop());
     }
 
 

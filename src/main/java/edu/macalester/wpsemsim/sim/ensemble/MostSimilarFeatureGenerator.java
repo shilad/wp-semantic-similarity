@@ -1,6 +1,7 @@
 package edu.macalester.wpsemsim.sim.ensemble;
 
 import edu.macalester.wpsemsim.normalize.BaseNormalizer;
+import edu.macalester.wpsemsim.sim.SimScore;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
         int fi = 0; // feature index
 
         for (int i = 0; i < ex.sims.size(); i++) {
-            ComponentSim cs = (random.nextFloat() >= 0.5) ? ex.sims.get(i) : ex.reverseSims.get(i);
+            SimScore cs = (random.nextFloat() >= 0.5) ? ex.sims.get(i) : ex.reverseSims.get(i);
 //            if (cs1.hasValue() || cs2.hasValue()) {
                 // range normalizer
                 BaseNormalizer rn = rangeNormalizers.get(cs.component);

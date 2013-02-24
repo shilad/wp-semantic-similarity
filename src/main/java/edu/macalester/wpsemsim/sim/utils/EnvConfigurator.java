@@ -410,7 +410,7 @@ public class EnvConfigurator {
         this.shouldLoadMetrics = shouldLoadMetrics;
     }
 
-    private Normalizer parseNormalizer(String normname){
+    private Normalizer parseNormalizer(String normname)throws ConfigurationException{
         Normalizer norm;
         if (normname.equals("")){
             return null;
@@ -418,7 +418,7 @@ public class EnvConfigurator {
         try {
             norm = (Normalizer) Class.forName("edu.macalester.wpsemsim.normalize."+normname+"Normalizer").newInstance();
         }catch (Exception e){
-            norm = null;
+            throw new ConfigurationException("unknown normalizer: " + normname);
         }
         return norm;
     }
