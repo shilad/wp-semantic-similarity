@@ -21,6 +21,7 @@ import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.Env;
 import edu.macalester.wpsemsim.utils.KnownSim;
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -46,6 +47,8 @@ public class EnvConfigurator {
     private boolean shouldLoadMappers = true;
     private boolean shouldLoadMetrics = true;
     private boolean shouldLoadGold = true;
+    private boolean shouldLoadModels = false;
+
     protected Env env;
 
 
@@ -115,6 +118,18 @@ public class EnvConfigurator {
      * @throws ConfigurationException
      */
     public List<SimilarityMetric> loadMetrics() throws IOException, ConfigurationException {
+        return loadMetrics(shouldLoadModels);
+    }
+
+
+    /**
+     * Loads metrics and puts them in the environment.
+     * @return
+     * @throws IOException
+     * @throws ConfigurationException
+     */
+    public List<SimilarityMetric> loadMetrics(boolean readModel) throws IOException, ConfigurationException {
+        info("loading metrics");
         info("loading metrics");
         Set<String> ensembleKeys = new HashSet<String>();
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
@@ -125,12 +140,12 @@ public class EnvConfigurator {
             } else if (type.equals("pairwise") && !doPairwise) {
                 // do nothing
             } else {
-                metrics.add(loadMetric(key));
+                metrics.add(loadMetric(key, readModel));
             }
         }
         if (doEnsembles) {
             for (String key : ensembleKeys) {
-                metrics.add(loadMetric(key));
+                metrics.add(loadMetric(key, readModel));
             }
         }
         return metrics;
@@ -212,6 +227,19 @@ public class EnvConfigurator {
      * @throws IOException
      */
     public SimilarityMetric loadMetric(String name) throws ConfigurationException, IOException {
+        return this.loadMetric(name, shouldLoadModels);
+    }
+
+
+    /**
+     * Loads a similarity metric if it isn't already loaded.
+     *
+     * @param name
+     * @return
+     * @throws ConfigurationException
+     * @throws IOException
+     */
+    public SimilarityMetric loadMetric(String name, boolean readModel) throws ConfigurationException, IOException {
         if (env.hasMetric(name)) {
             return env.getMetric(name);
         }
@@ -236,10 +264,13 @@ public class EnvConfigurator {
         metric.setName(name);
         JSONObject params = configuration.getMetric(name);
         if (params.containsKey("normalizer")){
-            Normalizer norm = parseNormalizer(requireString(params,"normalizer"));
+            Normalizer norm = parseNormalizer(params);
             if (!norm.equals(null)){
                 metric.setNormalizer(norm);
             }
+        }
+        if (readModel) {
+            metric.read(getModelDirectory(metric));
         }
         env.addMetric(name, metric);
         return metric;
@@ -406,21 +437,22 @@ public class EnvConfigurator {
         this.shouldLoadMappers = shouldLoadMappers;
     }
 
+    public void setShouldLoadModels(boolean shouldLoadModels) {
+        this.shouldLoadModels = shouldLoadModels;
+    }
+
     public void setShouldLoadMetrics(boolean shouldLoadMetrics) {
         this.shouldLoadMetrics = shouldLoadMetrics;
     }
 
-    private Normalizer parseNormalizer(String normname)throws ConfigurationException{
-        Normalizer norm;
-        if (normname.equals("")){
-            return null;
-        }
+    private Normalizer parseNormalizer(JSONObject parentParams)throws ConfigurationException{
+        JSONObject params = (JSONObject) parentParams.get("normalizer");
+        String type = StringUtils.capitalize(requireString(params, "type"));
         try {
-            norm = (Normalizer) Class.forName("edu.macalester.wpsemsim.normalize."+normname+"Normalizer").newInstance();
+           return (Normalizer) Class.forName("edu.macalester.wpsemsim.normalize."+type+"Normalizer").newInstance();
         }catch (Exception e){
-            throw new ConfigurationException("unknown normalizer: " + normname);
+            throw new ConfigurationException("unknown normalizer: " + type);
         }
-        return norm;
     }
 
     private List<KnownSim> loadGold() throws ConfigurationException, IOException {
@@ -429,5 +461,13 @@ public class EnvConfigurator {
         List<KnownSim> g = KnownSim.read(new File(path));
         env.setGold(g);
         return g;
+    }
+
+    public File getModelDirectory(SimilarityMetric m) throws ConfigurationException {
+        return getModelDirectory(m.getName());
+    }
+
+    public File getModelDirectory(String metricName) throws ConfigurationException {
+        return new File(requireString(configuration.getModels(), "path"), metricName);
     }
 }

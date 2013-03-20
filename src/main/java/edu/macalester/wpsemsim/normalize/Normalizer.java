@@ -7,4 +7,5 @@ public interface Normalizer extends Serializable {
     public void observe(double x, double y);
     public void observe(double x);
     public void observationsFinished();
+    public String dump();
 }

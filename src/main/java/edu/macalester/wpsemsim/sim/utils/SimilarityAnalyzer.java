@@ -3,10 +3,10 @@ package edu.macalester.wpsemsim.sim.utils;
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
+import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import edu.macalester.wpsemsim.utils.ConfigurationFile;
-import edu.macalester.wpsemsim.utils.Env;
-import edu.macalester.wpsemsim.utils.KnownSim;
+import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
@@ -35,10 +35,10 @@ public class SimilarityAnalyzer {
     private ConceptMapper mapper;
     private IndexHelper helper;
 
-    public SimilarityAnalyzer(File goldStandard, ConceptMapper mapper, IndexHelper helper) throws IOException {
+    public SimilarityAnalyzer(List<KnownSim> gold, ConceptMapper mapper, IndexHelper helper) throws IOException {
         this.mapper = mapper;
         this.helper = helper;
-        this.gold = KnownSim.read(goldStandard);
+        this.gold = gold;
     }
 
     public void analyzeMetrics(List<SimilarityMetric> metrics, BufferedWriter writer) throws IOException, ParseException {
@@ -118,52 +118,29 @@ public class SimilarityAnalyzer {
     public Object[] calculateCorrelation(final SimilarityMetric metric) throws IOException, ParseException {
         final TDoubleArrayList X = new TDoubleArrayList();
         final TDoubleArrayList Y = new TDoubleArrayList();
-        final double allX[] = new double[gold.size()];
-        Arrays.fill(allX, Double.NaN);
-        ExecutorService exec = Executors.newFixedThreadPool(
-//                1);
-                Runtime.getRuntime().availableProcessors());
-//        SimpleRegression reg = new SimpleRegression();
-        try {
-            for (int i = 0; i < gold.size(); i++) {
-                final KnownSim ks = gold.get(i);
-                final int finalI = i;
-                exec.submit(new Runnable() {
-                    public void run() {
-                        try {
-                            if (finalI % 50 == 0) {
-                                LOG.info("calculating metric " + metric.getName() + " gold results for number " + finalI);
-                            }
-                            double sim = metric.similarity(ks.phrase1, ks.phrase2);
-                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-                                synchronized (X) {
-                                    allX[finalI] = sim;
-                                    X.add(ks.similarity);
-                                    Y.add(sim);
-                                }
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            LOG.log(Level.SEVERE, "error processing similarity entry  " + ks, e);
+        final TDoubleArrayList allX = new TDoubleArrayList();
+
+        ParallelForEach.loop(gold, Runtime.getRuntime().availableProcessors() ,
+            new Function<KnownSim>() {
+            public void call(KnownSim ks) throws Exception {
+                double sim = Double.NaN;
+                try {
+                    sim = metric.similarity(ks.phrase1, ks.phrase2);
+                    if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
+                        synchronized (allX) {
+                            X.add(ks.similarity);
+                            Y.add(sim);
                         }
                     }
-                });
+                } finally {
+                    allX.add(sim);  // add Double.NaN on errors.
+                }
             }
-        } finally {
-            try {
-                Thread.sleep(5000);
-                exec.shutdown();
-                exec.awaitTermination(60, TimeUnit.HOURS);
-            } catch (InterruptedException e) {
-                LOG.log(Level.WARNING, "error while awaiting termination:", e);
-            }
-        }
+        });
 
-//        System.err.println("rsquared for fit is " + reg.getRSquare());
         double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
         double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
-//        LOG.info("correlation for " + metric.getName() + " is " + pearson);
-        return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX };
+        return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX.toArray() };
     }
 
     public class MyOLS extends OLSMultipleLinearRegression {
@@ -173,11 +150,10 @@ public class SimilarityAnalyzer {
     }
 
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException {
-        if (args.length < 3) {
+        if (args.length < 2) {
             System.err.println(
                     "usage: java " + SimilarityAnalyzer.class.toString() +
                     " path/to/sim/metric/conf.txt" +
-                    " path/to/gold/standard.txt" +
                     " path/to/reg/model_output.txt" +
                     " [sim1 sim2 ...]"
             );
@@ -189,14 +165,18 @@ public class SimilarityAnalyzer {
         Env env = conf.loadEnv();
 
         SimilarityAnalyzer analyzer = new SimilarityAnalyzer(
-                new File(args[1]), env.getMainMapper(), env.getMainIndex());
+                env.getGold(), env.getMainMapper(), env.getMainIndex());
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-        if (args.length == 3) {
-            metrics = conf.loadMetrics();
+        if (args.length == 2) {
+            metrics = conf.loadMetrics(true);
         } else {
-            for (String name : ArrayUtils.subarray(args, 3, args.length)) {
-                metrics.add(conf.loadMetric(name));
+            for (String name : ArrayUtils.subarray(args, 2, args.length)) {
+                SimilarityMetric metric = conf.loadMetric(name, true);
+                ((BaseSimilarityMetric)metric).setNormalizer(new IdentityNormalizer());
+                System.err.println("normalizer is: " +
+                        ((BaseSimilarityMetric) metric).getNormalizer().dump());
+                metrics.add(metric);
             }
         }
         analyzer.analyzeMetrics(metrics, writer);

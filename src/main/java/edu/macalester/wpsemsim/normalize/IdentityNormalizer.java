@@ -14,4 +14,9 @@ public class IdentityNormalizer extends BaseNormalizer{
 
     @Override
     public void observationsFinished() {}
+
+    @Override
+    public String dump() {
+        return "identity normalizer";
+    }
 }

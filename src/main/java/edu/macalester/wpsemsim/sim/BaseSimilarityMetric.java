@@ -6,13 +6,15 @@ import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.utils.DocScoreList;
+import edu.macalester.wpsemsim.utils.Function;
 import edu.macalester.wpsemsim.utils.KnownSim;
+import edu.macalester.wpsemsim.utils.ParallelForEach;
 import gnu.trove.set.TIntSet;
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -25,8 +27,12 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     private IndexHelper helper;
     private String name = this.getClass().getSimpleName();
     private Disambiguator disambiguator;
+    private int numThreads = 2;     // for training
+    private boolean trained = false;
+    private File path;
 
     private Normalizer normalizer = new IdentityNormalizer();
+
     // turned off while training the normalizer
     private boolean useNormalizer = true;
 
@@ -62,18 +68,19 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
      */
     protected void trainSimilarityNormalizer(List<KnownSim> labeled) {
         useNormalizer = false;
-        for (KnownSim ks:labeled){
-            try{
+        ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
+            public void call(KnownSim ks) throws IOException, ParseException {
                 double sim = similarity(ks.phrase1,ks.phrase2);
                 if (!Double.isNaN(sim) && !Double.isInfinite(sim)){
-                    normalizer.observe(sim, ks.similarity);
+                    synchronized (normalizer) {
+                        normalizer.observe(sim, ks.similarity);
+                    }
                 }
-            } catch (Exception e){
-                LOG.log(Level.SEVERE, "similarity training failed", e);
             }
-        }
+        });
         normalizer.observationsFinished();
         useNormalizer = true;
+        trained = true;
     }
 
     @Override
@@ -85,27 +92,32 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
      * Trains the normalizer to support the mostSimilar() method.
      * @param labeled
      */
-    protected void trainMostSimilarNormalizer(List<KnownSim> labeled, int numResults, TIntSet validIds) {
+    protected void trainMostSimilarNormalizer(List<KnownSim> labeled, final int numResults, final TIntSet validIds) {
         useNormalizer = false;
-        for (KnownSim ks:labeled){
-            ks.maybeSwap();
-            try {
-                Disambiguator.Match m = disambiguator.disambiguateMostSimilar(ks.phrase1, ks.phrase2, numResults, validIds);
+        ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
+            public void call(KnownSim ks) throws IOException {
+                ks.maybeSwap();
+                Disambiguator.Match m = disambiguator.disambiguateMostSimilar(
+                        ks.phrase1, ks.phrase2, numResults, validIds);
+                if (m == null) return;
                 DocScoreList dsl = mostSimilar(m.phraseWpId, numResults, validIds);
+                if (dsl == null) return;
                 double sim = dsl.getScoreForId(m.hintWpId);
                 if (!Double.isNaN(sim) && !Double.isInfinite(sim)){
-                    normalizer.observe(sim, ks.similarity);
+                    synchronized (normalizer) {
+                        normalizer.observe(sim, ks.similarity);
+                    }
                 }
-            } catch (IOException e) {
-                LOG.log(Level.SEVERE,  "disambiguation failed while training most similar:", e);
             }
-        }
+        });
         normalizer.observationsFinished();
         useNormalizer = true;
+        trained = true;
     }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+        ensureTrained();
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
@@ -113,7 +125,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (m == null) {
             return Double.NaN;
         } else {
-            System.err.println("match is " + m);
             return similarity(m.phraseWpId, m.hintWpId);
         }
     }
@@ -144,6 +155,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
 
     @Override
     public DocScoreList mostSimilar(String phrase, int maxResults, TIntSet possibleWpIds) throws IOException {
+        ensureTrained();
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
@@ -153,6 +165,15 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         }
         System.out.println("for " + phrase + " best is " + m.phraseWpName);
         return mostSimilar(m.phraseWpId, maxResults, possibleWpIds);
+    }
+
+    /**
+     * Throws an IllegalStateException if the model has not been trained.
+     */
+    protected void ensureTrained() {
+        if (!trained) {
+            throw new IllegalStateException("Model has not been trained.");
+        }
     }
 
     @Override
@@ -177,6 +198,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     protected double normalize(double sim) {
         if (normalizer == null || !useNormalizer || Double.isInfinite(sim) || Double.isNaN(sim)) {
             return sim;
+        } else if (!trained) {
+            throw new IllegalStateException("Model has not been trained.");
         } else {
             return normalizer.normalize(sim);
         }
@@ -196,5 +219,65 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
             normalized.set(i, dsl.getId(i), normalize(dsl.getScore(i)));
         }
         return normalized;
+    }
+
+    /**
+     * Writes the metric to a directory.
+     * @param directory
+     * @throws IOException
+     */
+    @Override
+    public void write(File directory) throws IOException {
+        ObjectOutputStream out = new ObjectOutputStream(
+                new FileOutputStream(new File(directory, "normalizer")));
+        out.writeObject(normalizer);
+        out.close();
+        FileUtils.write(new File(directory, "trained"), "" + trained);
+    }
+    /**
+     * Reads the metric from a directory.
+     * @param directory
+     * @throws IOException
+     */
+    @Override
+    public void read(File directory) throws IOException {
+        ObjectInputStream in = new ObjectInputStream(
+                new FileInputStream(new File(directory, "normalizer")));
+        try {
+            this.normalizer = (Normalizer) in.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new IOException(e);
+        }
+        in.close();
+        trained = Boolean.valueOf(
+                FileUtils.readFileToString(new File(directory, "trained")));
+    }
+
+    /**
+     * Sets the number of threads used when training the metric
+     * @param n
+     */
+    public void setNumThreads(int n) {
+        this.numThreads = n;
+    }
+
+    /**
+     * Returns true iff the model has been trained.
+     * @return
+     */
+    public boolean isTrained() {
+        return trained;
+    }
+
+    public File getPath() {
+        return path;
+    }
+
+    public void setPath(File path) {
+        this.path = path;
+    }
+
+    public Normalizer getNormalizer() {
+        return normalizer;
     }
 }

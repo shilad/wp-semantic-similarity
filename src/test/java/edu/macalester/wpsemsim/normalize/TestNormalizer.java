@@ -69,7 +69,7 @@ public class TestNormalizer {
 
     @Test
     public void testPolyInterp(){
-        PolynomialInterpolatorNormalizer polyInterp = new PolynomialInterpolatorNormalizer();
+        LoessNormalizer polyInterp = new LoessNormalizer();
         List<double[]> points= new ArrayList<double[]>();
         points.add(new double[]{0,0});
         points.add(new double[]{1.5,0.5});

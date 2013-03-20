@@ -15,6 +15,8 @@ import java.util.Random;
  * 4. Call normalize() on a new datapoint.
  */
 public abstract class BaseNormalizer implements Serializable, Normalizer {
+    public static final long serialVersionUID = 4305858822325261880L;
+
     public final static int SAMPLE_SIZE = 1000;
 
     public double min = Double.MIN_VALUE;
@@ -26,18 +28,6 @@ public abstract class BaseNormalizer implements Serializable, Normalizer {
 
     protected Integer numObservations = 0;
     protected Random random = new Random();
-
-    private boolean supervised=false;
-    private boolean needsTraining=true;
-    private String saveFile;
-
-    public boolean isSupervised(){
-        return supervised;
-    };
-
-    public boolean needsTraining(){
-        return needsTraining;
-    }
 
     /**
      * To meet the serializable contract.
@@ -79,5 +69,5 @@ public abstract class BaseNormalizer implements Serializable, Normalizer {
         return max;
     }
 
-
+    public abstract String dump();
 }

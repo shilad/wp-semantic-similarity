@@ -19,7 +19,6 @@ import org.apache.lucene.util.Version;
 import java.io.IOException;
 
 /**
- * }
  */
 public class LinkSimilarity extends BaseSimilarityMetric{
     private String field;

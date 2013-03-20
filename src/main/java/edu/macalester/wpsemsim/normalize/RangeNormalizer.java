@@ -33,4 +33,11 @@ public class RangeNormalizer extends BaseNormalizer {
         }
         return min + (max - min) * (x - desiredMin) / (desiredMax - desiredMin);
     }
+
+    @Override
+    public String dump() {
+        return ("range normalizer from [" +
+                min + ", " + max + "] to [" +
+                desiredMin + ", " + desiredMax + "]");
+    }
 }

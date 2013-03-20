@@ -68,4 +68,18 @@ public class PercentileNormalizer extends BaseNormalizer {
         double hl = xDelta / xHalfLife;
         return y0 + (1.0 - Math.exp(-hl)) * (yInf - y0);
     }
+
+    @Override
+    public String dump() {
+        StringBuffer buff = new StringBuffer("percentile normalizer: ");
+        for (int i = 0; i <= 20; i++) {
+            int p = i * 100 / 20;
+            int index = p * sample.size() / 100;
+            index = Math.min(index, sample.size() - 1);
+            buff.append(p + "%: ");
+            buff.append(sample.get(index));
+            buff.append(", ");
+        }
+        return buff.toString();
+    }
 }

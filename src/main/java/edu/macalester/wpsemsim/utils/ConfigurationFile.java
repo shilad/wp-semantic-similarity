@@ -7,6 +7,7 @@ import org.json.simple.parser.ParseException;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.PublicKey;
 import java.util.*;
 
 /**
@@ -76,6 +77,11 @@ public class ConfigurationFile {
     public JSONObject getGold(){
         return get("gold");
     }
+
+    public JSONObject getModels() {
+        return get("models");
+    }
+
     /**
      * Gets the configuration for all indexes.
      * @return

@@ -6,6 +6,7 @@ import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.set.TIntSet;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -104,4 +105,17 @@ public interface SimilarityMetric {
      */
     public DocScoreList mostSimilar(String phrase, int maxResults, TIntSet possibleWpIds) throws IOException;
 
+    /**
+     * Writes the metric to a directory.
+     * @param directory
+     * @throws IOException
+     */
+    public void write(File directory) throws IOException;
+
+    /**
+     * Reads the metric from a directory.
+     * @param directory
+     * @throws IOException
+     */
+    public void read(File directory) throws IOException;
 }
