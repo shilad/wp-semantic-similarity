@@ -9,6 +9,8 @@ import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.Function;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import edu.macalester.wpsemsim.utils.ParallelForEach;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.set.TIntSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
@@ -29,6 +31,10 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     private Disambiguator disambiguator;
     private int numThreads = 2;     // for training
     private boolean trained = false;
+
+    // the estimated similarity for things not returned by most similar
+    private double missingSimilarity;
+
     private File path;
 
     private Normalizer normalizer = new IdentityNormalizer();
@@ -90,27 +96,42 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
 
     /**
      * Trains the normalizer to support the mostSimilar() method.
+     * Also estimates the similarity score for articles that don't appear in top lists.
+     * Note that this (probably) is an overestimate, and depends on how well the
+     * distribution of scores in your gold standard matches your actual data.
+     *
      * @param labeled
      */
     protected void trainMostSimilarNormalizer(List<KnownSim> labeled, final int numResults, final TIntSet validIds) {
         useNormalizer = false;
+        final TDoubleList missingSimilarities = new TDoubleArrayList();
         ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
             public void call(KnownSim ks) throws IOException {
                 ks.maybeSwap();
                 Disambiguator.Match m = disambiguator.disambiguateMostSimilar(
                         ks.phrase1, ks.phrase2, numResults, validIds);
-                if (m == null) return;
-                DocScoreList dsl = mostSimilar(m.phraseWpId, numResults, validIds);
-                if (dsl == null) return;
-                double sim = dsl.getScoreForId(m.hintWpId);
-                if (!Double.isNaN(sim) && !Double.isInfinite(sim)){
-                    synchronized (normalizer) {
-                        normalizer.observe(sim, ks.similarity);
+                if (m != null)  {
+                    DocScoreList dsl = mostSimilar(m.phraseWpId, numResults, validIds);
+                    if (dsl != null) {
+                        double sim = dsl.getScoreForId(m.hintWpId);
+                        if (Double.isNaN(sim)) {
+                            synchronized (missingSimilarities) {
+                                missingSimilarities.add(ks.similarity);
+                            }
+                        } else if (Double.isInfinite(sim)) {
+                            // TODO: what to do?
+                        } else {
+                            synchronized (normalizer) {
+                                normalizer.observe(sim, ks.similarity);
+                            }
+                        }
                     }
                 }
             }
         });
         normalizer.observationsFinished();
+        missingSimilarity = missingSimilarities.isEmpty() ? 0.0 :
+                (missingSimilarities.sum() / missingSimilarities.size());
         useNormalizer = true;
         trained = true;
     }
@@ -218,6 +239,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         for (int i = 0; i < dsl.numDocs(); i++) {
             normalized.set(i, dsl.getId(i), normalize(dsl.getScore(i)));
         }
+        normalized.setMissingScore(missingSimilarity);
         return normalized;
     }
 
@@ -233,6 +255,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         out.writeObject(normalizer);
         out.close();
         FileUtils.write(new File(directory, "trained"), "" + trained);
+        FileUtils.write(new File(directory, "missingSimilarity"), "" + missingSimilarity);
     }
     /**
      * Reads the metric from a directory.
@@ -251,6 +274,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         in.close();
         trained = Boolean.valueOf(
                 FileUtils.readFileToString(new File(directory, "trained")));
+        missingSimilarity = Double.valueOf(
+                FileUtils.readFileToString(new File(directory, "missingSimilarity")));
     }
 
     /**

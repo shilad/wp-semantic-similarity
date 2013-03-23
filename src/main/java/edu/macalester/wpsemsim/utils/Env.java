@@ -42,6 +42,10 @@ public class Env {
         return mappers.get(MAIN_KEY);
     }
 
+    public void setMainMapper(ConceptMapper mapper) {
+        mappers.put(MAIN_KEY, mapper);
+    }
+
     public void addMetric(String name, SimilarityMetric metric) {
         this.metrics.put(name, metric);
     }

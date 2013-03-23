@@ -125,7 +125,8 @@ public class LinkSimilarity extends BaseSimilarityMetric{
     }
 
     private double transformLuceneScore(float score) {
-        return (Math.log(score) - 1) / 5.0;
+        return score;
+//        return (Math.log(score) - 1) / 5.0;
     }
 
     private MoreLikeThis getMoreLikeThis() {

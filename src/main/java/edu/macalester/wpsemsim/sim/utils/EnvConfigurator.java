@@ -7,6 +7,7 @@ import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.concepts.TitleMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
+import edu.macalester.wpsemsim.normalize.LoessNormalizer;
 import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.sim.LinkSimilarity;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
@@ -173,8 +174,6 @@ public class EnvConfigurator {
             mapper = getLuceneMapper(name);
         } else if (type.equals("ensemble")) {
             mapper = getEnsembleMapper(name);
-        } else if (type.equals("title")) {
-            mapper = getTitleMapper(name);
         } else {
             throw new ConfigurationException("unknown type for mapper " + name + ": " + type);
         }
@@ -392,12 +391,6 @@ public class EnvConfigurator {
         return new LuceneMapper(helper);
     }
 
-    private ConceptMapper getTitleMapper(String name) throws IOException, ConfigurationException {
-        JSONObject params = configuration.getMapper(name);
-        IndexHelper helper = loadIndex(requireString(params, "indexName"));
-        return new TitleMapper(helper);
-    }
-
     private ConceptMapper getDictionaryMapper(String name) throws IOException, ConfigurationException {
         try {
             JSONObject params = configuration.getMapper(name);
@@ -448,10 +441,18 @@ public class EnvConfigurator {
     private Normalizer parseNormalizer(JSONObject parentParams)throws ConfigurationException{
         JSONObject params = (JSONObject) parentParams.get("normalizer");
         String type = StringUtils.capitalize(requireString(params, "type"));
-        try {
-           return (Normalizer) Class.forName("edu.macalester.wpsemsim.normalize."+type+"Normalizer").newInstance();
-        }catch (Exception e){
-            throw new ConfigurationException("unknown normalizer: " + type);
+        if (type.equalsIgnoreCase("loess")) {
+            LoessNormalizer norm = new LoessNormalizer();
+            if (params.containsKey("log")) {
+                norm.setLogTransform(requireBoolean(params, "log"));
+            }
+            return norm;
+        } else {
+            try {
+                return (Normalizer) Class.forName("edu.macalester.wpsemsim.normalize."+type+"Normalizer").newInstance();
+            }catch (Exception e){
+                throw new ConfigurationException("unknown normalizer: " + type);
+            }
         }
     }
 

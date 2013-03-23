@@ -24,8 +24,8 @@ public class Disambiguator {
     public static class Match {
         public String phrase;
         public String hint;
-        public int phraseWpId;
-        public int hintWpId;
+        public int phraseWpId = -1;
+        public int hintWpId = -1;
         public String phraseWpName;
         public String hintWpName;
 
@@ -40,6 +40,9 @@ public class Disambiguator {
                     ", hintWpName='" + hintWpName + '\'' +
                     '}';
         }
+
+        public boolean hasPhraseMatch() { return phraseWpId >= 0; }
+        public boolean hasHintMatch() { return hintWpId >= 0; }
     }
 
     private SimilarityMetric metric;
@@ -68,7 +71,7 @@ public class Disambiguator {
         match.hint = hint;
 
         LinkedHashMap<String, Float> concept1s = mapper.map(phrase, maxConcepts);
-        if (concept1s == null || concept1s.isEmpty()) {
+        if (concept1s.isEmpty()) {
             LOG.info("no concepts for phrase " + phrase);
         }
 
@@ -89,8 +92,8 @@ public class Disambiguator {
             LOG.info("no concepts for phrase " + hint);
         }
 
-        // TODO: if ONLY concept2s is empty, still return results
-        if (concept1s.isEmpty() || concept2s.isEmpty()) {
+        // hopeless!
+        if (concept1s.isEmpty()) {
             return null;
         }
 
@@ -101,6 +104,11 @@ public class Disambiguator {
             int wpId1 = helper.titleToWpId(article1);
             if (wpId1 < 0) {
                 continue;
+            }
+            // if no hints match, fall back on the most popular phrase match
+            if (!match.hasPhraseMatch()) {
+                match.phraseWpId = wpId1;
+                match.phraseWpName = article1;
             }
             for (String article2 : concept2s.keySet()) {
                 double score2 = concept2s.get(article2);
@@ -124,7 +132,11 @@ public class Disambiguator {
             }
         }
 
-        return match;
+        if (match.hasPhraseMatch()) {
+            return match;
+        } else {
+            return null;
+        }
     }
 
     protected interface Scorer {

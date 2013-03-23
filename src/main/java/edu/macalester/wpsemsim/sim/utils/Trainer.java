@@ -1,6 +1,7 @@
 package edu.macalester.wpsemsim.sim.utils;
 
 import com.sleepycat.je.DatabaseException;
+import edu.macalester.wpsemsim.concepts.TitleMapper;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.sim.ensemble.*;
@@ -78,6 +79,11 @@ public class Trainer {
                 .withLongOpt("validIds")
                 .withDescription("Ids that can be included in results list.")
                 .create('v'));
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("titles")
+                .withDescription("Input phrases are article titles (takes path to dictionary database).")
+                .create('t'));
 
 
         CommandLine cmd;
@@ -121,6 +127,15 @@ public class Trainer {
         EnvConfigurator conf = new EnvConfigurator(new ConfigurationFile(pathConf));
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
+
+        if (cmd.hasOption("t")) {
+            LOG.info("installing title mapper");
+            env.setMainMapper(
+                    new TitleMapper(
+                        new File(cmd.getOptionValue("t")),
+                        env.getMainIndex()));
+        }
+
         SimilarityMetric metric = conf.loadMetric(metricName);
 
         if (metric instanceof BaseSimilarityMetric) {

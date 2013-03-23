@@ -2,6 +2,7 @@ package edu.macalester.wpsemsim.sim.utils;
 
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
+import edu.macalester.wpsemsim.concepts.Disambiguator;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
@@ -49,7 +50,7 @@ public class SimilarityAnalyzer {
 
         int i = 0;
         for (SimilarityMetric metric : metrics) {
-            Object[] r = calculateCorrelation(metric);
+            Object[] r = calculateMostSimilarCorrelation(metric);
             Double pearson = (Double) r[0];
             Double spearman = (Double) r[1];
             Double coverage = (Double) r[2];
@@ -115,28 +116,69 @@ public class SimilarityAnalyzer {
      * @return [pearson-correlation, coverage between 0 and 1.0, all y values]
      * @throws IOException
      */
+    public Object[] calculateMostSimilarCorrelation(final SimilarityMetric metric) throws IOException, ParseException {
+        final TDoubleArrayList X = new TDoubleArrayList();
+        final TDoubleArrayList Y = new TDoubleArrayList();
+        final TDoubleArrayList allX = new TDoubleArrayList();
+        final Disambiguator dab = new Disambiguator(mapper, metric, helper, 500);
+
+        ParallelForEach.loop(gold, Runtime.getRuntime().availableProcessors() ,
+                new Function<KnownSim>() {
+                    public void call(KnownSim ks) throws Exception {
+                        double sim = Double.NaN;
+                        try {
+                            Disambiguator.Match m = dab.disambiguateMostSimilar(ks.phrase1, ks.phrase2, 500, null);
+                            DocScoreList dsl = metric.mostSimilar(m.phraseWpId, 500);
+                            if (dsl != null) {
+                                sim = dsl.getScoreForId(m.hintWpId);
+                                if (Double.isNaN(sim)) {
+                                    sim = dsl.getMissingScore();
+                                }
+                            }
+                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
+                                synchronized (allX) {
+                                    X.add(ks.similarity);
+                                    Y.add(sim);
+                                }
+                            }
+                        } finally {
+                            allX.add(sim);  // add Double.NaN on errors.
+                        }
+                    }
+                });
+
+        double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
+        double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
+        return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX.toArray() };
+    }
+    /**
+     * Calculates the pearson correlation between the metric and the gold standard
+     * @param metric
+     * @return [pearson-correlation, coverage between 0 and 1.0, all y values]
+     * @throws IOException
+     */
     public Object[] calculateCorrelation(final SimilarityMetric metric) throws IOException, ParseException {
         final TDoubleArrayList X = new TDoubleArrayList();
         final TDoubleArrayList Y = new TDoubleArrayList();
         final TDoubleArrayList allX = new TDoubleArrayList();
 
         ParallelForEach.loop(gold, Runtime.getRuntime().availableProcessors() ,
-            new Function<KnownSim>() {
-            public void call(KnownSim ks) throws Exception {
-                double sim = Double.NaN;
-                try {
-                    sim = metric.similarity(ks.phrase1, ks.phrase2);
-                    if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-                        synchronized (allX) {
-                            X.add(ks.similarity);
-                            Y.add(sim);
+                new Function<KnownSim>() {
+                    public void call(KnownSim ks) throws Exception {
+                        double sim = Double.NaN;
+                        try {
+                            sim = metric.similarity(ks.phrase1, ks.phrase2);
+                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
+                                synchronized (allX) {
+                                    X.add(ks.similarity);
+                                    Y.add(sim);
+                                }
+                            }
+                        } finally {
+                            allX.add(sim);  // add Double.NaN on errors.
                         }
                     }
-                } finally {
-                    allX.add(sim);  // add Double.NaN on errors.
-                }
-            }
-        });
+                });
 
         double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
         double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
@@ -173,7 +215,6 @@ public class SimilarityAnalyzer {
         } else {
             for (String name : ArrayUtils.subarray(args, 2, args.length)) {
                 SimilarityMetric metric = conf.loadMetric(name, true);
-                ((BaseSimilarityMetric)metric).setNormalizer(new IdentityNormalizer());
                 System.err.println("normalizer is: " +
                         ((BaseSimilarityMetric) metric).getNormalizer().dump());
                 metrics.add(metric);

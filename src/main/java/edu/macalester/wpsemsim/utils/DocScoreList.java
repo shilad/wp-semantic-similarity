@@ -9,6 +9,7 @@ import java.util.Iterator;
 public class DocScoreList implements Iterable<DocScore> {
     private DocScore[] results;
     private int numDocs;
+    private double missingScore;    // score for missing documents.
 
     public DocScoreList(int maxNumDocs) {
         this.results = new DocScore[maxNumDocs];
@@ -100,5 +101,16 @@ public class DocScoreList implements Iterable<DocScore> {
 
     public DocScore get(int i) {
         return results[i];
+    }
+
+    /**
+     * @return Estimated similarity score for documents that are missing.
+     */
+    public double getMissingScore() {
+        return missingScore;
+    }
+
+    public void setMissingScore(double missingScore) {
+        this.missingScore = missingScore;
     }
 }

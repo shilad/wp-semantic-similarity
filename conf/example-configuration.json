@@ -13,7 +13,11 @@
     },
 
     "gold" : {
-            "path" : "dat/gold/combined.filtered.txt",
+            "path" : "dat/gold/combined.filtered.txt"
+    },
+
+    "models" : {
+            "path" : "dat/models"
     },
 
     "indexes" : {
@@ -112,6 +116,8 @@
             "type" : "links",
             "field" : "inlinks",
             "lucene" : "links",
+            "normalizer" : { "type" : "loess", "log" : true },
+//            "normalizer" : { "type" : "identity" },
             "similarity" : "lucene"
         },
         "pairwise-esa" : {
