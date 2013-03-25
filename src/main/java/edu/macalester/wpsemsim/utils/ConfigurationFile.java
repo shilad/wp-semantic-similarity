@@ -78,6 +78,10 @@ public class ConfigurationFile {
         return get("gold");
     }
 
+    public void setGold(String path) {
+        conf.put("gold", path);
+    }
+
     public JSONObject getModels() {
         return get("models");
     }

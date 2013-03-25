@@ -3,13 +3,16 @@ package edu.macalester.wpsemsim.sim.utils;
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.concepts.Disambiguator;
+import edu.macalester.wpsemsim.concepts.TitleMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
-import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.list.array.TDoubleArrayList;
-import org.apache.commons.lang3.ArrayUtils;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import org.apache.commons.cli.*;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
@@ -21,22 +24,21 @@ import java.io.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SimilarityAnalyzer {
     private static final Logger LOG = Logger.getLogger(SimilarityAnalyzer.class.getName());
+    private static final int MODE_MOST_SIMILAR = 1;
+    private static final int MODE_SIMILARITY = 2;
 
     private List<KnownSim> gold;
     private ConceptMapper mapper;
     private IndexHelper helper;
+    private int mode = MODE_SIMILARITY;
 
-    public SimilarityAnalyzer(List<KnownSim> gold, ConceptMapper mapper, IndexHelper helper) throws IOException {
+    public SimilarityAnalyzer(int mode, List<KnownSim> gold, ConceptMapper mapper, IndexHelper helper) throws IOException {
+        this.mode = mode;
         this.mapper = mapper;
         this.helper = helper;
         this.gold = gold;
@@ -50,7 +52,9 @@ public class SimilarityAnalyzer {
 
         int i = 0;
         for (SimilarityMetric metric : metrics) {
-            Object[] r = calculateMostSimilarCorrelation(metric);
+            Object[] r = (mode == MODE_SIMILARITY) ?
+                    calculateCorrelation(metric) :
+                    calculateMostSimilarCorrelation(metric);
             Double pearson = (Double) r[0];
             Double spearman = (Double) r[1];
             Double coverage = (Double) r[2];
@@ -192,34 +196,52 @@ public class SimilarityAnalyzer {
     }
 
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException {
-        if (args.length < 2) {
-            System.err.println(
-                    "usage: java " + SimilarityAnalyzer.class.toString() +
-                    " path/to/sim/metric/conf.txt" +
-                    " path/to/reg/model_output.txt" +
-                    " [sim1 sim2 ...]"
-            );
-            System.exit(1);
+        Options options = new Options();
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("mode")
+                .withDescription("Mode: similarity or mostSimilar.")
+                .create('m'));
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("name")
+                .withDescription("Name of similarity metric that should be built.")
+                .hasArgs()
+                .create('n'));
+
+        EnvConfigurator conf;
+        try {
+            conf = new EnvConfigurator(options, args);
+        } catch (org.apache.commons.cli.ParseException e) {
+            System.err.println( "Invalid option usage: " + e.getMessage());
+            new HelpFormatter().printHelp("SimilarityAnalyzer", options);
+            return;
         }
-        EnvConfigurator conf = new EnvConfigurator(
-                new ConfigurationFile(new File(args[0])));
+
+        CommandLine cmd = conf.getCommandLine();
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
 
-        SimilarityAnalyzer analyzer = new SimilarityAnalyzer(
-                env.getGold(), env.getMainMapper(), env.getMainIndex());
-        BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-        if (args.length == 2) {
-            metrics = conf.loadMetrics(true);
-        } else {
-            for (String name : ArrayUtils.subarray(args, 2, args.length)) {
-                SimilarityMetric metric = conf.loadMetric(name, true);
-                System.err.println("normalizer is: " +
-                        ((BaseSimilarityMetric) metric).getNormalizer().dump());
-                metrics.add(metric);
+        for (String name : cmd.getOptionValues("n")) {
+            metrics.add(conf.loadMetric(name, true));
+        }
+
+        int mode = MODE_SIMILARITY;
+        if (cmd.hasOption("m")) {
+            String s = cmd.getOptionValue("m");
+            if (s.equals("mostSimilar")) {
+                mode = MODE_MOST_SIMILAR;
+            } else if (s.equals("similarity")) {
+                    mode = MODE_SIMILARITY;
+            } else {
+                throw new IllegalArgumentException("invalid mode: " + s);
             }
         }
+
+        SimilarityAnalyzer analyzer = new SimilarityAnalyzer(
+                mode, env.getGold(), env.getMainMapper(), env.getMainIndex());
+        BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
         analyzer.analyzeMetrics(metrics, writer);
         writer.close();
     }

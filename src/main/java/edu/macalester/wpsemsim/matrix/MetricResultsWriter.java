@@ -1,7 +1,7 @@
 package edu.macalester.wpsemsim.matrix;
 
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import edu.macalester.wpsemsim.sim.utils.EnvConfigurator;
+import edu.macalester.wpsemsim.utils.EnvConfigurator;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.Env;
 import edu.macalester.wpsemsim.utils.KnownSim;

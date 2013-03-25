@@ -7,6 +7,7 @@ import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.Env;
+import edu.macalester.wpsemsim.utils.EnvConfigurator;
 import org.json.simple.JSONObject;
 
 import java.io.File;

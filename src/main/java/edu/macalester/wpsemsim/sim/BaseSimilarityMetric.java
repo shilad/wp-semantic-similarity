@@ -35,6 +35,10 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     // the estimated similarity for things not returned by most similar
     private double missingSimilarity;
 
+    // training data. This is serialized to ease normalizer tuning
+    private TDoubleArrayList trainingX = new TDoubleArrayList();
+    private TDoubleArrayList trainingY = new TDoubleArrayList();
+
     private File path;
 
     private Normalizer normalizer = new IdentityNormalizer();
@@ -104,7 +108,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
      */
     protected void trainMostSimilarNormalizer(List<KnownSim> labeled, final int numResults, final TIntSet validIds) {
         useNormalizer = false;
-        final TDoubleList missingSimilarities = new TDoubleArrayList();
+        trainingX.clear();
+        trainingY.clear();
         ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
             public void call(KnownSim ks) throws IOException {
                 ks.maybeSwap();
@@ -114,26 +119,33 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                     DocScoreList dsl = mostSimilar(m.phraseWpId, numResults, validIds);
                     if (dsl != null) {
                         double sim = dsl.getScoreForId(m.hintWpId);
-                        if (Double.isNaN(sim)) {
-                            synchronized (missingSimilarities) {
-                                missingSimilarities.add(ks.similarity);
-                            }
-                        } else if (Double.isInfinite(sim)) {
-                            // TODO: what to do?
-                        } else {
-                            synchronized (normalizer) {
-                                normalizer.observe(sim, ks.similarity);
-                            }
-                        }
+                        trainingX.add(sim);
+                        trainingY.add(ks.similarity);
                     }
                 }
             }
         });
+        trainNormalizer();
+        useNormalizer = true;
+        trained = true;
+    }
+
+    public void trainNormalizer() {
+        final TDoubleList missingSimilarities = new TDoubleArrayList();
+        for (int i = 0; i < trainingX.size(); i++) {
+            double x = trainingX.get(i);
+            double y = trainingY.get(i);
+            if (Double.isNaN(x)) {
+                missingSimilarities.add(y);
+            } else if (Double.isInfinite(x)) {
+                // TODO: what to do?
+            } else {
+                normalizer.observe(x, y);
+            }
+        }
         normalizer.observationsFinished();
         missingSimilarity = missingSimilarities.isEmpty() ? 0.0 :
                 (missingSimilarities.sum() / missingSimilarities.size());
-        useNormalizer = true;
-        trained = true;
     }
 
     @Override
@@ -256,6 +268,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         out.close();
         FileUtils.write(new File(directory, "trained"), "" + trained);
         FileUtils.write(new File(directory, "missingSimilarity"), "" + missingSimilarity);
+        writeDoubles(trainingX, new File(directory, "trainingX"));
+        writeDoubles(trainingY, new File(directory, "trainingY"));
     }
     /**
      * Reads the metric from a directory.
@@ -276,6 +290,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 FileUtils.readFileToString(new File(directory, "trained")));
         missingSimilarity = Double.valueOf(
                 FileUtils.readFileToString(new File(directory, "missingSimilarity")));
+        trainingX = readDoubles(new File(directory, "trainingX"));
+        trainingY = readDoubles(new File(directory, "trainingY"));
     }
 
     /**
@@ -304,5 +320,21 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
 
     public Normalizer getNormalizer() {
         return normalizer;
+    }
+
+    public static TDoubleArrayList readDoubles(File file) throws IOException {
+        TDoubleArrayList vals = new TDoubleArrayList();
+        for (String line : FileUtils.readLines(file))  {
+            vals.add(Double.valueOf(line));
+        }
+        return vals;
+    }
+
+    public static void writeDoubles(TDoubleArrayList vals, File file) throws IOException {
+        StringBuffer buff = new StringBuffer();
+        for (double x : vals.toArray()) {
+            buff.append(x + "\n");
+        }
+        FileUtils.write(file, buff.toString());
     }
 }

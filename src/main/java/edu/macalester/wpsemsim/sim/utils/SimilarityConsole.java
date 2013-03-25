@@ -7,6 +7,7 @@ import edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.Env;
+import edu.macalester.wpsemsim.utils.EnvConfigurator;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.BufferedReader;

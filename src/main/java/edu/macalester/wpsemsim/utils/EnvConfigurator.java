@@ -1,4 +1,4 @@
-package edu.macalester.wpsemsim.sim.utils;
+package edu.macalester.wpsemsim.utils;
 
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
@@ -7,8 +7,10 @@ import edu.macalester.wpsemsim.concepts.LuceneMapper;
 import edu.macalester.wpsemsim.concepts.TitleMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
+import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.LoessNormalizer;
 import edu.macalester.wpsemsim.normalize.Normalizer;
+import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.LinkSimilarity;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.sim.TextSimilarity;
@@ -19,16 +21,19 @@ import edu.macalester.wpsemsim.sim.ensemble.SvmEnsemble;
 import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
 import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
-import edu.macalester.wpsemsim.utils.ConfigurationFile;
-import edu.macalester.wpsemsim.utils.Env;
-import edu.macalester.wpsemsim.utils.KnownSim;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import org.apache.commons.cli.*;
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static edu.macalester.wpsemsim.utils.ConfigurationFile.*;
@@ -49,9 +54,10 @@ public class EnvConfigurator {
     private boolean shouldLoadMetrics = true;
     private boolean shouldLoadGold = true;
     private boolean shouldLoadModels = false;
+    private boolean shouldRebuildNormalizers = true;
 
     protected Env env;
-
+    private CommandLine cmd;
 
     /**
      * Creates a new configuration based on a particular configuration file.
@@ -59,7 +65,74 @@ public class EnvConfigurator {
      */
     public EnvConfigurator(ConfigurationFile conf) {
         this.configuration = conf;
-        this.env = new Env(configuration);
+        this.env = new Env();
+    }
+
+    public EnvConfigurator(Options options, String args[]) throws ParseException, IOException, ConfigurationException {
+        this.env = new Env();
+
+        options.addOption(new DefaultOptionBuilder()
+                .isRequired()
+                .hasArg()
+                .withLongOpt("conf")
+                .withDescription("Path to configuration file.")
+                .create('c'));
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("gold")
+                .withDescription("Path to gold standard")
+                .create('g'));
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("threads")
+                .withDescription("Number of threads")
+                .create('e'));
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("titles")
+                .withDescription("Input phrases are article titles (takes path to dictionary database).")
+                .create('t'));
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("results")
+                .withDescription("Maximum number of similar wikipedia pages.")
+                .create('r'));
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("validIds")
+                .withDescription("Ids that can be included in results list.")
+                .create('v'));
+        options.addOption(new DefaultOptionBuilder()
+                .withLongOpt("rebuildNormalizers")
+                .withDescription("Rebuilds all normalizers.")
+                .create('z'));
+
+        CommandLineParser parser = new PosixParser();
+        this.cmd = parser.parse(options, args);
+        this.configuration= new ConfigurationFile(
+                new File(cmd.getOptionValue("c")));
+        LOG.info("creating configuration based on " + configuration.getPath());
+
+        if (cmd.hasOption("e")) {
+            env.setNumThreads(Integer.valueOf(cmd.getOptionValue("e")));
+            LOG.info("set num threads to " + env.getNumThreads());
+        }
+        if (cmd.hasOption("r")) {
+            env.setNumMostSimilarResults(Integer.valueOf(cmd.getOptionValue("r")));
+            LOG.info("set max mostSimilar results " + env.getNumMostSimilarResults());
+        }
+        if (cmd.hasOption("v")) {
+            env.setValidIds(readIds(cmd.getOptionValue("v")));
+            LOG.info("set valid ids to " + env.getValidIds().size() +
+                     " ids in " + cmd.getOptionValue("v"));
+        }
+        if (cmd.hasOption("n")) {
+            this.shouldRebuildNormalizers = true;
+        }
+    }
+
+    public CommandLine getCommandLine() {
+        return cmd;
     }
 
     /**
@@ -93,6 +166,10 @@ public class EnvConfigurator {
         info("loading mappers");
         for (String name : (Set<String>)configuration.getMappers().keySet()) {
             loadMapper(name);
+        }
+        // install title mapper if necessary
+        if (cmd.hasOption("t")) {
+
         }
     }
 
@@ -164,6 +241,21 @@ public class EnvConfigurator {
         if (env.hasMapper(name)) {
             return env.getMapper(name);
         }
+        // install title mapper if necessary
+        if (name.equals(Env.MAIN_KEY) && cmd.hasOption("t")) {
+            LOG.info("overriding main mapper with title mapper");
+            try {
+                env.setMainMapper(
+                        new TitleMapper(
+                                new File(cmd.getOptionValue("t")),
+                                loadMainIndex())
+                );
+            } catch (DatabaseException e) {
+                LOG.log(Level.SEVERE, "creation of title mapper failed: ", e);
+                throw new ConfigurationException("creation of title mapper failed: " + e.getMessage());
+            }
+        }
+
         info("loading mapper " + name);
         JSONObject params = configuration.getMapper(name);
         String type = requireString(params, "type");
@@ -260,16 +352,21 @@ public class EnvConfigurator {
         } else {
             throw new ConfigurationException("Unknown metric type: " + type);
         }
+        if (metric instanceof BaseSimilarityMetric) {
+            ((BaseSimilarityMetric)metric).setNumThreads(env.getNumThreads());
+        }
         metric.setName(name);
         JSONObject params = configuration.getMetric(name);
-        if (params.containsKey("normalizer")){
-            Normalizer norm = parseNormalizer(params);
-            if (!norm.equals(null)){
-                metric.setNormalizer(norm);
-            }
-        }
         if (readModel) {
             metric.read(getModelDirectory(metric));
+            if (shouldRebuildNormalizers) {
+                BaseSimilarityMetric bmetric = (BaseSimilarityMetric) metric;
+                metric.setNormalizer(parseNormalizer(params));
+                bmetric.trainNormalizer();
+                LOG.info("rebuilt normalizer for " + name + " to " + bmetric.getNormalizer().dump());
+            }
+        } else {
+            metric.setNormalizer(parseNormalizer(params));
         }
         env.addMetric(name, metric);
         return metric;
@@ -402,6 +499,17 @@ public class EnvConfigurator {
         }
     }
 
+    private ConceptMapper getTitleMapper(String name) throws IOException, ConfigurationException {
+        try {
+            JSONObject params = configuration.getMapper(name);
+            return new DictionaryMapper(
+                    requireDirectory(params, "dictionary"),
+                    loadIndex(requireString(params, "indexName")));
+        } catch (DatabaseException e) {
+            throw new IOException(e);
+        }
+    }
+
     private void info(String message) {
         LOG.info("configurator for " + configuration.getPath() + ": " + message);
     }
@@ -434,12 +542,19 @@ public class EnvConfigurator {
         this.shouldLoadModels = shouldLoadModels;
     }
 
+    public void setShouldRebuildNormalizers(boolean retrainNormalizers) {
+        this.shouldRebuildNormalizers = retrainNormalizers;
+    }
+
     public void setShouldLoadMetrics(boolean shouldLoadMetrics) {
         this.shouldLoadMetrics = shouldLoadMetrics;
     }
 
     private Normalizer parseNormalizer(JSONObject parentParams)throws ConfigurationException{
         JSONObject params = (JSONObject) parentParams.get("normalizer");
+        if (params == null) {
+            return new IdentityNormalizer();
+        }
         String type = StringUtils.capitalize(requireString(params, "type"));
         if (type.equalsIgnoreCase("loess")) {
             LoessNormalizer norm = new LoessNormalizer();
@@ -459,7 +574,11 @@ public class EnvConfigurator {
     private List<KnownSim> loadGold() throws ConfigurationException, IOException {
         JSONObject params = configuration.getGold();
         String path = requireString(params, "path");
+        if (cmd.hasOption("g")) {
+            path = cmd.getOptionValue("g");
+        }
         List<KnownSim> g = KnownSim.read(new File(path));
+        LOG.info("read " + g.size() + " entries in gold standard " + path);
         env.setGold(g);
         return g;
     }
@@ -470,5 +589,24 @@ public class EnvConfigurator {
 
     public File getModelDirectory(String metricName) throws ConfigurationException {
         return new File(requireString(configuration.getModels(), "path"), metricName);
+    }
+
+    /**
+     * Reads a list of integer ids listed in a file, one id per line.
+     * @param path
+     * @return Set of ids
+     * @throws IOException
+     */
+    public static TIntSet readIds(String path) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(path));
+        TIntSet ids = new TIntHashSet();
+        while (true) {
+            String line = reader.readLine();
+            if (line == null) {
+                break;
+            }
+            ids.add(Integer.valueOf(line.trim()));
+        }
+        return ids;
     }
 }

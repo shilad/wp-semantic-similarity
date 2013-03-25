@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.normalize;
 
+import edu.macalester.wpsemsim.utils.MathUtils;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.math3.analysis.UnivariateFunction;
@@ -19,7 +20,7 @@ import java.util.logging.Logger;
 public class LoessNormalizer extends BaseNormalizer {
 
     private static Logger LOG = Logger.getLogger(LoessNormalizer.class.getName());
-    static final long serialVersionUID = -34232429;
+    public static final long serialVersionUID = -34232429;
 
     private TDoubleList X = new TDoubleArrayList();
     private TDoubleList Y = new TDoubleArrayList();
@@ -87,9 +88,9 @@ public class LoessNormalizer extends BaseNormalizer {
             double halfLife = (sMax - sMin) / 4.0;
             double yDelta = 0.1 * (yMax - yMin);
             if (x < sMin) {
-                x2 =  toAsymptote(sMin - x, halfLife, yMin, yMin - yDelta);
+                x2 =  MathUtils.toAsymptote(sMin - x, halfLife, yMin, yMin - yDelta);
             } else if (x > sMax) {
-                x2 = toAsymptote(x - sMax, halfLife, yMax, yMax + yDelta);
+                x2 = MathUtils.toAsymptote(x - sMax, halfLife, yMax, yMax + yDelta);
             } else {
                 throw new IllegalStateException();
             }
@@ -97,13 +98,6 @@ public class LoessNormalizer extends BaseNormalizer {
         return x2;
     }
 
-
-
-    public static double toAsymptote(double xDelta, double xHalfLife, double y0, double yInf) {
-        assert(xDelta > 0);
-        double hl = xDelta / xHalfLife;
-        return y0 + (1.0 - Math.exp(-hl)) * (yInf - y0);
-    }
 
     private synchronized  UnivariateFunction getInterpolationFunction() {
         if (interpolator != null) {
@@ -113,8 +107,8 @@ public class LoessNormalizer extends BaseNormalizer {
         double smoothed[][] = smooth(
                 logIfNeeded(X.toArray()),
                 Y.toArray(),
-                Math.max(10, X.size() / 25),
-                50);
+                Math.max(20, X.size() / 25),
+                10);
         double smoothedX[] = smoothed[0];
         double smoothedY[] = smoothed[1];
         interpolatorMin = smoothedX[0];
@@ -155,7 +149,7 @@ public class LoessNormalizer extends BaseNormalizer {
     private double logIfNeeded(double x) {
         if (logTransform) {
             sortByX();
-            return Math.log(1 + X.get(0) + x);
+            return (x < X.get(0)) ? 0 : Math.log(1 + X.get(0) + x);
         } else {
             return x;
         }
@@ -179,15 +173,11 @@ public class LoessNormalizer extends BaseNormalizer {
         StringBuffer buff = new StringBuffer("loess normalizer");
         if (logTransform) buff.append(" (log'ed)");
         DecimalFormat df = new DecimalFormat("#.##");
-        sortByX();
-        UnivariateFunction func = getInterpolationFunction();
-        double sMin = interpolatorMin;
-        double sMax = interpolatorMax;
-        for (int i = 0; i < 100; i++) {
-            double x = sMin + (sMax - sMin) * i / 100;
+        for (int i = 0; i <= 20; i++) {
+            double x = X.get(i * X.size() / 20);
             buff.append(" <" +
                     df.format(x) + "," +
-                    df.format(func.value(x)) + ">");
+                    df.format(normalize(x)) + ">");
         }
         return buff.toString();
     }

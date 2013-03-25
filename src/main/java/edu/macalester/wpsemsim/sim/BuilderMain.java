@@ -1,7 +1,7 @@
 package edu.macalester.wpsemsim.sim;
 
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
-import edu.macalester.wpsemsim.sim.utils.EnvConfigurator;
+import edu.macalester.wpsemsim.utils.EnvConfigurator;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
 import edu.macalester.wpsemsim.utils.DefaultOptionBuilder;
 import edu.macalester.wpsemsim.utils.Env;

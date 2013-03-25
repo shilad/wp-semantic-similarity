@@ -117,7 +117,7 @@
             "field" : "inlinks",
             "lucene" : "links",
             "normalizer" : { "type" : "loess", "log" : true },
-//            "normalizer" : { "type" : "identity" },
+//            "normalizer" : { "type" : "log" },
             "similarity" : "lucene"
         },
         "pairwise-esa" : {

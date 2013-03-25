@@ -2,11 +2,8 @@ package edu.macalester.wpsemsim.sim.ensemble;
 
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import edu.macalester.wpsemsim.sim.utils.EnvConfigurator;
-import edu.macalester.wpsemsim.utils.ConfigurationFile;
-import edu.macalester.wpsemsim.utils.DefaultOptionBuilder;
-import edu.macalester.wpsemsim.utils.Env;
-import edu.macalester.wpsemsim.utils.KnownSim;
+import edu.macalester.wpsemsim.utils.EnvConfigurator;
+import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.cli.*;
