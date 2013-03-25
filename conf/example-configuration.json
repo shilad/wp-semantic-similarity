@@ -110,6 +110,7 @@
             "type" : "links",
             "field" : "links",
             "lucene" : "links",
+            "normalizer" : { "type" : "loess", "log" : true },
             "similarity" : "lucene"
         },
         "inlinks" : {

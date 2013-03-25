@@ -558,6 +558,9 @@ public class EnvConfigurator {
         String type = StringUtils.capitalize(requireString(params, "type"));
         if (type.equalsIgnoreCase("loess")) {
             LoessNormalizer norm = new LoessNormalizer();
+            if (params.containsKey("monotonic")) {
+                norm.setMonotonic(requireBoolean(params, "monotonic"));
+            }
             if (params.containsKey("log")) {
                 norm.setLogTransform(requireBoolean(params, "log"));
             }
