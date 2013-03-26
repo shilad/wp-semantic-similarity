@@ -39,6 +39,16 @@ Instructions for building the semantic similarity network:
 
   `./bin/make-concept-index.sh path/to/dictionary.bz2 path/to/index/output-directory jvm_MBs`
   
+* Train the underlying similarity metrics on the article similarity dataset:
+
+```bash
+  ./bin/train.sh 10000 -c conf/example-configuration.json -e 35 -g dat/gold/combined.articles.txt  -n inlinks -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -e 35 -g dat/gold/combined.articles.txt  -n outlinks -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -e 35 -g dat/gold/combined.articles.txt  -n article-text -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -e 35 -g dat/gold/combined.articles.txt  -n esa -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -e 35 -g dat/gold/combined.articles.txt  -n article-cats -t dat/dictionary.pruned/   
+```
+  
 * Compute the list of ids that may appear as column ids in the similarity matrix (these are the 250K most linked-to ids):
 
   `./bin/make-valid-ids.sh conf/example-configuration.json 50`
