@@ -146,15 +146,22 @@
             "transpose" : "dat/link-sims.transpose.matrix",
             "normalizer" : { "type" : "loess", "log" : false },
         },
-        "pairwise-cats" : {
+        "pairwise-inlinks" : {
             "type" : "pairwise",
-            "matrix" : "dat/cat-sims.matrix",
-            "basedOn" : "article-cats",
-            "transpose" : "dat/cat-sims.transpose.matrix",
+            "matrix" : "dat/inlinks-sims.matrix",
+            "basedOn" : "inlinks",
             "normalizer" : { "type" : "loess", "log" : false },
+            "transpose" : "dat/inlinks-sims.transpose.matrix",
+        },
+        "pairwise-outlinks" : {
+            "type" : "pairwise",
+            "matrix" : "dat/outlinks-sims.matrix",
+            "basedOn" : "outlinks",
+            "normalizer" : { "type" : "loess", "log" : false },
+            "transpose" : "dat/outlinks-sims.transpose.matrix",
         },
         "ensemble" : {
-            "model" : "dat/model.out",
+            "model" : "dat/svm",
             "type" : "ensemble",
             "minComponents" : 2
         },
