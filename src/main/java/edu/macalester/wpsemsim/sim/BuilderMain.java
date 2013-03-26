@@ -108,7 +108,7 @@ public class BuilderMain {
         configurator.setShouldLoadMetrics(false);
 
         Env env = configurator.loadEnv();
-        SimilarityMetric m = configurator.loadMetric(metricName);
+        SimilarityMetric m = configurator.loadMetric(metricName, true);
         PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(m, outputFile);
         if (validIds != null) {
             writer.setValidIds(validIds);
