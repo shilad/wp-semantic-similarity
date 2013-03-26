@@ -167,10 +167,6 @@ public class EnvConfigurator {
         for (String name : (Set<String>)configuration.getMappers().keySet()) {
             loadMapper(name);
         }
-        // install title mapper if necessary
-        if (cmd.hasOption("t")) {
-
-        }
     }
 
     /**
@@ -240,7 +236,7 @@ public class EnvConfigurator {
     public synchronized  ConceptMapper loadMapper(String name) throws ConfigurationException, IOException {
         if (env.hasMapper(name)) {
             // do nothing
-        } else if (name.equals(Env.MAIN_KEY) && cmd.hasOption("t")) {
+        } else if (cmd != null && cmd.hasOption("t") && name.equals(Env.MAIN_KEY)) {
             LOG.info("overriding main mapper with title mapper");
             try {
                 env.setMainMapper(
@@ -575,7 +571,7 @@ public class EnvConfigurator {
     private List<KnownSim> loadGold() throws ConfigurationException, IOException {
         JSONObject params = configuration.getGold();
         String path = requireString(params, "path");
-        if (cmd.hasOption("g")) {
+        if (cmd != null && cmd.hasOption("g")) {
             path = cmd.getOptionValue("g");
         }
         List<KnownSim> g = KnownSim.read(new File(path));
