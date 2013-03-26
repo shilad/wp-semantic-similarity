@@ -118,22 +118,4 @@ public class CategorySimilarity extends BaseSimilarityMetric {
 
         return normalize(distanceToScore(shortestDistance));
     }
-
-    public static void main(String args[]) throws IOException, InterruptedException, CompressorException {
-        if (args.length != 3 && args.length != 4) {
-            System.err.println("usage: java " +
-                    TextSimilarity.class.getName() +
-                    " lucene-cat-index-dir output-file num-results [num-threads]");
-
-        }
-        IndexHelper helper = new IndexHelper(new File(args[0]), true);
-        CategoryGraph g = new CategoryGraph(helper);
-        g.init();
-        CategorySimilarity cs = new CategorySimilarity(null, g, helper);
-        int cores = (args.length == 4)
-                ? Integer.valueOf(args[3])
-                : Runtime.getRuntime().availableProcessors();
-        PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(cs, new File(args[1]));
-        writer.writeSims(helper.getWpIds(), cores, Integer.valueOf(args[2]));
-    }
 }

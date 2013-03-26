@@ -239,10 +239,8 @@ public class EnvConfigurator {
      */
     public synchronized  ConceptMapper loadMapper(String name) throws ConfigurationException, IOException {
         if (env.hasMapper(name)) {
-            return env.getMapper(name);
-        }
-        // install title mapper if necessary
-        if (name.equals(Env.MAIN_KEY) && cmd.hasOption("t")) {
+            // do nothing
+        } else if (name.equals(Env.MAIN_KEY) && cmd.hasOption("t")) {
             LOG.info("overriding main mapper with title mapper");
             try {
                 env.setMainMapper(
@@ -254,23 +252,23 @@ public class EnvConfigurator {
                 LOG.log(Level.SEVERE, "creation of title mapper failed: ", e);
                 throw new ConfigurationException("creation of title mapper failed: " + e.getMessage());
             }
-        }
-
-        info("loading mapper " + name);
-        JSONObject params = configuration.getMapper(name);
-        String type = requireString(params, "type");
-        ConceptMapper mapper;
-        if (type.equals("dictionary")) {
-            mapper = getDictionaryMapper(name);
-        } else if (type.equals("lucene")) {
-            mapper = getLuceneMapper(name);
-        } else if (type.equals("ensemble")) {
-            mapper = getEnsembleMapper(name);
         } else {
-            throw new ConfigurationException("unknown type for mapper " + name + ": " + type);
+            info("loading mapper " + name);
+            JSONObject params = configuration.getMapper(name);
+            String type = requireString(params, "type");
+            ConceptMapper mapper;
+            if (type.equals("dictionary")) {
+                mapper = getDictionaryMapper(name);
+            } else if (type.equals("lucene")) {
+                mapper = getLuceneMapper(name);
+            } else if (type.equals("ensemble")) {
+                mapper = getEnsembleMapper(name);
+            } else {
+                throw new ConfigurationException("unknown type for mapper " + name + ": " + type);
+            }
+            env.addMapper(name, mapper);
         }
-        env.addMapper(name, mapper);
-        return mapper;
+        return env.getMapper(name);
     }
 
     /**

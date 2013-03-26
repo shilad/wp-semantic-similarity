@@ -193,6 +193,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
         Disambiguator.Match m = disambiguator.disambiguateMostSimilar(phrase, null, maxResults, possibleWpIds);
+        System.err.println("disambiguator returned " + m);
         if (m == null) {
             return null;
         }

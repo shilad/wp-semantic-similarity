@@ -83,6 +83,7 @@
     "metrics" : {
         "article-cats" : {
             "type" : "category",
+            "normalizer" : { "type" : "loess", "log" : false },
             "lucene" : "cats",
         },
         "esa" : {
@@ -97,6 +98,7 @@
             "minTermFreq" : 2,
             "minDocFreq" : 6,
             "lucene" : "text",
+            "normalizer" : { "type" : "loess", "log" : false },
         },
         "article-links" : {
             "type" : "text",
@@ -126,6 +128,7 @@
             "matrix" : "dat/esa-sims.matrix",
             "basedOn" : "esa",
             "transpose" : "dat/esa-sims.transpose.matrix",
+            "normalizer" : { "type" : "loess", "log" : false },
             "buildPhraseVectors" : true,
         },
         "pairwise-text" : {
@@ -134,18 +137,21 @@
             "basedOn" : "article-text",
             "transpose" : "dat/text-sims.transpose.matrix",
             "buildPhraseVectors" : true,
-        },
+            "normalizer" : { "type" : "loess", "log" : false }
+    },
         "pairwise-links" : {
             "type" : "pairwise",
             "matrix" : "dat/link-sims.matrix",
             "basedOn" : "article-links",
             "transpose" : "dat/link-sims.transpose.matrix",
+            "normalizer" : { "type" : "loess", "log" : false },
         },
         "pairwise-cats" : {
             "type" : "pairwise",
             "matrix" : "dat/cat-sims.matrix",
             "basedOn" : "article-cats",
             "transpose" : "dat/cat-sims.transpose.matrix",
+            "normalizer" : { "type" : "loess", "log" : false },
         },
         "ensemble" : {
             "model" : "dat/model.out",

@@ -3,16 +3,11 @@ package edu.macalester.wpsemsim.sim.utils;
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.concepts.Disambiguator;
-import edu.macalester.wpsemsim.concepts.TitleMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
-import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.list.array.TDoubleArrayList;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
@@ -53,7 +48,7 @@ public class SimilarityAnalyzer {
         int i = 0;
         for (SimilarityMetric metric : metrics) {
             Object[] r = (mode == MODE_SIMILARITY) ?
-                    calculateCorrelation(metric) :
+                    calculateSimilarityCorrelation(metric) :
                     calculateMostSimilarCorrelation(metric);
             Double pearson = (Double) r[0];
             Double spearman = (Double) r[1];
@@ -161,7 +156,7 @@ public class SimilarityAnalyzer {
      * @return [pearson-correlation, coverage between 0 and 1.0, all y values]
      * @throws IOException
      */
-    public Object[] calculateCorrelation(final SimilarityMetric metric) throws IOException, ParseException {
+    public Object[] calculateSimilarityCorrelation(final SimilarityMetric metric) throws IOException, ParseException {
         final TDoubleArrayList X = new TDoubleArrayList();
         final TDoubleArrayList Y = new TDoubleArrayList();
         final TDoubleArrayList allX = new TDoubleArrayList();
