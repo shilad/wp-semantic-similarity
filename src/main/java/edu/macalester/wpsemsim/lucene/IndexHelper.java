@@ -323,20 +323,16 @@ public class IndexHelper {
         return indexDir;
     }
 
-    public Filter getWpIdFilter(TIntSet wpIds) throws IOException {
+    public synchronized Filter getWpIdFilter(TIntSet wpIds) throws IOException {
         if (wpIds == null) {
             return null;   // no filter
         }
-        if (!filterCache.containsKey(wpIds)) {
-            // guarantee only one writer at a time.
-            synchronized (filterCache) {
-                if (!filterCache.containsKey(wpIds)) {
-                    WpIdFilter f = new WpIdFilter(this, wpIds.toArray());
-                    filterCache.put(wpIds, f);
-                }
-            }
+        WpIdFilter filter = filterCache.get(wpIds);
+        if (filter == null) {
+            filter = new WpIdFilter(this, wpIds.toArray());
+            filterCache.put(wpIds, filter);
         }
-        return filterCache.get(wpIds);
+        return filter;
     }
 
     public void setAnalyzer(Analyzer analyzer) {
