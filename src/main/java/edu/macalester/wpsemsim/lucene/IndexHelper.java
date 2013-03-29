@@ -32,8 +32,7 @@ public class IndexHelper {
     private DirectoryReader reader;
     private IndexSearcher searcher;
     private File indexDir;
-    private final Map<TIntSet, WpIdFilter> filterCache =
-            Collections.synchronizedMap(new LRUMap(FILTER_CACHE_SIZE));
+    private final Map<TIntSet, WpIdFilter> filterCache = new LRUMap(FILTER_CACHE_SIZE);
     private Analyzer analyzer;
 
 
@@ -323,6 +322,15 @@ public class IndexHelper {
         return indexDir;
     }
 
+    /**
+     * Since this is synchronized, if there are many different id sets, they'll
+     * queue up serially during initialization. We presume that there will generally
+     * only be a single wpid set.
+     *
+     * @param wpIds
+     * @return
+     * @throws IOException
+     */
     public synchronized Filter getWpIdFilter(TIntSet wpIds) throws IOException {
         if (wpIds == null) {
             return null;   // no filter
