@@ -106,10 +106,11 @@ public class LoessNormalizer extends BaseNormalizer {
         minX = X.min();
 
         // create the smoothed points.
+        int windowSize = Math.min(20, X.size() / 10);
         double smoothed[][] = MathUtils.smooth(
                 logIfNeeded(X.toArray()),
                 Y.toArray(),
-                Math.max(20, X.size() / 25),
+                windowSize,
                 10);
         double smoothedX[] = smoothed[0];
         double smoothedY[] = smoothed[1];
