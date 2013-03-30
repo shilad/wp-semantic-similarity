@@ -214,6 +214,7 @@ public class SimilarityAnalyzer {
         }
 
         CommandLine cmd = conf.getCommandLine();
+        conf.setShouldLoadMetrics(true);
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
 

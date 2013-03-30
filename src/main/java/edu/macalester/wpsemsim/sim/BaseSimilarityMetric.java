@@ -197,7 +197,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (m == null) {
             return null;
         }
-        System.out.println("for " + phrase + " best is " + m.phraseWpName);
         return mostSimilar(m.phraseWpId, maxResults, possibleWpIds);
     }
 

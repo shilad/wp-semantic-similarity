@@ -32,19 +32,10 @@ public class BuilderMain {
     }
 
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, InterruptedException {
-        Options options = new Options();
-        options.addOption("t", "threads", true, "number of threads");
-        options.addOption(new DefaultOptionBuilder()
-                .isRequired()
-                .hasArg()
-                .withLongOpt("conf")
-                .withDescription("Path to configuration file.")
-                .create('c'));
-        options.addOption(new DefaultOptionBuilder()
-                .isRequired()
+        Options options = new Options();              options.addOption(new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("name")
-                .withDescription("Name of similarity metric.")
+                .withDescription("Name of similarity metric that should be built.")
                 .create('n'));
         options.addOption(new DefaultOptionBuilder()
                 .isRequired()
@@ -52,67 +43,26 @@ public class BuilderMain {
                 .withLongOpt("output")
                 .withDescription("Output file.")
                 .create('o'));
-        options.addOption(new DefaultOptionBuilder()
-                .hasArg()
-                .withLongOpt("results")
-                .withDescription("Maximum length of similar wikipedia pages list.")
-                .create('r'));
-        options.addOption(new DefaultOptionBuilder()
-                .hasArg()
-                .withLongOpt("validIds")
-                .withDescription("Ids that can be included in results list.")
-                .create('v'));
 
-        CommandLine cmd;
-
-        // create the parser
+        EnvConfigurator conf;
         try {
-            // parse the command line arguments
-            CommandLineParser parser = new PosixParser();
-            cmd = parser.parse(options, args);
-        } catch( ParseException exp ) {
-            System.err.println( "Invalid option usage: " + exp.getMessage());
-            new HelpFormatter().printHelp( "BuilderMain", options );
+            conf = new EnvConfigurator(options, args);
+        } catch (org.apache.commons.cli.ParseException e) {
+            System.err.println( "Invalid option usage: " + e.getMessage());
+            new HelpFormatter().printHelp("SimilarityAnalyzer", options);
             return;
         }
 
-        File pathConf = new File(cmd.getOptionValue("c"));
-        String metricName = cmd.getOptionValue("n");
+        CommandLine cmd = conf.getCommandLine();
+        conf.setShouldLoadMetrics(false);
+        Env env = conf.loadEnv();
+
         File outputFile = new File(cmd.getOptionValue("o"));
-
-        int numThreads = DEFAULT_NUM_THREADS;
-        if (cmd.hasOption("threads")) {
-            numThreads = Integer.valueOf(cmd.getOptionValue("t"));
-        }
-
-        int numResults = DEFAULT_NUM_RESULTS;
-        if (cmd.hasOption("results")) {
-            numResults = Integer.valueOf(cmd.getOptionValue("r"));
-        }
-        TIntSet validIds = null;
-        if (cmd.hasOption("validIds")) {
-            validIds = readIds(cmd.getOptionValue("v"));
-        }
-
-        LOG.info("building metric " + metricName);
-        LOG.info("using configuration file " + pathConf);
-        LOG.info("writing results to file " + outputFile);
-        LOG.info("using up to " + numThreads + " threads");
-        LOG.info("storing up to " + numResults + " results per page");
-        if (validIds != null) {
-            LOG.info("considering " + validIds.size() + " valid ids");
-        }
-
-        ConfigurationFile conf = new ConfigurationFile(pathConf);
-        EnvConfigurator configurator = new EnvConfigurator(conf);
-        configurator.setShouldLoadMetrics(false);
-
-        Env env = configurator.loadEnv();
-        SimilarityMetric m = configurator.loadMetric(metricName, true);
+        SimilarityMetric m = conf.loadMetric(cmd.getOptionValue("n"), true);
         PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(m, outputFile);
-        if (validIds != null) {
-            writer.setValidIds(validIds);
+        if (env.getValidIds() != null) {
+            writer.setValidIds(env.getValidIds());
         }
-        writer.writeSims(env.getMainIndex().getWpIds(), numThreads, numResults);
+        writer.writeSims(env.getMainIndex().getWpIds(), env.getNumThreads(), env.getNumMostSimilarResults());
     }
 }

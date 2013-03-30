@@ -524,22 +524,45 @@ public class EnvConfigurator {
         this.doPairwise = doPairwise;
     }
 
+    /**
+     * @param shouldLoadIndexes If true, loadEnv loads indexes.
+     *                          Default is true.
+     */
     public void setShouldLoadIndexes(boolean shouldLoadIndexes) {
         this.shouldLoadIndexes = shouldLoadIndexes;
     }
 
+    /**
+     * @param shouldLoadMappers If true, loadEnv loads mappers.
+     *                          Default is true.
+     */
     public void setShouldLoadMappers(boolean shouldLoadMappers) {
         this.shouldLoadMappers = shouldLoadMappers;
     }
 
+    /**
+     * If true, the models for similarity metrics will be loaded from disk.
+     * If false, the model similarity metrics are created from scratch (i.e. untrained).
+     * Defaults to false.
+     * @param shouldLoadModels
+     */
     public void setShouldLoadModels(boolean shouldLoadModels) {
         this.shouldLoadModels = shouldLoadModels;
     }
 
+    /**
+     * If true, normalizers are retrained even if they've been trained in the past.
+     * This is useful for tweaking normalizers after training the main model.
+     * @param retrainNormalizers
+     */
     public void setShouldRebuildNormalizers(boolean retrainNormalizers) {
         this.shouldRebuildNormalizers = retrainNormalizers;
     }
 
+    /**
+     * @param shouldLoadMetrics If true, loadEnv() loads metrics.
+     *                          Default is true.
+     */
     public void setShouldLoadMetrics(boolean shouldLoadMetrics) {
         this.shouldLoadMetrics = shouldLoadMetrics;
     }
