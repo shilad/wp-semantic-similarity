@@ -352,6 +352,7 @@ public class EnvConfigurator {
         metric.setName(name);
         JSONObject params = configuration.getMetric(name);
         if (readModel) {
+            LOG.info("reading model from " + getModelDirectory(metric));
             metric.read(getModelDirectory(metric));
             if (shouldRebuildNormalizers) {
                 BaseSimilarityMetric bmetric = (BaseSimilarityMetric) metric;
