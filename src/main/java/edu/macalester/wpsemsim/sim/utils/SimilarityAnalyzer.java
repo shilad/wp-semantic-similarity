@@ -218,8 +218,12 @@ public class SimilarityAnalyzer {
         Env env = conf.loadEnv();
 
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-        for (String name : cmd.getOptionValues("n")) {
-            metrics.add(conf.loadMetric(name, true));
+        if (cmd.getOptionValues("n").length == 0) {
+            metrics.addAll(conf.loadMetrics(true));
+        } else {
+            for (String name : cmd.getOptionValues("n")) {
+                metrics.add(conf.loadMetric(name, true));
+            }
         }
 
         int mode = MODE_SIMILARITY;
