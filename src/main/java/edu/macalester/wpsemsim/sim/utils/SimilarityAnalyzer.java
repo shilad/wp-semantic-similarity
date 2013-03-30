@@ -218,7 +218,7 @@ public class SimilarityAnalyzer {
         Env env = conf.loadEnv();
 
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-        if (cmd.getOptionValues("n").length == 0) {
+        if (cmd.getOptionValues("n") == null) {
             metrics.addAll(conf.loadMetrics(true));
         } else {
             for (String name : cmd.getOptionValues("n")) {
