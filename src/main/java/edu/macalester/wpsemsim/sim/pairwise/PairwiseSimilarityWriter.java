@@ -56,7 +56,7 @@ public class PairwiseSimilarityWriter {
             public void call(Integer wpId) throws IOException {
                 writeSim(wpId, maxSimsPerDoc);
             }
-        });
+        }, Integer.MAX_VALUE);
         LOG.info("wrote " + numCells + " non-zero similarity cells");
         this.writer.finish();
     }

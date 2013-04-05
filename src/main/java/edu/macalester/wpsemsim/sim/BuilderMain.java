@@ -13,23 +13,6 @@ import java.io.*;
 import java.util.logging.Logger;
 
 public class BuilderMain {
-    private static final Logger LOG = Logger.getLogger(BuilderMain.class.getName());
-
-    public static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors();
-    public static final int DEFAULT_NUM_RESULTS = 500;
-
-    public static TIntSet readIds(String path) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(path));
-        TIntSet ids = new TIntHashSet();
-        while (true) {
-            String line = reader.readLine();
-            if (line == null) {
-                break;
-            }
-            ids.add(Integer.valueOf(line.trim()));
-        }
-        return ids;
-    }
 
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, InterruptedException {
         Options options = new Options();              options.addOption(new DefaultOptionBuilder()

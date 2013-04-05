@@ -22,6 +22,13 @@ public class ParallelForEach {
             Collection<T> collection,
             int numThreads,
             final Function<T> fn) {
+        loop(collection, numThreads, fn, 50);
+    }
+    public static <T> void loop(
+            Collection<T> collection,
+            int numThreads,
+            final Function<T> fn,
+            final int logModulo) {
         final ExecutorService exec = Executors.newFixedThreadPool(numThreads);
         final CountDownLatch latch = new CountDownLatch(collection.size());
         try {
@@ -33,7 +40,7 @@ public class ParallelForEach {
                     public void run() {
                         T obj = asList.get(finalI);
                         try {
-                            if (finalI % 50 == 0) {
+                            if (finalI % logModulo == 0) {
                                 LOG.info("processing list element " + finalI + " of " + asList.size());
                             }
                             fn.call(obj);
