@@ -5,11 +5,18 @@ import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import edu.macalester.wpsemsim.matrix.ValueConf;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScoreList;
+import edu.macalester.wpsemsim.utils.Function;
+import edu.macalester.wpsemsim.utils.ParallelForEach;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import org.apache.commons.collections.ListUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +33,7 @@ public class PairwiseSimilarityWriter {
     private long numCells;
     private ValueConf vconf;
     private TIntSet validIds;
+    private TIntSet usedIds = new TIntHashSet();
 
     public PairwiseSimilarityWriter(SimilarityMetric metric, File outputFile) throws IOException {
         this.metric = metric;
@@ -38,41 +46,35 @@ public class PairwiseSimilarityWriter {
     }
 
     public void writeSims(final int wpIds[], final int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
-        ExecutorService exec = Executors.newFixedThreadPool(threads);
-        try {
-            for (int i = 0; i < threads; i++) {
-                final int i2 = i;
-                exec.submit(new Runnable() {
-                    public void run() {
-                        try {
-                            writeSims(wpIds, threads, i2, maxSimsPerDoc);
-                        } catch (Exception e) {
-                            LOG.log(Level.SEVERE, "error processing split " + i2, e);
-                        }
-                    }
-                });
+        List<Integer> wpIds2 = new ArrayList<Integer>();
+        for (int id : wpIds) { wpIds2.add(id); }
+        writeSims(wpIds2, threads, maxSimsPerDoc);
+    }
+
+    public void writeSims(List<Integer> wpIds, int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
+        ParallelForEach.loop(wpIds, threads, new Function<Integer>() {
+            public void call(Integer wpId) throws IOException {
+                writeSim(wpId, maxSimsPerDoc);
             }
-        } finally {
-            exec.shutdown();
-            exec.awaitTermination(60, TimeUnit.HOURS);
-        }
+        });
         LOG.info("wrote " + numCells + " non-zero similarity cells");
         this.writer.finish();
     }
 
-    private void writeSims(int[] wpIds, int nthreads, int offset, int maxSimsPerDoc) throws IOException {
-        for (int i = offset; i < wpIds.length; i += nthreads) {
-            if (idCounter.incrementAndGet() % 10000 == 0) {
-                System.err.println("" + new Date() + ": finding matches for doc " + idCounter.get());
+    private void writeSim(Integer wpId, int maxSimsPerDoc) throws IOException {
+        if (idCounter.incrementAndGet() % 10000 == 0) {
+            String nValidStr  = (validIds == null) ? "infinite" : ("" + validIds.size());
+            System.err.println("" + new Date() +
+                    ": finding matches for doc " + idCounter.get() +
+                    ", used " + usedIds.size() + " of " + nValidStr);
+        }
+        DocScoreList scores = metric.mostSimilar(wpId, maxSimsPerDoc, validIds);
+        if (scores != null) {
+            synchronized (this) {
+                numCells += scores.getIds().length;
             }
-            int wpId = wpIds[i];
-            DocScoreList scores = metric.mostSimilar(wpId, maxSimsPerDoc, validIds);
-            if (scores != null) {
-                synchronized (this) {
-                    numCells += scores.getIds().length;
-                }
-                writer.writeRow(new SparseMatrixRow(vconf, wpId, scores.getIds(), scores.getScoresAsFloat()));
-            }
+            writer.writeRow(new SparseMatrixRow(vconf, wpId, scores.getIds(), scores.getScoresAsFloat()));
+            usedIds.addAll(scores.getIds());
         }
     }
 }
