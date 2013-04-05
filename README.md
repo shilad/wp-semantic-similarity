@@ -60,6 +60,7 @@ Instructions for building the semantic similarity network:
   ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-text -o dat/text-sims.matrix -r 500 -v dat/valid_ids.txt
   ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-links -o dat/link-sims.matrix -r 500 -v dat/valid_ids.txt
   ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-inlinks -o dat/inlink-sims.matrix -r 500 -v dat/valid_ids.txt
+  ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-outlinks -o dat/outlink-sims.matrix -r 500 -v dat/valid_ids.txt
 ```
   
   The text and esa jobs will take quite a while - many hours.
@@ -71,7 +72,8 @@ Instructions for building the semantic similarity network:
   ./bin/transpose.sh ./dat/text-sims.matrix ./dat/text-sims.transpose.matrix 24000 5000
   ./bin/transpose.sh ./dat/link-sims.matrix ./dat/link-sims.transpose.matrix 24000 5000
   ./bin/transpose.sh ./dat/esa-sims.matrix ./dat/esa-sims.transpose.matrix 24000 5000
-  ./bin/transpose.sh ./dat/inlink-sims.matrix ./dat/inlink-sims.transpose.matrix 24000 5000
+  ./bin/transpose.sh ./dat/inlinks-sims.matrix ./dat/inlinks-sims.transpose.matrix 24000 5000
+  ./bin/transpose.sh ./dat/outlinks-sims.matrix ./dat/outlinks-sims.transpose.matrix 24000 5000
 ```
   
   These take about 30 min each.
