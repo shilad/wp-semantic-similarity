@@ -34,6 +34,9 @@ public class MatrixSummarizer {
             }
         }
 
+        System.out.println("num rows: " + matrix.getNumRows());
+        System.out.println("num columns: " + counts.size());
+
         // sort by counts
         Integer ids[] = ArrayUtils.toObject(counts.keys());
         Arrays.sort(ids, new Comparator<Integer>() {
