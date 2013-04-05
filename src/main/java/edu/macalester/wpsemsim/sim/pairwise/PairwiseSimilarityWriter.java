@@ -70,11 +70,13 @@ public class PairwiseSimilarityWriter {
         }
         DocScoreList scores = metric.mostSimilar(wpId, maxSimsPerDoc, validIds);
         if (scores != null) {
+            int ids[] = scores.getIds();
             synchronized (this) {
                 numCells += scores.getIds().length;
+                usedIds.addAll(ids);
+
             }
-            writer.writeRow(new SparseMatrixRow(vconf, wpId, scores.getIds(), scores.getScoresAsFloat()));
-            usedIds.addAll(scores.getIds());
+            writer.writeRow(new SparseMatrixRow(vconf, wpId, ids, scores.getScoresAsFloat()));
         }
     }
 }
