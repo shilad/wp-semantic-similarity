@@ -50,6 +50,7 @@ public class WpIdFilter extends Filter {
                 bits.set(id);
             }
         }
+        LOG.info("returning set bits: " + bits.size() + " of " + (acceptDocs == null ? Integer.MAX_VALUE : acceptDocs.length()));
         return new DocIdBitSet(bits);
     }
 }
