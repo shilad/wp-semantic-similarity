@@ -26,8 +26,8 @@ public class MatrixSummarizer {
                 double val = row.getColValue(i);
                 counts.adjustOrPutValue(id, 1, 1);
                 sums.adjustOrPutValue(id, val, val);
-                counts.adjustOrPutValue(row.getRowIndex(), 1, 1);
-                sums.adjustOrPutValue(row.getRowIndex(), val, val);
+//                counts.adjustOrPutValue(row.getRowIndex(), 1, 1);
+//                sums.adjustOrPutValue(row.getRowIndex(), val, val);
             }
             if (rowNum++ % 100000 == 0) {
                 LOG.info("reading row " + rowNum + " of " + matrix.getNumRows());
