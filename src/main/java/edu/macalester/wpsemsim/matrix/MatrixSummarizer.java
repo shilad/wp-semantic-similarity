@@ -30,7 +30,7 @@ public class MatrixSummarizer {
 //                sums.adjustOrPutValue(row.getRowIndex(), val, val);
             }
             if (rowNum++ % 100000 == 0) {
-                LOG.info("reading row " + rowNum + " of " + matrix.getNumRows());
+                LOG.info("reading row " + rowNum + " of " + matrix.getNumRows() + "; unique col ids=" + counts.size());
             }
         }
 
