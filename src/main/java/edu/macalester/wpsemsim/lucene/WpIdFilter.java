@@ -47,11 +47,18 @@ public class WpIdFilter extends Filter {
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         BitSet bits = new BitSet();
+        int i = 0;
         for (int id : luceneIds) {
             if (acceptDocs == null || acceptDocs.get(id)) {
                 bits.set(id);
+                i++;
             }
         }
+        int n = 0;
+        for (int id = 0; id < bits.length(); id++) {
+            if (bits.get(id)) n++;
+        }
+        LOG.info("bit size=" + bits.size() + " set=" + n + " compared to " + luceneIds.length);
         return new DocIdBitSet(bits);
     }
 }
