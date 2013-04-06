@@ -19,6 +19,7 @@ import org.apache.lucene.util.BytesRef;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
@@ -29,14 +30,15 @@ import java.util.logging.Logger;
  */
 public class IndexHelper {
     private static final Logger LOG = Logger.getLogger(IndexHelper.class.getName());
+
+    // TODO: make the concurrenthashmap LRU
     private static final int FILTER_CACHE_SIZE = 50;
 
     private DirectoryReader reader;
     private IndexSearcher searcher;
     private File indexDir;
 
-    private final Map filterCache = LazyMap.decorate(
-            new LRUMap(FILTER_CACHE_SIZE), new WpIdFilterGenerator());
+    private final Map<TIntSet, WpIdFilter> filterCache = new ConcurrentHashMap<TIntSet, WpIdFilter>(16, 0.75f, 1);
 
     private Analyzer analyzer;
 
@@ -337,25 +339,25 @@ public class IndexHelper {
      * @throws IOException
      */
     public Filter getWpIdFilter(TIntSet wpIds) throws IOException {
-        return (Filter) filterCache.get(wpIds);
+        Filter f = filterCache.get(wpIds);
+        if (f != null) {
+            return f;
+        } else {
+            return makeWpIdFilter(wpIds);
+        }
+    }
+
+    public Filter makeWpIdFilter(TIntSet wpIds) throws IOException {
+        // avoid concurrent creations by making a sycnrhonized check.
+        synchronized (filterCache) {
+            if (!filterCache.containsKey(wpIds)) {
+                filterCache.put(wpIds, new WpIdFilter(this, wpIds.toArray()));
+            }
+            return filterCache.get(wpIds);
+        }
     }
 
     public void setAnalyzer(Analyzer analyzer) {
         this.analyzer = analyzer;
-    }
-
-    /**
-     * A simple class used to lazily create WpIdFilters as necessary.
-     */
-    protected class WpIdFilterGenerator implements Transformer {
-        @Override
-        public Object transform(Object wpIds) {
-            try {
-                return new WpIdFilter(IndexHelper.this, ((TIntSet)wpIds).toArray());
-            } catch (IOException e) {
-                LOG.log(Level.SEVERE, "creation of wpidfilter failed:", e);
-                return null;
-            }
-        }
     }
 }
