@@ -4,7 +4,9 @@ import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
+import org.apache.commons.collections.Transformer;
 import org.apache.commons.collections.map.LRUMap;
+import org.apache.commons.collections.map.LazyMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -32,7 +34,10 @@ public class IndexHelper {
     private DirectoryReader reader;
     private IndexSearcher searcher;
     private File indexDir;
-    private final Map<TIntSet, WpIdFilter> filterCache = new LRUMap(FILTER_CACHE_SIZE);
+
+    private final Map filterCache = LazyMap.decorate(
+            new LRUMap(FILTER_CACHE_SIZE), new WpIdFilterGenerator());
+
     private Analyzer analyzer;
 
 
@@ -331,19 +336,26 @@ public class IndexHelper {
      * @return
      * @throws IOException
      */
-    public synchronized Filter getWpIdFilter(TIntSet wpIds) throws IOException {
-        if (wpIds == null) {
-            return null;   // no filter
-        }
-        WpIdFilter filter = filterCache.get(wpIds);
-        if (filter == null) {
-            filter = new WpIdFilter(this, wpIds.toArray());
-            filterCache.put(wpIds, filter);
-        }
-        return filter;
+    public Filter getWpIdFilter(TIntSet wpIds) throws IOException {
+        return (Filter) filterCache.get(wpIds);
     }
 
     public void setAnalyzer(Analyzer analyzer) {
         this.analyzer = analyzer;
+    }
+
+    /**
+     * A simple class used to lazily create WpIdFilters as necessary.
+     */
+    protected class WpIdFilterGenerator implements Transformer {
+        @Override
+        public Object transform(Object wpIds) {
+            try {
+                return new WpIdFilter(IndexHelper.this, ((TIntSet)wpIds).toArray());
+            } catch (IOException e) {
+                LOG.log(Level.SEVERE, "creation of wpidfilter failed:", e);
+                return null;
+            }
+        }
     }
 }
