@@ -58,7 +58,7 @@ public class WpIdFilter extends Filter {
         for (int id = 0; id < bits.length(); id++) {
             if (bits.get(id)) n++;
         }
-        LOG.info("bit size=" + bits.size() + " set=" + n + " compared to " + luceneIds.length);
+//        LOG.info("bit size=" + bits.size() + " set=" + n + " compared to " + luceneIds.length);
         return new DocIdBitSet(bits);
     }
 }
