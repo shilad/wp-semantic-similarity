@@ -74,8 +74,8 @@ public class FunkSVD {
         long n = 0;
         int r = 0;
         for (SparseMatrixRow row : matrix) {
-            if (n % 100000 == 0) {
-                LOG.info("visiting row " + n + " of " + matrix.getNumRows());
+            if (r % 100000 == 0) {
+                LOG.info("visiting row " + r + " of " + matrix.getNumRows());
             }
             double rowV[] = rowApproximations[r++];
             for (int c = 0; c < row.getNumCols(); c++) {
