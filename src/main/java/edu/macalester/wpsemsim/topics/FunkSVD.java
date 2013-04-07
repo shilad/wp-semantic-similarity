@@ -7,6 +7,7 @@ import gnu.trove.map.hash.TIntIntHashMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Random;
 import java.util.logging.Logger;
 
 public class FunkSVD {
@@ -44,6 +45,8 @@ public class FunkSVD {
 
     private SparseMatrix matrix;
 
+    private Random random = new Random();
+
     public FunkSVD(SparseMatrix matrix, int rank) {
         this.rank = rank;
         this.matrix = matrix;
@@ -53,6 +56,11 @@ public class FunkSVD {
     }
 
     public void estimate() {
+        LOG.info("randomly filling rowApproximations");
+        for (double row[] : rowApproximations) { randomlyFill(row); }
+        LOG.info("randomly filling columnApproximations");
+        for (double col[] : columnApproximations) { randomlyFill(col); }
+
         for (int i = 0; i < rank; i++) {
             LOG.info("doing iteration " + i);
             double rmse = doIteration(i);
@@ -108,6 +116,17 @@ public class FunkSVD {
             reverseColumnMap[columnMap.get(colId)] = colId;
         }
         LOG.info("finished dense indexing for " + reverseColumnMap.length + " column ids");
+    }
+
+    private void randomlyFill(double X[]) {
+        double sum = 0.0;
+        for (int i = 0; i < X.length; i++) {
+            X[i] = random.nextDouble();
+            sum += X[i];
+        }
+        for (int i = 0; i < X.length; i++) {
+            X[i] /= sum;
+        }
     }
 
     public static void main(String args[]) throws IOException {
