@@ -39,6 +39,12 @@ Instructions for building the semantic similarity network:
 
   `./bin/make-concept-index.sh path/to/dictionary.bz2 path/to/index/output-directory jvm_MBs`
   
+* Generate the gold standard dataset:
+
+  `./bin/make_gold.sh`
+
+  This should take about a minute, and it writes a combined gold standard dataset from a variety of sources to dat/gold/combined.tab.txt.
+
 * Train the underlying similarity metrics on the article similarity dataset:
 
 ```bash
@@ -53,12 +59,11 @@ Instructions for building the semantic similarity network:
 
   `./bin/make-valid-ids.sh conf/example-configuration.json 50`
 
-* Generate the precomputed similarity matrices:
+* Generate the pairwise similarity metrics:
 
 ```bash
   ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n esa -o dat/esa-sims.matrix -r 500 -v dat/valid_ids.txt
   ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-text -o dat/text-sims.matrix -r 500 -v dat/valid_ids.txt
-  ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-links -o dat/link-sims.matrix -r 500 -v dat/valid_ids.txt
   ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-inlinks -o dat/inlink-sims.matrix -r 500 -v dat/valid_ids.txt
   ./bin/make-sims.sh jvm_MBs -c path/to/conf.json -n article-outlinks -o dat/outlink-sims.matrix -r 500 -v dat/valid_ids.txt
 ```
@@ -68,21 +73,23 @@ Instructions for building the semantic similarity network:
 * Generate the tranposes of the similarity files:
 
 ```bash
-  ./bin/transpose.sh ./dat/cat-sims.matrix ./dat/cat-sims.transpose.matrix 24000 5000
   ./bin/transpose.sh ./dat/text-sims.matrix ./dat/text-sims.transpose.matrix 24000 5000
-  ./bin/transpose.sh ./dat/link-sims.matrix ./dat/link-sims.transpose.matrix 24000 5000
   ./bin/transpose.sh ./dat/esa-sims.matrix ./dat/esa-sims.transpose.matrix 24000 5000
   ./bin/transpose.sh ./dat/inlinks-sims.matrix ./dat/inlinks-sims.transpose.matrix 24000 5000
   ./bin/transpose.sh ./dat/outlinks-sims.matrix ./dat/outlinks-sims.transpose.matrix 24000 5000
 ```
   
   These take about 30 min each.
+  
+* Train the pairwise metrics:
 
-* Generate the gold standard dataset:
 
-  `./bin/make_gold.sh`
-
-  This should take about a minute, and it writes a combined gold standard dataset from a variety of sources to dat/gold/combined.tab.txt.
+```bash
+  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/combined.articles.txt  -n pairwise-inlinks -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/combined.articles.txt  -n pairwise-outlinks -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/combined.articles.txt  -n pairwise-text -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/combined.articles.txt  -n pairwise-esa -t dat/dictionary.pruned/ 
+```
 
 * Fit the combined model
 
