@@ -1,12 +1,8 @@
 package edu.macalester.wpsemsim.lucene;
 
-import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
-import org.apache.commons.collections.Transformer;
-import org.apache.commons.collections.map.LRUMap;
-import org.apache.commons.collections.map.LazyMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -20,8 +16,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -325,6 +319,7 @@ public class IndexHelper {
         return searcher;
     }
 
+
     public File getIndexDir() {
         return indexDir;
     }
@@ -339,16 +334,14 @@ public class IndexHelper {
      * @throws IOException
      */
     public Filter getWpIdFilter(TIntSet wpIds) throws IOException {
+        if (wpIds == null) {
+            return null;
+        }
         Filter f = filterCache.get(wpIds);
         if (f != null) {
             return f;
-        } else {
-            return makeWpIdFilter(wpIds);
         }
-    }
-
-    public Filter makeWpIdFilter(TIntSet wpIds) throws IOException {
-        // avoid concurrent creations by making a sycnrhonized check.
+        // avoid concurrent creations by making a synchronized check.
         synchronized (filterCache) {
             if (!filterCache.containsKey(wpIds)) {
                 filterCache.put(wpIds, new WpIdFilter(this, wpIds.toArray()));
