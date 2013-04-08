@@ -127,17 +127,19 @@ public class SimilarityAnalyzer {
                         double sim = Double.NaN;
                         try {
                             Disambiguator.Match m = dab.disambiguateMostSimilar(ks.phrase1, ks.phrase2, 500, null);
-                            DocScoreList dsl = metric.mostSimilar(m.phraseWpId, 500);
-                            if (dsl != null) {
-                                sim = dsl.getScoreForId(m.hintWpId);
-                                if (Double.isNaN(sim)) {
-                                    sim = dsl.getMissingScore();
+                            if (m != null) {
+                                DocScoreList dsl = metric.mostSimilar(m.phraseWpId, 500);
+                                if (dsl != null) {
+                                    sim = dsl.getScoreForId(m.hintWpId);
+                                    if (Double.isNaN(sim)) {
+                                        sim = dsl.getMissingScore();
+                                    }
                                 }
-                            }
-                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-                                synchronized (allX) {
-                                    X.add(ks.similarity);
-                                    Y.add(sim);
+                                if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
+                                    synchronized (allX) {
+                                        X.add(ks.similarity);
+                                        Y.add(sim);
+                                    }
                                 }
                             }
                         } finally {
