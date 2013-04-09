@@ -47,9 +47,13 @@ public class SimilarityAnalyzer {
 
         int i = 0;
         for (SimilarityMetric metric : metrics) {
+            LOG.info("analyzing " + metric.getName());
             Object[] r = (mode == MODE_SIMILARITY) ?
                     calculateSimilarityCorrelation(metric) :
                     calculateMostSimilarCorrelation(metric);
+            if (r == null) {
+                continue;       // metric failed to produce enough observations.
+            }
             Double pearson = (Double) r[0];
             Double spearman = (Double) r[1];
             Double coverage = (Double) r[2];
@@ -148,9 +152,15 @@ public class SimilarityAnalyzer {
                     }
                 });
 
-        double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
-        double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
-        return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX.toArray() };
+        if (X.size() < 4) {
+            LOG.info("metric " + metric.getName() + " only produced " + X.size() + " similarity scores.");
+            LOG.info("skipping calculation of Pearson, etc.");
+            return null;
+        } else {
+            double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
+            double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
+            return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX.toArray() };
+        }
     }
     /**
      * Calculates the pearson correlation between the metric and the gold standard
@@ -181,9 +191,15 @@ public class SimilarityAnalyzer {
                     }
                 });
 
-        double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
-        double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
-        return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX.toArray() };
+        if (X.size() < 4) {
+            LOG.info("metric " + metric.getName() + " only produced " + X.size() + " similarity scores.");
+            LOG.info("skipping calculation of Pearson, etc.");
+            return null;
+        } else {
+            double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
+            double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
+            return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX.toArray() };
+        }
     }
 
     public class MyOLS extends OLSMultipleLinearRegression {
