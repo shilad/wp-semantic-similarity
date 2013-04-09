@@ -74,7 +74,6 @@ public class PairwiseSimilarityWriter {
             synchronized (this) {
                 numCells += scores.getIds().length;
                 usedIds.addAll(ids);
-
             }
             writer.writeRow(new SparseMatrixRow(vconf, wpId, ids, scores.getScoresAsFloat()));
         }

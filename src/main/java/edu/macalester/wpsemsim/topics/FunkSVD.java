@@ -42,6 +42,7 @@ public class FunkSVD {
 
     private double learningRate = 0.001;
     private double regularization = 0.02;
+    private double meanVal = -1;
 
     private SparseMatrix matrix;
 
@@ -50,17 +51,10 @@ public class FunkSVD {
     public FunkSVD(SparseMatrix matrix, int rank) {
         this.rank = rank;
         this.matrix = matrix;
-        makeColumnMapping();
-        rowApproximations = new double[matrix.getNumRows()][rank];
-        columnApproximations = new double[columnMap.size()][rank];
     }
 
     public void estimate() {
-        LOG.info("randomly filling rowApproximations");
-        for (double row[] : rowApproximations) { randomlyFill(row); }
-        LOG.info("randomly filling columnApproximations");
-        for (double col[] : columnApproximations) { randomlyFill(col); }
-
+        init();
         for (int i = 0; i < rank; i++) {
             LOG.info("doing iteration " + i);
             double rmse = doIteration(i);
@@ -104,7 +98,8 @@ public class FunkSVD {
         return sum;
     }
 
-    private void makeColumnMapping() {
+    private void init() {
+
         LOG.info("creating dense indexing for column ids");
         for (SparseMatrixRow row : matrix) {
             for (int i = 0; i < row.getNumCols(); i++) {
@@ -119,6 +114,38 @@ public class FunkSVD {
             reverseColumnMap[columnMap.get(colId)] = colId;
         }
         LOG.info("finished dense indexing for " + reverseColumnMap.length + " column ids");
+
+        rowApproximations = new double[matrix.getNumRows()][rank];
+        columnApproximations = new double[columnMap.size()][rank];
+        LOG.info("randomly filling rowApproximations");
+        for (double row[] : rowApproximations) { randomlyFill(row); }
+        LOG.info("randomly filling columnApproximations");
+        for (double col[] : columnApproximations) { randomlyFill(col); }
+
+        calculateStats();
+    }
+
+    private void calculateStats() {
+        LOG.info("calculating mean");
+        this.meanVal = 0.0;
+        long numCells = 0;
+        for (SparseMatrixRow row : matrix) {
+            for (int i = 0; i < row.getNumCols(); i++) {
+                meanVal += row.getColValue(i);
+                numCells++;
+            }
+        }
+        meanVal /= numCells;
+
+        LOG.info("calculating std dev");
+        double err2 = 0.0;
+        for (SparseMatrixRow row : matrix) {
+            for (int i = 0; i < row.getNumCols(); i++) {
+                err2 += Math.pow(row.getColValue(i) - meanVal, 2.0);
+            }
+        }
+        err2 = Math.sqrt(err2 / numCells);
+        LOG.info("overal std dev is " + err2);
     }
 
     private void randomlyFill(double X[]) {
@@ -130,6 +157,9 @@ public class FunkSVD {
         for (int i = 0; i < X.length; i++) {
             X[i] /= sum;
         }
+    }
+
+    private void write(File file) {
     }
 
     public static void main(String args[]) throws IOException {
