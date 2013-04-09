@@ -53,7 +53,7 @@ public class EnvConfigurator {
     private boolean shouldLoadMappers = true;
     private boolean shouldLoadMetrics = true;
     private boolean shouldLoadGold = true;
-    private boolean shouldLoadModels = false;
+    private boolean shouldReadModels = false;
     private boolean shouldRebuildNormalizers = true;
 
     protected Env env;
@@ -192,7 +192,7 @@ public class EnvConfigurator {
      * @throws ConfigurationException
      */
     public List<SimilarityMetric> loadMetrics() throws IOException, ConfigurationException {
-        return loadMetrics(shouldLoadModels);
+        return loadMetrics(shouldReadModels);
     }
 
 
@@ -312,7 +312,7 @@ public class EnvConfigurator {
      * @throws IOException
      */
     public SimilarityMetric loadMetric(String name) throws ConfigurationException, IOException {
-        return this.loadMetric(name, shouldLoadModels);
+        return this.loadMetric(name, shouldReadModels);
     }
 
 
@@ -340,7 +340,7 @@ public class EnvConfigurator {
         } else if (type.equals("links")) {
             metric = createLinkSimilarity(name);
         } else if (type.equals("pairwise")) {
-            metric = createPairwiseSimilarity(name);
+            metric = createPairwiseSimilarity(name, readModel);
         } else if (type.equals("ensemble")) {
             metric = loadEnsembleMetric(name);
         } else {
@@ -382,14 +382,14 @@ public class EnvConfigurator {
         return similarity;
     }
 
-    private SimilarityMetric createPairwiseSimilarity(String name) throws IOException, ConfigurationException {
+    private SimilarityMetric createPairwiseSimilarity(String name, boolean loadModels) throws IOException, ConfigurationException {
         JSONObject params = configuration.getMetric(name);
         PairwiseCosineSimilarity metric;
         SparseMatrix m = new SparseMatrix(requireFile(params, "matrix"));
         SparseMatrix mt = new SparseMatrix(requireFile(params, "transpose"));
         metric = new PairwiseCosineSimilarity(loadMainMapper(), loadMainIndex(), m, mt);
         if (params.containsKey("basedOn")) {
-            metric.setBasedOn(loadMetric(requireString(params, "basedOn")));
+            metric.setBasedOn(loadMetric(requireString(params, "basedOn"), loadModels));
         }
         if (params.containsKey("buildPhraseVectors")) {
             metric.setBuildPhraseVectors(requireBoolean(params, "buildPhraseVectors"));
@@ -542,13 +542,13 @@ public class EnvConfigurator {
     }
 
     /**
-     * If true, the models for similarity metrics will be loaded from disk.
+     * If true, the models for similarity metrics will be read from disk.
      * If false, the model similarity metrics are created from scratch (i.e. untrained).
      * Defaults to false.
-     * @param shouldLoadModels
+     * @param shouldReadModels
      */
-    public void setShouldLoadModels(boolean shouldLoadModels) {
-        this.shouldLoadModels = shouldLoadModels;
+    public void setShouldReadModels(boolean shouldReadModels) {
+        this.shouldReadModels = shouldReadModels;
     }
 
     /**

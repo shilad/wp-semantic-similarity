@@ -232,7 +232,7 @@ public class SimilarityAnalyzer {
         }
 
         CommandLine cmd = conf.getCommandLine();
-        conf.setShouldLoadModels(true);
+        conf.setShouldReadModels(true);
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
 
