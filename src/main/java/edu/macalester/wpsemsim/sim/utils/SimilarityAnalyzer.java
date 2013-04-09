@@ -244,6 +244,7 @@ public class SimilarityAnalyzer {
                 metrics.add(conf.loadMetric(name, true));
             }
         }
+        System.err.println("metrics are " + metrics);
 
         int mode = MODE_SIMILARITY;
         if (cmd.hasOption("m")) {

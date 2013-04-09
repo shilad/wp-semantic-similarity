@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -ne 3 ]; then
-    echo "usage: index.sh matrix_path lucene_path jvm_MB" >&2
+    echo "usage: $0 matrix_path lucene_path jvm_MB" >&2
     exit 1
 fi
 
