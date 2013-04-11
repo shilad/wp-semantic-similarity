@@ -6,9 +6,7 @@ import edu.macalester.wpsemsim.lucene.Page;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimScore;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import edu.macalester.wpsemsim.utils.DocScore;
-import edu.macalester.wpsemsim.utils.DocScoreList;
-import edu.macalester.wpsemsim.utils.KnownSim;
+import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.TIntSet;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -184,38 +182,17 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
      */
     @Override
     public void trainMostSimilar(final List<KnownSim> gold, final int numResults, final TIntSet validIds) {
-        final ExecutorService exec = Executors.newFixedThreadPool(numThreads);
         final List<Example> examples = Collections.synchronizedList(new ArrayList<Example>());
-        try {
-            for (int i = 0; i < gold.size(); i++) {
-                final int finalI = i;
-                exec.submit(new Runnable() {
-                    public void run() {
-                        KnownSim ks = gold.get(finalI);
-                        try {
-                        if (finalI % 50 == 0) {
-                            LOG.info("training for number " + finalI + " of " + gold.size());
-                        }
-                        Example ex = getComponentSimilarities(ks.phrase1, ks.phrase2, numResults, validIds);
-                        ex.label = ks;
-                        if (ex.getNumNotNan() >= minComponents) {
-                            examples.add(ex);
-                        }
-                    } catch (Exception e) {
-                        LOG.log(Level.SEVERE, "error processing similarity entry  " + ks, e);
-                        LOG.log(Level.SEVERE, "stacktrace: " + ExceptionUtils.getStackTrace(e).replaceAll("\n", " ").replaceAll("\\s+", " "));
-                    }
-                }});
+        ParallelForEach.loop(gold, numThreads, new Function<KnownSim>() {
+            @Override
+            public void call(KnownSim ks) throws Exception {
+                Example ex = getComponentSimilarities(ks.phrase1, ks.phrase2, numResults, validIds);
+                ex.label = ks;
+                if (ex.getNumNotNan() >= minComponents) {
+                    examples.add(ex);
+                }
             }
-        } finally {
-            try {
-                Thread.sleep(5000);
-                exec.shutdown();
-                exec.awaitTermination(60, TimeUnit.HOURS);
-            } catch (InterruptedException e) {
-                LOG.log(Level.WARNING, "error while awaiting termination:", e);
-            }
-        }
+        });
         ensemble.trainMostSimilar(examples);
         trainMostSimilarNormalizer(gold, numResults, validIds);
     }
