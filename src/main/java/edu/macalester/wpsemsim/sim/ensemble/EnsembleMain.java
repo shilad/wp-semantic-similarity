@@ -91,6 +91,7 @@ public class EnsembleMain {
 
 
         conf.setShouldLoadMetrics(false);
+        conf.setShouldReadModels(true);
         conf.setDoEnsembles(false);
         Env env = conf.loadEnv();
 
@@ -100,11 +101,11 @@ public class EnsembleMain {
         ensembleSim.setMinComponents(0);
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
         if (metricNames == null || metricNames.length == 0) {
-            conf.loadMetrics();
+            conf.loadMetrics(true);
             metrics = new ArrayList<SimilarityMetric>(env.getMetrics().values());
         } else {
             for (String name : metricNames) {
-                metrics.add(conf.loadMetric(name));
+                metrics.add(conf.loadMetric(name, true));
             }
         }
 
