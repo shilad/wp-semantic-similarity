@@ -117,14 +117,17 @@ public abstract class FeatureGenerator implements Serializable {
             if (ex.hasReverse()) allSims.addAll(ex.reverseSims);
             for (SimScore s : allSims) {
                 numResults = Math.max(numResults, s.length);
-                if (s.listSims != null) {
-                    for (float x : s.listSims) {
-                        if (!Double.isNaN(x) && !Double.isInfinite(x)) {
-                            rangeNormalizers.get(s.component).observe(x);
-                            percentNormalizers.get(s.component).observe(x);
-                        }
-                    }
-                }
+                double x = s.hasValue() ? s.sim : s.missingSim;
+                rangeNormalizers.get(s.component).observe(x);
+                percentNormalizers.get(s.component).observe(x);
+//                if (s.listSims != null) {
+//                    for (float x : s.listSims) {
+//                        if (!Double.isNaN(x) && !Double.isInfinite(x)) {
+//                            rangeNormalizers.get(s.component).observe(x);
+//                            percentNormalizers.get(s.component).observe(x);
+//                        }
+//                    }
+//                }
             }
         }
 
@@ -133,10 +136,26 @@ public abstract class FeatureGenerator implements Serializable {
         trained = true;
     }
 
+    /**
+     * Given an example, generate a list of feature indexes -> feature value.
+     * @param ex
+     * @return
+     */
     public abstract LinkedHashMap<Integer, Double> generate(Example ex);
 
+    /**
+     * Return a list of feature names. The index of a name in the resulting list
+     * must match the feature indexes returned by generate().
+     *
+     * @return
+     */
     public abstract List<String> getFeatureNames();
 
+    /**
+     * Given a feature name, convert it to a metric name.
+     * @param featureName
+     * @return
+     */
     public abstract String featureNameToMetricName(String featureName);
 
     public boolean hasFeature(String name) {

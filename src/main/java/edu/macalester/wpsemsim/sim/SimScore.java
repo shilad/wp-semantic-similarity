@@ -22,6 +22,9 @@ public class SimScore {
     // actual similarity value
     public double sim = Double.NaN;
 
+    // inferred similarity value for an element not in a mostSimilar list.
+    public double missingSim = Double.NaN;
+
     // length of list
     public int length = 0;
 
@@ -45,6 +48,7 @@ public class SimScore {
                 sim = list.getScore(rank);
             }
             listSims = list.getScoresAsFloat();
+            missingSim = list.getMissingScore();
         }
     }
 

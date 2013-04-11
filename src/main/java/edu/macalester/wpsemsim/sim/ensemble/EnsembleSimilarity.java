@@ -194,7 +194,9 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
             }
         });
         ensemble.trainMostSimilar(examples);
-        trainMostSimilarNormalizer(gold, numResults, validIds);
+
+        // train the normalizer
+        super.trainMostSimilar(gold, numResults, validIds);
     }
 
 
