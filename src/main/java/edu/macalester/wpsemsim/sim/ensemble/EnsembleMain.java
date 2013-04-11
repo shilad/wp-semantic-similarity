@@ -36,7 +36,7 @@ public class EnsembleMain {
                 .withLongOpt("ensemble")
                 .withDescription("Ensemble type ('weka', 'svm', or 'linear').")
                 .hasArgs()
-                .create('z'));
+                .create('b'));
         options.addOption(new DefaultOptionBuilder()
                 .isRequired()
                 .hasArg()
