@@ -57,7 +57,7 @@ public class EnsembleMain {
             System.exit(1);
         }
 
-        String ensembleType = cmd.getOptionValue("z");
+        String ensembleType = cmd.getOptionValue("b");
         if (!Arrays.asList("svm", "linear", "weka").contains(ensembleType)) {
             System.err.println( "Invalid ensemble type: " + ensembleType);
             new HelpFormatter().printHelp( "EnsembleMain", options );
