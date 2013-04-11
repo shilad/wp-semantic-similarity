@@ -67,12 +67,13 @@ public abstract class FeatureGenerator implements Serializable {
                     break;
                 }
             }
-            if (metric == null) {
-                if (prune) removeComponent(i);
-                else {
+            if (metric == null) {   // metric not found
+                if (prune) {
+                    removeComponent(i);
+                } else {
                     throw new IllegalArgumentException("missing metric: " + name);
                 }
-            } else {
+            } else {                // metric found
                 pruned.add(metric);
                 i++;
             }
@@ -88,6 +89,10 @@ public abstract class FeatureGenerator implements Serializable {
         }
     }
 
+    /**
+     * Remove a particular component for a trained model.
+     * @param i
+     */
     protected void removeComponent(int i) {
         if (this.components != null) {
             components.remove(i);
@@ -97,6 +102,10 @@ public abstract class FeatureGenerator implements Serializable {
         percentNormalizers.remove(i);
     }
 
+    /**
+     *
+     * @param examples
+     */
     public void train(List<Example> examples) {
         if (components == null) throw new NullPointerException("components not set");
         for (int i = 0; i < components.size(); i++) {

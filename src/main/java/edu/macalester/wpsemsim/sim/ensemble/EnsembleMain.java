@@ -22,31 +22,8 @@ import java.util.logging.Logger;
 public class EnsembleMain {
     public static Logger LOG = Logger.getLogger(EnsembleMain.class.getName());
 
-    public static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors();
-    public static final int DEFAULT_NUM_RESULTS = 500;
-
-    public static TIntSet readIds(String path) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(path));
-        TIntSet ids = new TIntHashSet();
-        while (true) {
-            String line = reader.readLine();
-            if (line == null) {
-                break;
-            }
-            ids.add(Integer.valueOf(line.trim()));
-        }
-        return ids;
-    }
-
-    public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException, ClassNotFoundException {
+    public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException, ClassNotFoundException, org.apache.commons.cli.ParseException {
         Options options = new Options();
-        options.addOption("t", "threads", true, "number of threads");
-        options.addOption(new DefaultOptionBuilder()
-                .isRequired()
-                .hasArg()
-                .withLongOpt("conf")
-                .withDescription("Path to configuration file.")
-                .create('c'));
         options.addOption(new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("names")
@@ -56,52 +33,30 @@ public class EnsembleMain {
         options.addOption(new DefaultOptionBuilder()
                 .isRequired()
                 .hasArg()
-                .withLongOpt("gold")
-                .withDescription("Path to gold standard")
-                .hasArgs()
-                .create('g'));
-        options.addOption(new DefaultOptionBuilder()
-                .isRequired()
-                .hasArg()
                 .withLongOpt("ensemble")
                 .withDescription("Ensemble type ('weka', 'svm', or 'linear').")
                 .hasArgs()
-                .create('e'));
+                .create('z'));
         options.addOption(new DefaultOptionBuilder()
                 .isRequired()
                 .hasArg()
                 .withLongOpt("output")
                 .withDescription("Output file.")
                 .create('o'));
-        options.addOption(new DefaultOptionBuilder()
-                .hasArg()
-                .withLongOpt("results")
-                .withDescription("Maximum number of similar wikipedia pages.")
-                .create('r'));
-        options.addOption(new DefaultOptionBuilder()
-                .hasArg()
-                .withLongOpt("validIds")
-                .withDescription("Ids that can be included in results list.")
-                .create('v'));
-        options.addOption(new DefaultOptionBuilder()
-                .withLongOpt("articles")
-                .withDescription("Query phrases are article titles")
-                .create('a'));
 
-
-
-        CommandLine cmd;
+        EnvConfigurator conf = null;
+        CommandLine cmd = null;
 
         // create the parser
         try {
-            // parse the command line arguments
-            CommandLineParser parser = new PosixParser();
-            cmd = parser.parse(options, args);
+            conf = new EnvConfigurator(options, args);
+            cmd = conf.getCommandLine();
         } catch( org.apache.commons.cli.ParseException exp ) {
             System.err.println( "Invalid option usage: " + exp.getMessage());
             new HelpFormatter().printHelp( "EnsembleMain", options );
-            return;
+            System.exit(1);
         }
+
         String ensembleType = cmd.getOptionValue("e");
         if (!Arrays.asList("svm", "linear", "weka").contains(ensembleType)) {
             System.err.println( "Invalid ensemble type: " + ensembleType);
@@ -109,39 +64,15 @@ public class EnsembleMain {
             return;
         }
 
-        File pathConf = new File(cmd.getOptionValue("c"));
         String metricNames[] = cmd.getOptionValues("n");
-        File outputFile = new File(cmd.getOptionValue("o"));
-        File goldStandard = new File(cmd.getOptionValue("g"));
-
-        int numThreads = DEFAULT_NUM_THREADS;
-        if (cmd.hasOption("threads")) {
-            numThreads = Integer.valueOf(cmd.getOptionValue("t"));
-        }
-
-        int numResults = DEFAULT_NUM_RESULTS;
-        if (cmd.hasOption("results")) {
-            numResults = Integer.valueOf(cmd.getOptionValue("r"));
-        }
-        TIntSet validIds = null;
-        if (cmd.hasOption("validIds")) {
-            validIds = readIds(cmd.getOptionValue("v"));
-        }
-
         if (metricNames == null || metricNames.length == 0) {
             LOG.info("building all metrics");
         } else {
             LOG.info("building metrics " + Arrays.toString(metricNames));
         }
-        LOG.info("using configuration file " + pathConf);
-        LOG.info("writing results to file " + outputFile);
-        LOG.info("using up to " + numThreads + " threads");
-        LOG.info("storing up to " + numResults + " results per page");
-        if (validIds != null) {
-            LOG.info("considering " + validIds.size() + " valid ids");
-        }
 
-        EnvConfigurator conf = new EnvConfigurator(new ConfigurationFile(pathConf));
+        File outputFile = new File(cmd.getOptionValue("o"));
+        LOG.info("writing results to file " + outputFile);
         if (outputFile.exists()) {
             FileUtils.forceDelete(outputFile);
         }
@@ -157,13 +88,15 @@ public class EnsembleMain {
         } else {
             throw new IllegalStateException();
         }
+
+
         conf.setShouldLoadMetrics(false);
         conf.setDoEnsembles(false);
         Env env = conf.loadEnv();
 
         EnsembleSimilarity ensembleSim = new EnsembleSimilarity(
                 e, env.getMainMapper(), env.getMainIndex());
-        ensembleSim.setNumThreads(numThreads);
+        ensembleSim.setNumThreads(env.getNumThreads());
         ensembleSim.setMinComponents(0);
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
         if (metricNames == null || metricNames.length == 0) {
@@ -176,7 +109,7 @@ public class EnsembleMain {
         }
 
         ensembleSim.setComponents(metrics);
-        ensembleSim.trainMostSimilar(KnownSim.read(goldStandard), numResults, validIds);
+        ensembleSim.trainMostSimilar(env.getGold(), env.getNumMostSimilarResults(), env.getValidIds());
         ensembleSim.write(outputFile);
 
         // test it!
