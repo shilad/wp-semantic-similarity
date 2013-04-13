@@ -10,6 +10,7 @@ import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.LoessNormalizer;
 import edu.macalester.wpsemsim.normalize.Normalizer;
+import edu.macalester.wpsemsim.normalize.RankAndScoreNormalizer;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.LinkSimilarity;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
@@ -54,7 +55,6 @@ public class EnvConfigurator {
     private boolean shouldLoadMetrics = true;
     private boolean shouldLoadGold = true;
     private boolean shouldReadModels = false;
-    private boolean shouldRebuildNormalizers = true;
 
     protected Env env;
     private CommandLine cmd;
@@ -102,10 +102,6 @@ public class EnvConfigurator {
                 .withLongOpt("validIds")
                 .withDescription("Ids that can be included in results list.")
                 .create('v'));
-        options.addOption(new DefaultOptionBuilder()
-                .withLongOpt("rebuildNormalizers")
-                .withDescription("Rebuilds all normalizers.")
-                .create('z'));
 
         CommandLineParser parser = new PosixParser();
         this.cmd = parser.parse(options, args);
@@ -125,9 +121,6 @@ public class EnvConfigurator {
             env.setValidIds(readIds(cmd.getOptionValue("v")));
             LOG.info("set valid ids to " + env.getValidIds().size() +
                      " ids in " + cmd.getOptionValue("v"));
-        }
-        if (cmd.hasOption("n")) {
-            this.shouldRebuildNormalizers = true;
         }
     }
 
@@ -354,12 +347,6 @@ public class EnvConfigurator {
         if (readModel) {
             LOG.info("reading model from " + getModelDirectory(metric));
             metric.read(getModelDirectory(metric));
-            if (shouldRebuildNormalizers) {
-                BaseSimilarityMetric bmetric = (BaseSimilarityMetric) metric;
-                metric.setNormalizer(parseNormalizer(params));
-                bmetric.trainNormalizer();
-                LOG.info("rebuilt normalizer for " + name + " to " + bmetric.getNormalizer().dump());
-            }
         } else {
             metric.setNormalizer(parseNormalizer(params));
         }
@@ -552,15 +539,6 @@ public class EnvConfigurator {
     }
 
     /**
-     * If true, normalizers are retrained even if they've been trained in the past.
-     * This is useful for tweaking normalizers after training the main model.
-     * @param retrainNormalizers
-     */
-    public void setShouldRebuildNormalizers(boolean retrainNormalizers) {
-        this.shouldRebuildNormalizers = retrainNormalizers;
-    }
-
-    /**
      * @param shouldLoadMetrics If true, loadEnv() loads metrics.
      *                          Default is true.
      */
@@ -583,6 +561,12 @@ public class EnvConfigurator {
                 norm.setLogTransform(requireBoolean(params, "log"));
             }
             return norm;
+        } else if (type.equalsIgnoreCase("rankAndScore")) {
+                RankAndScoreNormalizer norm = new RankAndScoreNormalizer();
+                if (params.containsKey("log")) {
+                    norm.setLogTransform(requireBoolean(params, "log"));
+                }
+                return norm;
         } else {
             try {
                 return (Normalizer) Class.forName("edu.macalester.wpsemsim.normalize."+type+"Normalizer").newInstance();

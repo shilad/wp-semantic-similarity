@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.normalize;
 
+import edu.macalester.wpsemsim.utils.MathUtils;
 import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math3.analysis.interpolation.LoessInterpolator;
@@ -55,18 +56,12 @@ public class PercentileNormalizer extends BaseNormalizer {
         double yDelta = 1.0 / (sample.size() + 1);
 
         if (x < sample.get(0)) {
-            return toAsymptote(sMin - x, halfLife, yDelta, 0.0);
+            return MathUtils.toAsymptote(sMin - x, halfLife, yDelta, 0.0);
         } else if (x > sample.get(sample.size() - 1)) {
-            return toAsymptote(x - sMax, halfLife, 1.0 - yDelta, 1.0);
+            return MathUtils.toAsymptote(x - sMax, halfLife, 1.0 - yDelta, 1.0);
         } else {
             return interpolator.value(x);
         }
-    }
-
-    public static double toAsymptote(double xDelta, double xHalfLife, double y0, double yInf) {
-        assert(xDelta > 0);
-        double hl = xDelta / xHalfLife;
-        return y0 + (1.0 - Math.exp(-hl)) * (yInf - y0);
     }
 
     @Override

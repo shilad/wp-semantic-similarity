@@ -32,9 +32,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     private int numThreads = 2;     // for training
     private boolean trained = false;
 
-    // the estimated similarity for things not returned by most similar
-    private double missingSimilarity;
-
     // training data. This is serialized to ease normalizer tuning
     private TDoubleArrayList trainingX = new TDoubleArrayList();
     private TDoubleArrayList trainingY = new TDoubleArrayList();
@@ -121,31 +118,13 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                         double sim = dsl.getScoreForId(m.hintWpId);
                         trainingX.add(sim);
                         trainingY.add(ks.similarity);
+                        normalizer.observe(dsl, dsl.getIndexForId(m.hintWpId), ks.similarity);
                     }
                 }
             }
         });
-        trainNormalizer();
         useNormalizer = true;
         trained = true;
-    }
-
-    public void trainNormalizer() {
-        final TDoubleList missingSimilarities = new TDoubleArrayList();
-        for (int i = 0; i < trainingX.size(); i++) {
-            double x = trainingX.get(i);
-            double y = trainingY.get(i);
-            if (Double.isNaN(x)) {
-                missingSimilarities.add(y);
-            } else if (Double.isInfinite(x)) {
-                // TODO: what to do?
-            } else {
-                normalizer.observe(x, y);
-            }
-        }
-        normalizer.observationsFinished();
-        missingSimilarity = missingSimilarities.isEmpty() ? 0.0 :
-                (missingSimilarities.sum() / missingSimilarities.size());
     }
 
     @Override
@@ -245,13 +224,9 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     protected DocScoreList normalize(DocScoreList dsl) {
         if (normalizer == null || !useNormalizer) {
             return dsl;
+        } else {
+            return normalizer.normalize(dsl);
         }
-        DocScoreList normalized = new DocScoreList(dsl.numDocs());
-        for (int i = 0; i < dsl.numDocs(); i++) {
-            normalized.set(i, dsl.getId(i), normalize(dsl.getScore(i)));
-        }
-        normalized.setMissingScore(missingSimilarity);
-        return normalized;
     }
 
     /**
@@ -266,7 +241,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         out.writeObject(normalizer);
         out.close();
         FileUtils.write(new File(directory, "trained"), "" + trained);
-        FileUtils.write(new File(directory, "missingSimilarity"), "" + missingSimilarity);
         writeDoubles(trainingX, new File(directory, "trainingX"));
         writeDoubles(trainingY, new File(directory, "trainingY"));
     }
@@ -287,8 +261,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         in.close();
         trained = Boolean.valueOf(
                 FileUtils.readFileToString(new File(directory, "trained")));
-        missingSimilarity = Double.valueOf(
-                FileUtils.readFileToString(new File(directory, "missingSimilarity")));
         trainingX = readDoubles(new File(directory, "trainingX"));
         trainingY = readDoubles(new File(directory, "trainingY"));
     }

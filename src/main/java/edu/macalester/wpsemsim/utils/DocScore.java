@@ -6,6 +6,7 @@ public final class DocScore implements Comparable<DocScore> {
 
     public final int getId() { return id; }
     public final double getScore() { return score; }
+    public final void setScore(double score) { this.score = score; }
 
     @Override
     public int compareTo(DocScore ds) {

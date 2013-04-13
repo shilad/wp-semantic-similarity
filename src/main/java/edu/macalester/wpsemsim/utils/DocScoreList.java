@@ -23,6 +23,15 @@ public class DocScoreList implements Iterable<DocScore> {
         return numDocs;
     }
 
+    public int getIndexForId(int id) {
+        for (int i = 0; i < numDocs(); i++) {
+            if (results[i].id == id) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public double getScoreForId(int id) {
         for (int i = 0; i < numDocs(); i++) {
             if (results[i].id == id) {
