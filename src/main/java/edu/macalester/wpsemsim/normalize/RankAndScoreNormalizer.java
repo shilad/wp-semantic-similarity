@@ -40,12 +40,11 @@ public class RankAndScoreNormalizer extends BaseNormalizer {
 
     @Override
     public void observationsFinished() {
-        super.observationsFinished();
         double Y[] = ys.toArray();
         double X[][] = new double[Y.length][2];
         for (int i = 0; i < Y.length; i++) {
             X[i][0] = Math.log(1 + ranks.get(i));
-            X[i][1] = logIfNecessary(scores.get(1));
+            X[i][1] = logIfNecessary(scores.get(i));
         }
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(Y, X);
@@ -53,6 +52,7 @@ public class RankAndScoreNormalizer extends BaseNormalizer {
         intercept = params[0];
         rankCoeff = params[1];
         scoreCoeff = params[2];
+        super.observationsFinished();
         LOG.info("trained model " + dump() + " with R-squared " + regression.calculateRSquared());
     }
 
@@ -82,7 +82,7 @@ public class RankAndScoreNormalizer extends BaseNormalizer {
     public String dump() {
         DecimalFormat df = new DecimalFormat("#.###");
         return (
-                df.format(rankCoeff) + "*log(1 + rank) + " +
+                df.format(rankCoeff) + "*log(1+rank) + " +
                 df.format(scoreCoeff) + "*score + " +
                 df.format(intercept)
             );
