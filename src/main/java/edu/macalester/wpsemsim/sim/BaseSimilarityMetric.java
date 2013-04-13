@@ -123,6 +123,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 }
             }
         });
+        normalizer.observationsFinished();
         useNormalizer = true;
         trained = true;
     }
