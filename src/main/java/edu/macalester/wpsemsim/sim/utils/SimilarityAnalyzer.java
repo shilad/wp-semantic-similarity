@@ -95,8 +95,9 @@ public class SimilarityAnalyzer {
         ols.newSampleData(Y, covered.getData());
 
         double beta[] = ols.estimateRegressionParameters();
+        System.out.println("intercept is " + beta[0]);
         for (int i = 0; i < metrics.size(); i++) {
-            System.out.println("coefficient for " + metrics.get(i).getName() + " is " + beta[i]);
+            System.out.println("coefficient for " + metrics.get(i).getName() + " is " + beta[i+1]);
             System.out.println("pearson is " + pearson(covered.getColumn(i), Y));
             System.out.println("spearman is " + spearman(covered.getColumn(i), Y));
         }
