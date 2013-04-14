@@ -110,9 +110,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
             public void call(KnownSim ks) throws IOException {
                 ks.maybeSwap();
-                Disambiguator.Match m = disambiguator.disambiguateMostSimilar(
-                        ks.phrase1, ks.phrase2, numResults, validIds);
-                if (m != null)  {
+                Disambiguator.Match m = disambiguator.disambiguateMostSimilar(ks, numResults, validIds);
+                if (m != null) {
                     DocScoreList dsl = mostSimilar(m.phraseWpId, numResults, validIds);
                     if (dsl != null) {
                         double sim = dsl.getScoreForId(m.hintWpId);

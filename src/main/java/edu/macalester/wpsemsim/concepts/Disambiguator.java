@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.sim.SimScore;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.DocScoreList;
+import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.set.TIntSet;
 
 import java.io.IOException;
@@ -57,8 +58,39 @@ public class Disambiguator {
         this.maxConcepts = maxConcepts;
     }
 
+    public Match disambiguateMostSimilar(KnownSim ks, int numResults, TIntSet validIds) throws IOException {
+        if (ks.wpId1 >= 0 && ks.wpId2 >= 0) {
+            return knownSimToMatch(ks);
+        } else {
+            return disambiguateMostSimilar(ks.phrase1, ks.phrase2, numResults, validIds);
+        }
+    }
+
+    private Match knownSimToMatch(KnownSim ks) {
+        Match m = new Match();
+        m.phrase = ks.phrase1;
+        m.hint = ks.phrase2;
+        m.phraseWpId = ks.wpId1;
+        m.hintWpId = ks.wpId2;
+        m.phraseWpName = helper.wpIdToTitle(ks.wpId1);
+        m.hintWpName = helper.wpIdToTitle(ks.wpId2);
+        if (m.phraseWpName == null || m.hintWpName == null) {
+            return null;
+        } else {
+            return m;
+        }
+    }
+
     public Match disambiguateMostSimilar(String phrase, String hint, int numResults, TIntSet validIds) throws IOException {
         return disambiguate(phrase, hint, new MostSimilarScorer(numResults, validIds));
+    }
+
+    public Match disambiguateSimilarity(KnownSim ks) throws IOException {
+        if (ks.wpId1 >= 0 && ks.wpId2 >= 0) {
+            return knownSimToMatch(ks);
+        } else {
+            return disambiguateSimilarity(ks.phrase1, ks.phrase2);
+        }
     }
 
     public Match disambiguateSimilarity(String phrase, String hint) throws IOException {

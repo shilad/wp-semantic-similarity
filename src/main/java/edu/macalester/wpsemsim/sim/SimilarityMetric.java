@@ -21,12 +21,14 @@ public interface SimilarityMetric {
     public void setNormalizer(Normalizer n);
 
     /**
-     * Train the similarity() function
+     * Train the similarity() function.
+     * The KnownSims may already be associated with Wikipedia ids (check wpId1 and wpId2)
      */
     public void trainSimilarity(List<KnownSim> labeled);
 
     /**
      * Train the mostSimilar() function
+     * The KnownSims may already be associated with Wikipedia ids (check wpId1 and wpId2)
      */
     public void trainMostSimilar(List<KnownSim> labeled, int numResults, TIntSet validIds);
 

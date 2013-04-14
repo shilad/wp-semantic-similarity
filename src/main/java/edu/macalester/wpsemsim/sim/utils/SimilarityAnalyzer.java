@@ -131,7 +131,7 @@ public class SimilarityAnalyzer {
                     public void call(KnownSim ks) throws Exception {
                         double sim = Double.NaN;
                         try {
-                            Disambiguator.Match m = dab.disambiguateMostSimilar(ks.phrase1, ks.phrase2, 500, null);
+                            Disambiguator.Match m = dab.disambiguateMostSimilar(ks, 500, null);
                             if (m != null) {
                                 DocScoreList dsl = metric.mostSimilar(m.phraseWpId, 500);
                                 if (dsl != null) {
