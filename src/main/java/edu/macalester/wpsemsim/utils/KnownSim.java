@@ -11,9 +11,19 @@ import java.util.logging.Logger;
 public class KnownSim {
     public String phrase1;
     public String phrase2;
+    public int wpId1 = -1;
+    public int wpId2 = -1;
     public double similarity;
 
     public KnownSim(String phrase1, String phrase2, double similarity) {
+        this.phrase1 = phrase1;
+        this.phrase2 = phrase2;
+        this.similarity = similarity;
+    }
+
+    public KnownSim(String phrase1, String phrase2, int wpId1, int wpId2, double similarity) {
+        this.wpId1 = wpId1;
+        this.wpId2 = wpId2;
         this.phrase1 = phrase1;
         this.phrase2 = phrase2;
         this.similarity = similarity;

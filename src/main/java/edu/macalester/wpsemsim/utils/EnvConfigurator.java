@@ -1,10 +1,7 @@
 package edu.macalester.wpsemsim.utils;
 
 import com.sleepycat.je.DatabaseException;
-import edu.macalester.wpsemsim.concepts.ConceptMapper;
-import edu.macalester.wpsemsim.concepts.DictionaryMapper;
-import edu.macalester.wpsemsim.concepts.LuceneMapper;
-import edu.macalester.wpsemsim.concepts.TitleMapper;
+import edu.macalester.wpsemsim.concepts.*;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
@@ -584,8 +581,25 @@ public class EnvConfigurator {
         }
         List<KnownSim> g = KnownSim.read(new File(path));
         LOG.info("read " + g.size() + " entries in gold standard " + path);
+
+        // add in wp ids if possible.
+        if (env.getMainMapper() != null && env.getMainMapper() instanceof TitleMapper) {
+            int numMapped = 0;
+            for (KnownSim ks : g) {
+                ks.wpId1 = getFirstMapping(ks.phrase1);
+                ks.wpId2 = getFirstMapping(ks.phrase2);
+                if (ks.wpId1 >= 0) numMapped++;
+                if (ks.wpId2 >= 0) numMapped++;
+            }
+            LOG.info("added in mapping for " + numMapped + " wikipedia ids.");
+        }
         env.setGold(g);
         return g;
+    }
+
+    private int getFirstMapping(String phrase) throws IOException {
+        Disambiguator dab = new Disambiguator(env.getMainMapper(), null, env.getMainIndex(), 1);
+        return dab.disambiguateMostSimilar(phrase, null, 1, null).phraseWpId;
     }
 
     public File getModelDirectory(SimilarityMetric m) throws ConfigurationException {
