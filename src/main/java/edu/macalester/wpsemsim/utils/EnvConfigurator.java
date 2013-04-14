@@ -599,7 +599,8 @@ public class EnvConfigurator {
 
     private int getFirstMapping(String phrase) throws IOException {
         Disambiguator dab = new Disambiguator(env.getMainMapper(), null, env.getMainIndex(), 1);
-        return dab.disambiguateMostSimilar(phrase, null, 1, null).phraseWpId;
+        Disambiguator.Match m = dab.disambiguateMostSimilar(phrase, null, 1, null);
+        return (m == null) ? -1 : m.phraseWpId;
     }
 
     public File getModelDirectory(SimilarityMetric m) throws ConfigurationException {
