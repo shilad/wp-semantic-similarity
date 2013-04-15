@@ -26,9 +26,11 @@ public class RankAndScoreNormalizer extends BaseNormalizer {
         if (index >= 0) {
             double score = list.getScore(index);
             if (!Double.isNaN(score) && !Double.isInfinite(score)) {
-                ranks.add(index);
-                scores.add(score);
-                ys.add(y);
+                synchronized (ranks) {
+                    ranks.add(index);
+                    scores.add(score);
+                    ys.add(y);
+                }
             }
         }
         super.observe(list, index, y);
