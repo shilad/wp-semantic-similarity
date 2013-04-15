@@ -14,7 +14,9 @@ import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.sim.TextSimilarity;
 import edu.macalester.wpsemsim.sim.category.CategoryGraph;
 import edu.macalester.wpsemsim.sim.category.CategorySimilarity;
+import edu.macalester.wpsemsim.sim.ensemble.Ensemble;
 import edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity;
+import edu.macalester.wpsemsim.sim.ensemble.LinearEnsemble;
 import edu.macalester.wpsemsim.sim.ensemble.SvmEnsemble;
 import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
 import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
@@ -332,7 +334,7 @@ public class EnvConfigurator {
         } else if (type.equals("pairwise")) {
             metric = createPairwiseSimilarity(name, readModel);
         } else if (type.equals("ensemble")) {
-            metric = loadEnsembleMetric(name);
+            metric = loadEnsembleMetric(name, readModel);
         } else {
             throw new ConfigurationException("Unknown metric type: " + type);
         }
@@ -351,13 +353,36 @@ public class EnvConfigurator {
         return metric;
     }
 
-    private SimilarityMetric loadEnsembleMetric(String key) throws IOException, ConfigurationException {
+    private SimilarityMetric loadEnsembleMetric(String key, boolean readModel) throws IOException, ConfigurationException {
         info("loading ensemble metric " + key);
         Map<String, Object> params = (Map<String, Object>) configuration.getMetric(key);
-        setDoEnsembles(false);
-        List<SimilarityMetric> metrics = loadMetrics();
-        EnsembleSimilarity similarity = new EnsembleSimilarity(new SvmEnsemble(), loadMainMapper(), env.getMainIndex());
-        similarity.setComponents(metrics);
+
+        // load underlying metrics
+        List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
+        if (params.containsKey("basedOn")) {
+            for (String k : requireListOfStrings(params, "basedOn")) {
+                metrics.add(loadMetric(k, readModel));
+            }
+        } else {
+            // load everything except this ensemble
+            for (String k : (Set<String>)configuration.getMetrics().keySet()) {
+                if (!k.equals(key)) {
+                    metrics.add(loadMetric(k, readModel));
+                }
+            }
+        }
+
+        String type = requireString(params, "type");
+        Ensemble ensemble = null;
+        if (type.equals("svm")) {
+            ensemble = new SvmEnsemble(metrics);
+        } else if (type.equals("linear")) {
+            ensemble = new LinearEnsemble(metrics);
+        } else {
+            throw new ConfigurationException("unknown ensemble type for " + key + ": " + type);
+        }
+        EnsembleSimilarity similarity = new EnsembleSimilarity(ensemble, loadMainMapper(), env.getMainIndex());
+//        similarity.setComponents(metrics);
         similarity.read(requireDirectory(params, "model"));
         similarity.setName(key);
         if (params.containsKey("minComponents")) {

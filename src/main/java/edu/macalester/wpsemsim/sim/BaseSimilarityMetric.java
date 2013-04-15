@@ -32,10 +32,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     private int numThreads = 2;     // for training
     private boolean trained = false;
 
-    // training data. This is serialized to ease normalizer tuning
-    private TDoubleArrayList trainingX = new TDoubleArrayList();
-    private TDoubleArrayList trainingY = new TDoubleArrayList();
-
     private File path;
 
     private Normalizer normalizer = new IdentityNormalizer();
@@ -105,8 +101,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
      */
     protected void trainMostSimilarNormalizer(List<KnownSim> labeled, final int numResults, final TIntSet validIds) {
         useNormalizer = false;
-        trainingX.clear();
-        trainingY.clear();
         ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
             public void call(KnownSim ks) throws IOException {
                 ks.maybeSwap();
@@ -115,8 +109,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                     DocScoreList dsl = mostSimilar(m.phraseWpId, numResults, validIds);
                     if (dsl != null) {
                         double sim = dsl.getScoreForId(m.hintWpId);
-                        trainingX.add(sim);
-                        trainingY.add(ks.similarity);
                         normalizer.observe(dsl, dsl.getIndexForId(m.hintWpId), ks.similarity);
                     }
                 }
@@ -241,8 +233,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         out.writeObject(normalizer);
         out.close();
         FileUtils.write(new File(directory, "trained"), "" + trained);
-        writeDoubles(trainingX, new File(directory, "trainingX"));
-        writeDoubles(trainingY, new File(directory, "trainingY"));
     }
     /**
      * Reads the metric from a directory.
@@ -261,8 +251,6 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         in.close();
         trained = Boolean.valueOf(
                 FileUtils.readFileToString(new File(directory, "trained")));
-        trainingX = readDoubles(new File(directory, "trainingX"));
-        trainingY = readDoubles(new File(directory, "trainingY"));
     }
 
     /**
