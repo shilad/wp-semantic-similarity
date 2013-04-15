@@ -38,8 +38,10 @@ public class LoessNormalizer extends BaseNormalizer {
     @Override
     public void observe(double x, double y){
         if (!Double.isNaN(y) && !Double.isInfinite(y)) {
-            X.add(x);
-            Y.add(y);
+            synchronized (X) {
+                X.add(x);
+                Y.add(y);
+            }
         }
     }
 
