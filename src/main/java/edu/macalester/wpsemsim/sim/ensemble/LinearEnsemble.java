@@ -86,10 +86,9 @@ public class LinearEnsemble implements Ensemble {
         });
         DecimalFormat f = new DecimalFormat("+ ##.####;- ##.####");
         StringBuffer buffer = new StringBuffer(f.format(coefficients[0]));
-        buffer.append(f.format(coefficients[0]));
         for (int i : indexes) {
             buffer.append(" ");
-            buffer.append(f.format(coefficients[i]));
+            buffer.append(f.format(coefficients[i+1]));
             buffer.append(" * ");
             buffer.append(names.get(i));
         }
