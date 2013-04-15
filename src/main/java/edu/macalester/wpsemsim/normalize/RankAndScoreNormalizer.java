@@ -55,7 +55,7 @@ public class RankAndScoreNormalizer extends BaseNormalizer {
         rankCoeff = params[1];
         scoreCoeff = params[2];
         super.observationsFinished();
-        LOG.info("trained model " + dump() + " with R-squared " + regression.calculateRSquared());
+        LOG.info("trained model on " + X.length + " observations: " + dump() + " with R-squared " + regression.calculateRSquared());
     }
 
     @Override

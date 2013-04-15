@@ -5,13 +5,19 @@ import sys
 from math import floor
 from random import sample
 
+NBINS = int(sys.argv[1])
 
-NBINS = 10
+min_threshold = -10000000000
+if len(sys.argv) >= 3:
+    min_threshold = float(sys.argv[2])
+
 
 data = []
 for line in sys.stdin:
     (phrase1, phrase2, sim) = line.split('\t')
-    data.append((phrase1.strip(), phrase2.strip(), float(sim.strip()), line))
+    sim = float(sim.strip())
+    if sim >= min_threshold:
+        data.append((phrase1.strip(), phrase2.strip(), sim, line))
 
 min_sim = min([s for (p1, p2, s, l) in data])
 max_sim = max([s for (p1, p2, s, l) in data])

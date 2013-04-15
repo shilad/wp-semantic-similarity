@@ -28,7 +28,7 @@ public class SimilarityConsole {
                 new ConfigurationFile(new File(args[0])));
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
-        SimilarityMetric metric = conf.loadMetric(args[1]);
+        SimilarityMetric metric = conf.loadMetric(args[1], true);
         if (metric == null) {
             System.err.println("couldn't find metric named " + args[1]);
             System.exit(1);

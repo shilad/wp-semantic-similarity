@@ -30,13 +30,16 @@ def getSims(path):
     elif path.endswith('tab'):
         delim = '\t'
     else:
-        raise 'unknown delimiter for file', name
+        raise Exception('unknown delimiter for file ' + path)
 
     name = os.path.basename(path).split('.')[0]
     sims = []
     for line in open(path):
-        (w1, w2, s) = line.strip().split(delim)
-        sims.append((w1, w2, float(s)))
+        try:
+            (w1, w2, s) = line.strip().split(delim)
+            sims.append((w1, w2, float(s)))
+        except:
+            warn('invalid line in %s: %s' % (`path`, `line`))
 
     min_sim = min([s for w1, w2, s in sims])
     max_sim = max([s for w1, w2, s in sims])
