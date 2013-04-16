@@ -156,7 +156,9 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
      * @param directory
      * @throws IOException
      */
+    @Override
     public void write(File directory) throws IOException {
+        super.write(directory);
         ensemble.write(directory);
     }
 
@@ -165,7 +167,9 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
      * @param directory
      * @throws IOException
      */
+    @Override
     public void read(File directory) throws IOException {
+        super.read(directory);
         ensemble.read(directory);
     }
 
