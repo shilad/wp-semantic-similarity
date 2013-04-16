@@ -39,16 +39,21 @@ public class SimScore {
 
     public SimScore(int component, DocScoreList list, int rank) {
         this.component = component;
-        length = list.numDocs();
-        if (length > 0) {
-            maxSim = list.getScore(0);
-            minSim = list.getScore(list.numDocs()-1);
-            this.rank = rank;
-            if (rank >= 0) {
-                sim = list.getScore(rank);
+        if (list == null) {
+            length = 0;
+            listSims = new float[0];
+        } else {
+            length = list.numDocs();
+            if (length > 0) {
+                maxSim = list.getScore(0);
+                minSim = list.getScore(list.numDocs()-1);
+                this.rank = rank;
+                if (rank >= 0) {
+                    sim = list.getScore(rank);
+                }
+                listSims = list.getScoresAsFloat();
+                missingSim = list.getMissingScore();
             }
-            listSims = list.getScoresAsFloat();
-            missingSim = list.getMissingScore();
         }
     }
 

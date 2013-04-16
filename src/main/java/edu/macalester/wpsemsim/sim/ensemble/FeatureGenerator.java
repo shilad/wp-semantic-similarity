@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.normalize.PercentileNormalizer;
 import edu.macalester.wpsemsim.normalize.RangeNormalizer;
 import edu.macalester.wpsemsim.sim.SimScore;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import gnu.trove.list.array.TDoubleArrayList;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -25,6 +26,10 @@ public abstract class FeatureGenerator implements Serializable {
     // Each component's normalizers are a map of normalize name to normalizer.
     protected List<BaseNormalizer> rangeNormalizers = new ArrayList<BaseNormalizer>();
     protected List<BaseNormalizer> percentNormalizers = new ArrayList<BaseNormalizer>();
+
+    // should be used to impute missing values.
+    protected List<Double> missingValues = new ArrayList<Double>();
+
     protected int numResults = 0;
     protected boolean trained = false;
 
@@ -112,25 +117,28 @@ public abstract class FeatureGenerator implements Serializable {
             rangeNormalizers.add(new RangeNormalizer(-1, +1, false));
             percentNormalizers.add(new PercentileNormalizer());
         }
+        TDoubleArrayList missing[] = new TDoubleArrayList[components.size()];
+        for (int i = 0; i < components.size(); i++) missing[i] = new TDoubleArrayList();
+
         for (Example ex : examples) {
             List<SimScore> allSims = new ArrayList<SimScore>(ex.sims);
             if (ex.hasReverse()) allSims.addAll(ex.reverseSims);
             for (SimScore s : allSims) {
-                numResults = Math.max(numResults, s.length);
-                double x = s.hasValue() ? s.sim : s.missingSim;
-                rangeNormalizers.get(s.component).observe(x);
-                percentNormalizers.get(s.component).observe(x);
-//                if (s.listSims != null) {
-//                    for (float x : s.listSims) {
-//                        if (!Double.isNaN(x) && !Double.isInfinite(x)) {
-//                            rangeNormalizers.get(s.component).observe(x);
-//                            percentNormalizers.get(s.component).observe(x);
-//                        }
-//                    }
-//                }
+                if (!Double.isNaN(s.missingSim)) {
+                    missing[s.component].add(s.missingSim);
+                }
+                if (s.hasValue() || !Double.isNaN(s.missingSim)) {
+                    numResults = Math.max(numResults, s.length);
+                    double x = s.hasValue() ? s.sim : s.missingSim;
+                    rangeNormalizers.get(s.component).observe(x);
+                    percentNormalizers.get(s.component).observe(x);
+                }
             }
         }
 
+        for (int i = 0; i < components.size(); i++) {
+            missingValues.add(1.0 * missing[i].sum() / missing[i].size());
+        }
         for (BaseNormalizer n : rangeNormalizers) { n.observationsFinished(); }
         for (BaseNormalizer n : percentNormalizers) { n.observationsFinished(); }
         trained = true;

@@ -126,6 +126,9 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
         MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = helper.wpIdToLuceneId(wpId);
+        if (luceneId < 0) {
+            return null;
+        }
         TopDocs similarDocs = searcher.search(mlt.like(luceneId),
                 helper.getWpIdFilter(validIds), maxResults);
         DocScoreList scores = new DocScoreList(similarDocs.scoreDocs.length);
