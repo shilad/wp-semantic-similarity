@@ -32,24 +32,23 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
         int fi = 0; // feature index
 
         for (int i = 0; i < ex.sims.size(); i++) {
-            SimScore cs = (random.nextFloat() >= 0.5) ? ex.sims.get(i) : ex.reverseSims.get(i);
-//            if (cs1.hasValue() || cs2.hasValue()) {
-                // range normalizer
+            SimScore cs = (!ex.hasReverse() || random.nextFloat() >= 0.5)
+                            ? ex.sims.get(i)
+                            : ex.reverseSims.get(i);
+
+            // range normalizer
             double x = cs.hasValue() ? cs.sim : cs.missingSim;
             BaseNormalizer rn = rangeNormalizers.get(cs.component);
             features.put(fi++, rn.normalize(x));
 
             // percent normalizer
             BaseNormalizer pn = percentNormalizers.get(cs.component);
-            double p = pn.normalize(x);
+            double p = cs.hasValue() ? pn.normalize(x) : -0.2;
             features.put(fi++, percentileToScore(p));
 
                 // log rank (mean and min)
             int rank = cs.hasValue() ? cs.rank : numResults * 2;
             features.put(fi++, rankToScore(rank, numResults * 2));
-//            } else {
-//                fi += 4;
-//            }
         }
         assert(fi == components.size() * 3);
         return features;

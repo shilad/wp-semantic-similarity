@@ -9,7 +9,6 @@ import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.TIntSet;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
@@ -17,10 +16,6 @@ import org.apache.lucene.queryparser.surround.parser.ParseException;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -211,28 +206,36 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
      * @throws IOException
      * @throws ParseException
      */
-    protected Example getComponentSimilarities(KnownSim ks, int numResults, TIntSet validIds) throws IOException, ParseException {
+    private Example getComponentSimilarities(KnownSim ks, int numResults, TIntSet validIds) throws IOException, ParseException {
         Example result = (numResults > 0) ? Example.makeEmptyWithReverse() : Example.makeEmpty();
         for (int i = 0; i < components.size(); i++) {
             SimilarityMetric m = components.get(i);
 
+            SimScore ss1;
+            SimScore ss2;
             boolean hasWpIds = (ks.wpId1 >= 0 && ks.wpId2 >= 0);
             if (numResults <= 0) {      // similarity
                 if (hasWpIds) {
-                    result.add(new SimScore(i, m.similarity(ks.wpId1, ks.wpId2)),
-                               new SimScore(i, m.similarity(ks.wpId2, ks.wpId1)));
+                    ss1 = new SimScore(i, m.similarity(ks.wpId1, ks.wpId2));
+                    ss2 = new SimScore(i, m.similarity(ks.wpId2, ks.wpId1));
                 } else {
-                    result.add(new SimScore(i, m.similarity(ks.phrase1, ks.phrase2)),
-                               new SimScore(i, m.similarity(ks.phrase2, ks.phrase1)));
+                    ss1 = new SimScore(i, m.similarity(ks.phrase1, ks.phrase2));
+                    ss2 = new SimScore(i, m.similarity(ks.phrase2, ks.phrase1));
                 }
             } else {                    // mostSimilar
                 if (hasWpIds) {
-                    DocScoreList dsl = m.mostSimilar(ks.wpId1, numResults, validIds);
-                    result.add(new SimScore(i, dsl, dsl.getIndexForId(ks.wpId2)));
+                    DocScoreList dsl1 = m.mostSimilar(ks.wpId1, numResults, validIds);
+                    DocScoreList dsl2 = m.mostSimilar(ks.wpId2, numResults, validIds);
+                    int i1 = (dsl1 == null) ? -1 : dsl1.getIndexForId(ks.wpId2);
+                    int i2 = (dsl2 == null) ? -1 : dsl2.getIndexForId(ks.wpId1);
+                    ss1 = new SimScore(i, dsl1, i1);
+                    ss2 = new SimScore(i, dsl2, i2);
                 } else {
-                    result.add(getComponentSim(i, m, ks.phrase1, ks.phrase2, numResults, validIds));
+                    ss1 = getPhraseMostSimilar(i, m, ks.phrase1, ks.phrase2, numResults, validIds);
+                    ss2 = getPhraseMostSimilar(i, m, ks.phrase2, ks.phrase1, numResults, validIds);
                 }
             }
+            result.add(ss1, ss2);
         }
         return result;
     }
@@ -249,7 +252,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
      * @return
      * @throws IOException
      */
-    protected SimScore getComponentSim(int ci, SimilarityMetric metric, String phrase1, String phrase2, int numResults, TIntSet validIds) throws IOException {
+    private SimScore getPhraseMostSimilar(int ci, SimilarityMetric metric, String phrase1, String phrase2, int numResults, TIntSet validIds) throws IOException {
         // get most similar lucene ids for phrase 1
         DocScoreList top =  metric.mostSimilar(phrase1, numResults, validIds);
         if (top == null || top.numDocs() == 0) {

@@ -232,7 +232,7 @@ public class SvmEnsemble implements Ensemble {
         out.close();
 
         out = new ObjectOutputStream(
-                new FileOutputStream(new File(directory, "featureGenerator")));
+                new FileOutputStream(new File(directory, "mostSimilarGenerator")));
         out.writeObject(featureGenerator);
         out.close();
 
@@ -272,7 +272,7 @@ public class SvmEnsemble implements Ensemble {
             in.close();
 
             in = new ObjectInputStream(
-                    new FileInputStream(new File(directory, "featureGenerator")));
+                    new FileInputStream(new File(directory, "mostSimilarGenerator")));
             featureGenerator = FeatureGenerator.read(in, components, false);
             if (components != null) {
                 featureGenerator.setComponents(components);

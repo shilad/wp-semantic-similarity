@@ -1,16 +1,13 @@
 package edu.macalester.wpsemsim.sim.ensemble;
 
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 
 import java.io.*;
 import java.text.DecimalFormat;
-import java.text.ParseException;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -23,7 +20,8 @@ import java.util.regex.Pattern;
 public class LinearEnsemble implements Ensemble {
     private static final Logger LOG = Logger.getLogger(LinearEnsemble.class.getName());
 
-    protected FeatureGenerator featureGenerator = new SimilarityFeatureGenerator();
+    protected FeatureGenerator similarityGenerator = new SimilarityFeatureGenerator();
+    protected FeatureGenerator mostSimilarGenerator = new MostSimilarFeatureGenerator();
     protected List<SimilarityMetric> components;
     protected int numFeatures;
     protected double[] coefficients;
@@ -39,7 +37,8 @@ public class LinearEnsemble implements Ensemble {
     @Override
     public void setComponents(List<SimilarityMetric> components) {
         this.components = components;
-        featureGenerator.setComponents(components);
+        mostSimilarGenerator.setComponents(components);
+        similarityGenerator.setComponents(components);
     }
 
     @Override
@@ -52,7 +51,7 @@ public class LinearEnsemble implements Ensemble {
         if (examples.isEmpty()) {
             throw new IllegalArgumentException("no examples to train on!");
         }
-        featureGenerator.train(examples);
+        mostSimilarGenerator.train(examples);
 
         double X[][] = new double[examples.size()][];
         double Y[] = new double[examples.size()];
@@ -74,7 +73,7 @@ public class LinearEnsemble implements Ensemble {
     }
 
     public String getEquationString() {
-        List<String> names = getComponentNames();
+        List<String> names = mostSimilarGenerator.getFeatureNames();
         List<Integer> indexes = new ArrayList<Integer>();
         for (int i = 0; i < names.size(); i++) {
             indexes.add(i);
@@ -96,7 +95,7 @@ public class LinearEnsemble implements Ensemble {
     }
 
     private double[] exampleFeatures(Example ex) {
-        Map<Integer, Double> features = featureGenerator.generate(ex);
+        Map<Integer, Double> features = mostSimilarGenerator.generate(ex);
         if (features.size() != Collections.max(features.keySet()) + 1) {
             throw new IllegalArgumentException("features array not dense!");
         }
@@ -143,8 +142,8 @@ public class LinearEnsemble implements Ensemble {
         FileUtils.write(new File(directory, "equation.txt"), getEquationString());
 
         out = new ObjectOutputStream(
-                new FileOutputStream(new File(directory, "featureGenerator")));
-        out.writeObject(featureGenerator);
+                new FileOutputStream(new File(directory, "mostSimilarGenerator")));
+        out.writeObject(mostSimilarGenerator);
         out.close();
 
         String names = StringUtils.join(getComponentNames(), ", ");
@@ -175,8 +174,8 @@ public class LinearEnsemble implements Ensemble {
             in.close();
 
             in = new ObjectInputStream(
-                    new FileInputStream(new File(directory, "featureGenerator")));
-            featureGenerator = FeatureGenerator.read(in, components, true);
+                    new FileInputStream(new File(directory, "mostSimilarGenerator")));
+            mostSimilarGenerator = FeatureGenerator.read(in, components, true);
             in.close();
 
             LinkedHashMap<String, Double> eq = readEquation(
@@ -186,10 +185,10 @@ public class LinearEnsemble implements Ensemble {
             TIntDoubleHashMap indexCoeffs = new TIntDoubleHashMap();
             for (String featureName : eq.keySet()) {
                 if (!featureName.equals("C")) {
-                    int i = featureGenerator.getFeatureIndex(featureName);
+                    int i = mostSimilarGenerator.getFeatureIndex(featureName);
                     if (i < 0) {
                         throw new IOException("feature generator in " +
-                                new File(directory, "featureGenerator") +
+                                new File(directory, "mostSimilarGenerator") +
                                 " does not have have feature named " + featureName);
                     }
                     maxIndex = Math.max(i, maxIndex);
