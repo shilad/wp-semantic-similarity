@@ -105,6 +105,7 @@ public abstract class FeatureGenerator implements Serializable {
         names.remove(i);
         rangeNormalizers.remove(i);
         percentNormalizers.remove(i);
+        missingValues.remove(i);
     }
 
     /**
@@ -168,6 +169,18 @@ public abstract class FeatureGenerator implements Serializable {
 
     public boolean hasFeature(String name) {
         return getFeatureNames().contains(name);
+    }
+
+    /**
+     * Returns the value associated with a sim score.
+     * If there is no value, it imputes the value.
+     * @param ss
+     * @return
+     */
+    protected double getOrImputeSim(SimScore ss) {
+        if (ss.hasValue()) return ss.sim;
+        else if (!Double.isNaN(ss.missingSim)) return ss.missingSim;
+        else return missingValues.get(ss.component);
     }
 
     protected double percentileToScore(double p) {
