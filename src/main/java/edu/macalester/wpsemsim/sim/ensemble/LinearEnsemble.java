@@ -209,7 +209,7 @@ public class LinearEnsemble implements Ensemble {
 
     // from http://stackoverflow.com/questions/3681242/java-how-to-parse-double-from-regex
     private static final Pattern PAT_DOUBLE =  Pattern.compile("[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?");
-    private static final Pattern PAT_VARIABLE = Pattern.compile("[a-zA-Z0-9_-]+");
+    private static final Pattern PAT_VARIABLE = Pattern.compile("[a-zA-Z0-9_-]*[a-zA-Z]");
 
     /**
      * Parse an equation in the format:
