@@ -372,7 +372,7 @@ public class EnvConfigurator {
             }
         }
 
-        String type = requireString(params, "type");
+        String type = requireString(params, "ensembleType");
         Ensemble ensemble = null;
         if (type.equals("svm")) {
             ensemble = new SvmEnsemble(metrics);
