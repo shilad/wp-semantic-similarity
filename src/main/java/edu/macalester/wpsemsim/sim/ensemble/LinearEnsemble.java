@@ -129,10 +129,9 @@ public class LinearEnsemble implements Ensemble {
 
     @Override
     public void write(File directory) throws IOException {
-        if (directory.isDirectory()) {
-            FileUtils.forceDelete(directory);
+        if (!directory.isDirectory()) {
+            directory.mkdirs();
         }
-        directory.mkdirs();
 
         ObjectOutputStream out = new ObjectOutputStream(
                 new FileOutputStream(new File(directory, "coefficients")));

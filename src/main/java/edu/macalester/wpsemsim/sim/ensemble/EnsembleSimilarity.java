@@ -25,7 +25,6 @@ import java.util.logging.Logger;
  * TODO:
  * For now we only train mostSimilar.
  * Training similarity() would not be difficult, but it is unimplemented.
- *
  */
 public class EnsembleSimilarity extends BaseSimilarityMetric implements SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(EnsembleSimilarity.class.getName());
