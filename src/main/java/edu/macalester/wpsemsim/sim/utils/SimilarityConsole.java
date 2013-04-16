@@ -4,10 +4,10 @@ import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.sim.ensemble.EnsembleSimilarity;
-import edu.macalester.wpsemsim.utils.ConfigurationFile;
-import edu.macalester.wpsemsim.utils.DocScoreList;
-import edu.macalester.wpsemsim.utils.Env;
-import edu.macalester.wpsemsim.utils.EnvConfigurator;
+import edu.macalester.wpsemsim.utils.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.BufferedReader;
@@ -18,28 +18,36 @@ import java.io.InputStreamReader;
 public class SimilarityConsole {
 
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, DatabaseException, ParseException {
-        if (args.length != 2) {
-            System.err.println(
-                    "usage: java " + EnsembleSimilarity.class.toString() +
-                            " path/to/sim/metric/conf.txt metric-name");
+        Options options = new Options();
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .isRequired()
+                .withLongOpt("name")
+                .withDescription("Name of similarity metrics that should be included.")
+                .create('n'));
+
+        EnvConfigurator conf = null;
+        CommandLine cmd = null;
+
+        // create the parser
+        try {
+            conf = new EnvConfigurator(options, args);
+            cmd = conf.getCommandLine();
+        } catch( org.apache.commons.cli.ParseException exp ) {
+            System.err.println( "Invalid option usage: " + exp.getMessage());
+            new HelpFormatter().printHelp( "EnsembleMain", options );
             System.exit(1);
         }
-        EnvConfigurator conf = new EnvConfigurator(
-                new ConfigurationFile(new File(args[0])));
+
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
-        SimilarityMetric metric = conf.loadMetric(args[1], true);
-        if (metric == null) {
-            System.err.println("couldn't find metric named " + args[1]);
-            System.exit(1);
-        }
+        SimilarityMetric metric = conf.loadMetric(cmd.getOptionValue("n"));
 
         System.out.println("Please enter:\n" +
-                        "\tone phrase for mostSimilar()\n" +
-                        "\tor two phrases separated by commas for similarity()" +
-                        "\tor exit to stop");
+                "\tone phrase for mostSimilar()\n" +
+                "\tor two phrases separated by commas for similarity()" +
+                "\tor exit to stop");
 
-        IndexHelper helper = env.getMainIndex();
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         while (true) {
             String line = in.readLine();
@@ -58,7 +66,7 @@ public class SimilarityConsole {
                 }
                 System.out.println("top results for " + phrases[0]);
                 for (int i = 0; i < results.numDocs(); i++) {
-                    String title = helper.wpIdToTitle(results.getId(i));
+                    String title = env.getMainIndex().wpIdToTitle(results.getId(i));
                     System.out.println("" + (i+1) + ". " + results.getScore(i) + ": " + title);
                 }
             } else if (phrases.length == 2) {

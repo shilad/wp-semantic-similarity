@@ -21,6 +21,8 @@ import java.util.logging.Logger;
 
 /**
  * Provides basic functionality that similarity metric implementations should extend.
+ *
+ * TODO: separate similarity() and mostSimilar() normalizers.
  */
 public abstract class BaseSimilarityMetric implements SimilarityMetric {
     private static Logger LOG = Logger.getLogger(BaseSimilarityMetric.class.getName());
