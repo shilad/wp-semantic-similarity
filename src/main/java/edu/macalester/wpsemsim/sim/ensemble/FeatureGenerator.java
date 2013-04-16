@@ -212,6 +212,6 @@ public abstract class FeatureGenerator implements Serializable {
     }
 
     public int getFeatureIndex(String featureName) {
-        return names.indexOf(featureName);
+        return getFeatureNames().indexOf(featureName);
     }
 }
