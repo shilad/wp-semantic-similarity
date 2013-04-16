@@ -186,7 +186,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
         ParallelForEach.loop(gold, numThreads, new Function<KnownSim>() {
             @Override
             public void call(KnownSim ks) throws Exception {
-                Example ex = getComponentSimilarities(ks.phrase1, ks.phrase2, numResults, validIds);
+                Example ex = getComponentSimilarities(ks, numResults, validIds);
                 ex.label = ks;
                 if (ex.getNumNotNan() >= minComponents) {
                     examples.add(ex);
@@ -204,24 +204,34 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
      * Collects the similarities scores for a pair of phrases from all metrics.
      * We are training mostSimilar iff numResults > 0.
      *
-     *
-     * @param phrase1
-     * @param phrase2
+     * @param ks
      * @param numResults
      * @param validIds
      * @return
      * @throws IOException
      * @throws ParseException
      */
-    protected Example getComponentSimilarities(String phrase1, String phrase2, int numResults, TIntSet validIds) throws IOException, ParseException {
+    protected Example getComponentSimilarities(KnownSim ks, int numResults, TIntSet validIds) throws IOException, ParseException {
         Example result = (numResults > 0) ? Example.makeEmptyWithReverse() : Example.makeEmpty();
         for (int i = 0; i < components.size(); i++) {
             SimilarityMetric m = components.get(i);
-            if (numResults <= 0) {
-                result.add(new SimScore(i, m.similarity(phrase1, phrase2)));
-            } else {
-                result.add(getComponentSim(i, m, phrase1, phrase2, numResults, validIds),
-                           getComponentSim(i, m, phrase2, phrase1, numResults, validIds));
+
+            boolean hasWpIds = (ks.wpId1 >= 0 && ks.wpId2 >= 0);
+            if (numResults <= 0) {      // similarity
+                if (hasWpIds) {
+                    result.add(new SimScore(i, m.similarity(ks.wpId1, ks.wpId2)),
+                               new SimScore(i, m.similarity(ks.wpId2, ks.wpId1)));
+                } else {
+                    result.add(new SimScore(i, m.similarity(ks.phrase1, ks.phrase2)),
+                               new SimScore(i, m.similarity(ks.phrase2, ks.phrase1)));
+                }
+            } else {                    // mostSimilar
+                if (hasWpIds) {
+                    DocScoreList dsl = m.mostSimilar(ks.wpId1, numResults, validIds);
+                    result.add(new SimScore(i, dsl, dsl.getIndexForId(ks.wpId2)));
+                } else {
+                    result.add(getComponentSim(i, m, ks.phrase1, ks.phrase2, numResults, validIds));
+                }
             }
         }
         return result;
