@@ -31,7 +31,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     private IndexHelper helper;
     private String name = this.getClass().getSimpleName();
     private Disambiguator disambiguator;
-    protected int numThreads = 2;     // for training
+    protected int numThreads = Runtime.getRuntime().availableProcessors();
     private boolean trained = false;
 
     private File path;
