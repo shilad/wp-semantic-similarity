@@ -60,7 +60,14 @@ public class SimilarityConsole {
             }
             String phrases[] = line.split(",");
             if (phrases.length == 1) {
-                DocScoreList results = metric.mostSimilar(phrases[0].trim(), 2000);
+                DocScoreList results;
+                try {
+                    results = metric.mostSimilar(phrases[0].trim(), env.getNumMostSimilarResults());
+                } catch (Exception e) {
+                    System.err.println("qurey for " + phrases[0].trim() + " failed:");
+                    e.printStackTrace();
+                    continue;
+                }
                 if (results.numDocs() > env.getNumMostSimilarResults()) {
                     results.truncate(env.getNumMostSimilarResults());
                 }
