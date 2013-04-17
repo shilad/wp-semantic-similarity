@@ -82,6 +82,20 @@ public class Example {
         return buff.toString();
     }
 
+   public Example makeDense(int numComponents) {
+       List<SimScore> dense = new ArrayList<SimScore>();
+       int j = 0;
+       for (int i = 0; i < numComponents; i++) {
+           if (j < sims.size() && sims.get(j).component == i) {
+               dense.add(sims.get(j++));
+           } else {
+               dense.add(new SimScore(i, null, -1));
+           }
+       }
+       assert(j == sims.size());
+       return new Example(label, dense);
+   }
+
     public static Example makeEmpty() {
         return new Example(new ArrayList<SimScore>());
     }

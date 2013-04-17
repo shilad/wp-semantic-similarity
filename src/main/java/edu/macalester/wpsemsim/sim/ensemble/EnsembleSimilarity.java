@@ -95,7 +95,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
         int n = 0;
         DocScoreList list = new DocScoreList(features.size());
         for (int wpId2 : features.keySet()) {
-            Example ex = features.get(wpId2);
+            Example ex = features.get(wpId2).makeDense(components.size());
             if (ex.getNumNotNan() >= minComponents) {
                 double pred = ensemble.predict(ex, false);
                 if (!Double.isNaN(pred)) {
