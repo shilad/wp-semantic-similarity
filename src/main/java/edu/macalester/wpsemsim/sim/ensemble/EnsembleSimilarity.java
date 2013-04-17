@@ -29,7 +29,6 @@ import java.util.logging.Logger;
 public class EnsembleSimilarity extends BaseSimilarityMetric implements SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(EnsembleSimilarity.class.getName());
 
-    private int numThreads = Runtime.getRuntime().availableProcessors();
     private ConceptMapper mapper;
     private IndexHelper helper;
     private int minComponents = 0;
@@ -125,10 +124,6 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
      */
     public void setMinComponents(int n) {
         this.minComponents = n;
-    }
-
-    public void setNumThreads(int n) {
-        this.numThreads = n;
     }
 
     /**
