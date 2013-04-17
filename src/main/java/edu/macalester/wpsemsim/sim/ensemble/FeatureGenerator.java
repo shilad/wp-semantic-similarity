@@ -18,6 +18,9 @@ import java.util.List;
  * Base class for MostSimilar and Similarity feature generators.
  */
 public abstract class FeatureGenerator implements Serializable {
+
+    public static final long serialVersionUID = 6748803838389411768l;
+
     // don't serialize the components they must be set manually.
     protected transient List<SimilarityMetric> components = null;
     protected List<String> names = new ArrayList<String>();

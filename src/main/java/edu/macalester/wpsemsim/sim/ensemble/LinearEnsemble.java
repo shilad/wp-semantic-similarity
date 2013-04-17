@@ -23,7 +23,7 @@ public class LinearEnsemble implements Ensemble {
     protected FeatureGenerator similarityGenerator = new SimilarityFeatureGenerator();
     protected FeatureGenerator mostSimilarGenerator = new MostSimilarFeatureGenerator();
     protected List<SimilarityMetric> components;
-    protected int numFeatures;
+    protected int numFeatures = -1;
     protected double[] coefficients;
 
     public LinearEnsemble() throws IOException {

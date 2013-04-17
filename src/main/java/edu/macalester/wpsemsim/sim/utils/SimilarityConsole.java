@@ -41,7 +41,7 @@ public class SimilarityConsole {
 
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
-        SimilarityMetric metric = conf.loadMetric(cmd.getOptionValue("n"));
+        SimilarityMetric metric = conf.loadMetric(cmd.getOptionValue("n"), true);
 
         System.out.println("Please enter:\n" +
                 "\tone phrase for mostSimilar()\n" +
@@ -61,8 +61,8 @@ public class SimilarityConsole {
             String phrases[] = line.split(",");
             if (phrases.length == 1) {
                 DocScoreList results = metric.mostSimilar(phrases[0].trim(), 2000);
-                if (results.numDocs() > 500) {
-                    results.truncate(500);
+                if (results.numDocs() > env.getNumMostSimilarResults()) {
+                    results.truncate(env.getNumMostSimilarResults());
                 }
                 System.out.println("top results for " + phrases[0]);
                 for (int i = 0; i < results.numDocs(); i++) {

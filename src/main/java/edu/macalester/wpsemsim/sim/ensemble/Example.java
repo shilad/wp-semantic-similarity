@@ -73,6 +73,14 @@ public class Example {
         }
         return n;
     }
+    public String toString() {
+        StringBuffer buff = new StringBuffer();
+        for (int i = 0; i < sims.size(); i++) {
+            if (i != 0) buff.append(" ");
+            buff.append("" + sims.get(i).sim);
+        }
+        return buff.toString();
+    }
 
     public static Example makeEmpty() {
         return new Example(new ArrayList<SimScore>());

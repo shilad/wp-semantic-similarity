@@ -71,7 +71,6 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
 
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
-
         // build up example objects for each related page.
         Map<Integer, Example> features = new HashMap<Integer, Example>();
         for (int i = 0; i < components.size(); i++) {
@@ -97,7 +96,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
         int n = 0;
         DocScoreList list = new DocScoreList(features.size());
         for (int wpId2 : features.keySet()) {
-            Example ex = features.get(wpId);
+            Example ex = features.get(wpId2);
             if (ex.getNumNotNan() >= minComponents) {
                 double pred = ensemble.predict(ex, false);
                 if (!Double.isNaN(pred)) {

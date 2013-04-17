@@ -382,7 +382,7 @@ public class EnvConfigurator {
             throw new ConfigurationException("unknown ensemble type for " + key + ": " + type);
         }
         EnsembleSimilarity similarity = new EnsembleSimilarity(ensemble, loadMainMapper(), env.getMainIndex());
-//        similarity.setComponents(metrics);
+        similarity.setComponents(metrics);
         similarity.read(requireDirectory(params, "model"));
         similarity.setName(key);
         if (params.containsKey("minComponents")) {
