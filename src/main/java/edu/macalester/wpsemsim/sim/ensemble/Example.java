@@ -83,18 +83,26 @@ public class Example {
     }
 
    public Example makeDense(int numComponents) {
-       List<SimScore> dense = new ArrayList<SimScore>();
-       int j = 0;
-       for (int i = 0; i < numComponents; i++) {
-           if (j < sims.size() && sims.get(j).component == i) {
-               dense.add(sims.get(j++));
-           } else {
-               dense.add(new SimScore(i, null, -1));
-           }
+       if (hasReverse()) {
+           return new Example(label, makeDense(sims, numComponents), makeDense(reverseSims, numComponents));
+       } else {
+           return new Example(label, makeDense(sims, numComponents));
        }
-       assert(j == sims.size());
-       return new Example(label, dense);
    }
+
+    private List<SimScore> makeDense(List<SimScore> scores, int numComponents) {
+        List<SimScore> dense = new ArrayList<SimScore>();
+        int j = 0;
+        for (int i = 0; i < numComponents; i++) {
+            if (j < scores.size() && scores.get(j).component == i) {
+                dense.add(scores.get(j++));
+            } else {
+                dense.add(new SimScore(i, null, -1));
+            }
+        }
+        assert(j == scores.size());
+        return dense;
+    }
 
     public static Example makeEmpty() {
         return new Example(new ArrayList<SimScore>());
