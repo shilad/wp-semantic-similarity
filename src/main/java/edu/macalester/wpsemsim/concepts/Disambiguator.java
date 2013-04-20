@@ -97,6 +97,10 @@ public class Disambiguator {
         return disambiguate(phrase, hint, new SimilarityScorer());
     }
 
+    public Match disambiguate(String phrase) throws IOException {
+        return disambiguate(phrase, null, null);
+    }
+
     protected Match disambiguate(String phrase, String hint, Scorer scorer) throws IOException {
         Match match = new Match();
         match.phrase = phrase;

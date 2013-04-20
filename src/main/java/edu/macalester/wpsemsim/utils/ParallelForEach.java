@@ -1,23 +1,33 @@
 package edu.macalester.wpsemsim.utils;
 
 
-import edu.macalester.wpsemsim.sim.ensemble.Example;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ParallelForEach {
     public static final Logger LOG = Logger.getLogger(ParallelForEach.class.getName());
 
+    /**
+     * Construct a parallel loop on [from, to).
+     *
+     * @param from bottom of range (inclusive)
+     * @param to top of range (exclusive)
+     * @param numThreads
+     * @param fn callback
+     */
+    public static void range(int from, int to, int numThreads, final Function<Integer> fn) {
+        List<Integer> range = new ArrayList<Integer>();
+        for (int i = from; i < to; i++) { range.add(i); }
+        loop(range, numThreads, fn);
+    }
     public static <T> void loop(
             Collection<T> collection,
             int numThreads,
