@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * Given a list of phrases, constructs:
@@ -56,7 +57,6 @@ public class PhraseAnalyzer {
         buildMostSimilar(metric);
         buildSimilarity(metric);
     }
-
     /**
      * Map all the phrases in a file to Wikipedia pages.
      * One phrase appears per line.
@@ -74,7 +74,7 @@ public class PhraseAnalyzer {
                     public void call(String line) throws Exception {
                         PhraseInfo pi = new PhraseInfo();
                         pi.phrase = line.trim();
-                        Disambiguator.Match m = dab.disambiguate(pi.phrase);
+                        Disambiguator.Match m = dab.disambiguate(normalize(pi.phrase));
                         if (m != null && m.hasPhraseMatch()) {
                             pi.wpId = m.phraseWpId;
                             synchronized (phrases) {
@@ -215,6 +215,13 @@ public class PhraseAnalyzer {
         for (PhraseInfo pi : phrases) { wpIds.add(pi.wpId); }
         return wpIds;
     }
+
+
+    private static Pattern REPLACE_WEIRD = Pattern.compile("[^\\p{L}\\p{N}]+");
+    public static String normalize(String s) {
+        return REPLACE_WEIRD.matcher(s).replaceAll(" ").toLowerCase().trim();
+    }
+
 
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, InterruptedException {
         Options options = new Options();              options.addOption(new DefaultOptionBuilder()
