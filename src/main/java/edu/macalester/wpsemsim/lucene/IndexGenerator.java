@@ -197,8 +197,8 @@ public class IndexGenerator {
         FileUtils.deleteDirectory(indexDir);
         indexDir.mkdirs();
         this.dir = FSDirectory.open(indexDir);
-        Analyzer analyzer = (this.analyzer == null) ? new StandardAnalyzer(Version.LUCENE_40) : this.analyzer;
-        IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);
+        Analyzer analyzer = (this.analyzer == null) ? new StandardAnalyzer(Version.LUCENE_42) : this.analyzer;
+        IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_42, analyzer);
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
         iwc.setRAMBufferSizeMB(bufferMB);
         if (this.similarity != null) {

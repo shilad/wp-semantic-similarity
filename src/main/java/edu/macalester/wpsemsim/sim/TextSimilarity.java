@@ -57,7 +57,7 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
         mlt.setMaxQueryTerms(maxQueryTerms);
         mlt.setMinDocFreq(minDocFreq);
         mlt.setMinTermFreq(minTermFreq);
-        mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_40));
+        mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_42));
         mlt.setFieldNames(new String[]{field}); // specify the fields for similiarity
         return mlt;
     }
@@ -67,8 +67,8 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
         if (!useInternalMapper) {
             return super.similarity(phrase1, phrase2);
         }
-        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
-        QueryParser parser = new QueryParser(Version.LUCENE_40, field, analyzer);
+        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_42);
+        QueryParser parser = new QueryParser(Version.LUCENE_42, field, analyzer);
 
         TopDocs similarDocs1 = null;
         TopDocs similarDocs2 = null;

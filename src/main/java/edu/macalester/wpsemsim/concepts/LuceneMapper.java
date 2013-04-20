@@ -32,8 +32,8 @@ public class LuceneMapper implements ConceptMapper {
 
     @Override
     public LinkedHashMap<String, Float> map(String text, int maxConcepts) {
-        QueryParser qp = new QueryParser(Version.LUCENE_40, "text", new ESAAnalyzer());
-//        QueryParser qp = new QueryParser(Version.LUCENE_40, "text", new StandardAnalyzer(Version.LUCENE_40));
+        QueryParser qp = new QueryParser(Version.LUCENE_42, "text", new ESAAnalyzer());
+//        QueryParser qp = new QueryParser(Version.LUCENE_42, "text", new StandardAnalyzer(Version.LUCENE_42));
         try {
             TopDocs docs = helper.getSearcher().search(qp.parse(text), maxConcepts * 10);
             for (ScoreDoc sd : docs.scoreDocs) {

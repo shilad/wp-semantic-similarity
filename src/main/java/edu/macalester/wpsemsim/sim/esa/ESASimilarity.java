@@ -89,7 +89,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
                 return phraseCache.get(phrase);
             }
         }
-        QueryParser parser = new QueryParser(Version.LUCENE_40, "text", analyzer);
+        QueryParser parser = new QueryParser(Version.LUCENE_42, "text", analyzer);
         TopDocs docs = null;
         try {
             docs = searcher.search(parser.parse(phrase), esaHelper.getWpIdFilter(validIds), 5000);

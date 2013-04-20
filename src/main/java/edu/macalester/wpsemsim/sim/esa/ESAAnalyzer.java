@@ -36,14 +36,14 @@ public class ESAAnalyzer extends Analyzer {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
-        ENGLISH_STOP_WORDS_SET = StopFilter.makeStopSet(Version.LUCENE_40, stopWords);
+        ENGLISH_STOP_WORDS_SET = StopFilter.makeStopSet(Version.LUCENE_42, stopWords);
     }
 
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer wt = new WikipediaTokenizer(reader);
-        TokenFilter filter = new LowerCaseFilter(Version.LUCENE_40, wt);
-        filter = new StopFilter(Version.LUCENE_40, filter, ENGLISH_STOP_WORDS_SET);
+        TokenFilter filter = new LowerCaseFilter(Version.LUCENE_42, wt);
+        filter = new StopFilter(Version.LUCENE_42, filter, ENGLISH_STOP_WORDS_SET);
         filter = new SnowballFilter(filter, "English");
         return new TokenStreamComponents(wt, filter);
 

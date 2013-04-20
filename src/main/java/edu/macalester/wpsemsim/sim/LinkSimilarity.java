@@ -135,7 +135,7 @@ public class LinkSimilarity extends BaseSimilarityMetric{
         mlt.setMaxQueryTerms(100);
         mlt.setMinDocFreq(minDocFreq);
         mlt.setMinTermFreq(1);
-        mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_40));
+        mlt.setAnalyzer(new StandardAnalyzer(Version.LUCENE_42));
         mlt.setFieldNames(new String[]{field}); // specify the fields for similiarity
         return mlt;
     }

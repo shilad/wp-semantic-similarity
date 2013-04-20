@@ -87,8 +87,6 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
         return normalize(text);
     }
 
-
-
     private static Pattern REPLACE_WEIRD = Pattern.compile("[^\\p{L}\\p{N}]+");
     public static String normalize(String s) {
         return REPLACE_WEIRD.matcher(s).replaceAll(" ").toLowerCase().trim();

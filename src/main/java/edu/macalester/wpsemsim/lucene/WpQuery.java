@@ -67,13 +67,13 @@ public class WpQuery {
 
         Map<String, Analyzer> otherAnalyzers = new HashMap<String, Analyzer>();
         if (args[1].equals("esa")) { // HACK!!!
-            otherAnalyzers.put(Page.FIELD_TEXT, new StandardAnalyzer(Version.LUCENE_40));
+            otherAnalyzers.put(Page.FIELD_TEXT, new StandardAnalyzer(Version.LUCENE_42));
         } else {
             otherAnalyzers.put(Page.FIELD_TEXT, new ESAAnalyzer());
         }
 
         PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new KeywordAnalyzer(), otherAnalyzers);
-        QueryParser parser = new CustomQueryParser(Version.LUCENE_40, Page.FIELD_TEXT, analyzer);
+        QueryParser parser = new CustomQueryParser(Version.LUCENE_42, Page.FIELD_TEXT, analyzer);
         TopDocs docs = helper.getSearcher().search(parser.parse(query), numResults);
         DecimalFormat format = new DecimalFormat("#.###");
         for (ScoreDoc doc : docs.scoreDocs) {
