@@ -1,10 +1,9 @@
 package edu.macalester.wpsemsim.topics;
 
-import edu.macalester.wpsemsim.matrix.SparseMatrix;
+import edu.macalester.wpsemsim.matrix.Matrix;
 import gnu.trove.map.TDoubleIntMap;
 import gnu.trove.map.TIntObjectMap;
 
-import java.io.File;
 import java.util.List;
 
 /**
@@ -20,6 +19,6 @@ public class TopicExtractor {
         this.numTopics = numTopics;
     }
 
-    public void estimate(SparseMatrix matrix) {
+    public void estimate(Matrix matrix) {
     }
 }

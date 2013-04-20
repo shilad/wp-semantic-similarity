@@ -15,6 +15,7 @@ public class SparseMatrixSorter {
         SparseMatrixWriter writer = new SparseMatrixWriter(file, matrix.getValueConf());
         for (int id : rowIds) {
             writer.writeRow(matrix.getRow(id));
+
         }
         writer.finish();
     }

@@ -12,20 +12,24 @@ import java.util.logging.Logger;
 /**
  * A single sparse matrix row backed by a byte buffer. The row contains:
  * - a row id (int),
- * - a set of n columns, each with an id (int) and value (float packed into two bytes)
+ * - a set of n columns, each with a value (float packed into two bytes)
+ *
+ * Since the matrix is dense, the row assumes that a single copy of column ids is
+ * stored somewhere in the container matrix.
  *
  * The row can either be created from the component data, or from a byte buffer.
  * This means that the object can wrap data from an mmap'd file in the correct format.
  */
-public final class SparseMatrixRow extends BaseMatrixRow implements MatrixRow {
-    Logger LOG = Logger.getLogger(SparseMatrixRow.class.getName());
+public final class DenseMatrixRow extends BaseMatrixRow implements MatrixRow {
+    Logger LOG = Logger.getLogger(DenseMatrixRow.class.getName());
+
     public static final Float MIN_SCORE = -1.1f;
     public static final Float MAX_SCORE = 1.1f;
 
     public static final Float SCORE_RANGE = (MAX_SCORE - MIN_SCORE);
     public static final int PACKED_RANGE = (Short.MAX_VALUE - Short.MIN_VALUE);
 
-    public static final int HEADER = 0xfefefefe;
+    public static final int HEADER = 0xfefefefa;
 
     /**
      * The main "source" buffer.
@@ -40,23 +44,25 @@ public final class SparseMatrixRow extends BaseMatrixRow implements MatrixRow {
     /**
      * A view buffer that points to the ids.
      */
-    private IntBuffer idBuffer;
+    private int[] colIds;
 
     /**
      * A view buffer that points to the values.
      */
     private ShortBuffer valBuffer;
+
     private ValueConf vconf;
 
-    public SparseMatrixRow(ValueConf vconf, int rowIndex, LinkedHashMap<Integer, Float> row) {
+    public DenseMatrixRow(ValueConf vconf, int rowIndex, LinkedHashMap<Integer, Float> row) {
         this(vconf, rowIndex,
             ArrayUtils.toPrimitive(row.keySet().toArray(new Integer[] {})),
             ArrayUtils.toPrimitive(row.values().toArray(new Float[]{}))
         );
     }
 
-    public SparseMatrixRow(ValueConf vconf, int rowIndex, int colIds[], float colVals[]) {
+    public DenseMatrixRow(ValueConf vconf, int rowIndex, int colIds[], float colVals[]) {
         this.vconf = vconf;
+        this.colIds = colIds;
         short packed[] = new short[colVals.length];
         for (int i = 0; i < colVals.length; i++) {
             packed[i] = vconf.pack(colVals[i]);
@@ -64,45 +70,42 @@ public final class SparseMatrixRow extends BaseMatrixRow implements MatrixRow {
         createBuffer(rowIndex, colIds, packed);
     }
 
-    public SparseMatrixRow(ValueConf vconf, int rowIndex, int colIds[], short colVals[]) {
+    public DenseMatrixRow(ValueConf vconf, int rowIndex, int colIds[], short colVals[]) {
         this.vconf = vconf;
         createBuffer(rowIndex, colIds, colVals);
     }
 
     public void createBuffer(int rowIndex, int colIds[], short colVals[]) {
         assert(colIds.length == colVals.length);
+        this.colIds = colIds;
 
         buffer = ByteBuffer.allocate(
                 4 +                 // header
                 4 +                 // row index
-                4 +                 // num cols
-                4 * colVals.length +    // col indexes
-                2 * colVals.length      // col values
+                2 * colVals.length  // col values
         );
         createViewBuffers(colVals.length);
 
         headerBuffer.put(0, HEADER);
         headerBuffer.put(1, rowIndex);
-        headerBuffer.put(2, colVals.length);
-        idBuffer.put(colIds, 0, colIds.length);
         valBuffer.put(colVals, 0, colVals.length);
     }
 
     private void createViewBuffers(int numColumns) {
         buffer.position(0);
         headerBuffer = buffer.asIntBuffer();
-        buffer.position(3 * 4);
-        idBuffer = buffer.asIntBuffer();
-        buffer.position(3 * 4 + numColumns * 4);
+        buffer.position(2 * 4);
         valBuffer = buffer.asShortBuffer();
     }
 
     /**
      * Wrap an existing byte buffer that contains a row.
+     * @param colIds
      * @param buffer
      */
-    public SparseMatrixRow(ValueConf vconf, ByteBuffer buffer) {
+    public DenseMatrixRow(ValueConf vconf, int colIds[], ByteBuffer buffer) {
         this.vconf = vconf;
+        this.colIds = colIds;
         this.buffer = buffer;
         if (this.buffer.getInt(0) != HEADER) {
             throw new IllegalArgumentException("Invalid header in byte buffer");
@@ -112,7 +115,7 @@ public final class SparseMatrixRow extends BaseMatrixRow implements MatrixRow {
 
     @Override
     public final int getColIndex(int i) {
-        return idBuffer.get(i);
+        return colIds[i];
     }
 
     @Override
@@ -131,7 +134,7 @@ public final class SparseMatrixRow extends BaseMatrixRow implements MatrixRow {
 
     @Override
     public final int getNumCols() {
-        return headerBuffer.get(2);
+        return colIds.length;
     }
 
     public ByteBuffer getBuffer() {
@@ -140,5 +143,9 @@ public final class SparseMatrixRow extends BaseMatrixRow implements MatrixRow {
 
     public ValueConf getValueConf() {
         return vconf;
+    }
+
+    protected int[] getColIds() {
+        return colIds;
     }
 }

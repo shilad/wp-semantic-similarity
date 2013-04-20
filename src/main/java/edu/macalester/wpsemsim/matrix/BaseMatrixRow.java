@@ -1,0 +1,49 @@
+package edu.macalester.wpsemsim.matrix;
+
+import gnu.trove.map.hash.TIntFloatHashMap;
+
+import java.util.LinkedHashMap;
+
+/**
+ * A base class for matrix rows.
+ */
+public abstract class BaseMatrixRow implements MatrixRow {
+    @Override
+    public abstract int getColIndex(int i);
+
+    @Override
+    public abstract float getColValue(int i);
+
+    @Override
+    public abstract int getRowIndex();
+
+    @Override
+    public abstract int getNumCols();
+
+    @Override
+    public LinkedHashMap<Integer, Float> asMap() {
+        LinkedHashMap<Integer, Float> result = new LinkedHashMap<Integer, Float>();
+        for (int i = 0; i < getNumCols(); i++) {
+            result.put(getColIndex(i), getColValue(i));
+        }
+        return result;
+    }
+
+    @Override
+    public TIntFloatHashMap asTroveMap() {
+        TIntFloatHashMap result = new TIntFloatHashMap();
+        for (int i = 0; i < getNumCols(); i++) {
+            result.put(getColIndex(i), getColValue(i));
+        }
+        return result;
+    }
+
+    @Override
+    public double getNorm() {
+        double length = 0.0;
+        for (int i = 0; i < getNumCols(); i++) {
+            length += getColValue(i) * getColValue(i);
+        }
+        return Math.sqrt(length);
+    }
+}

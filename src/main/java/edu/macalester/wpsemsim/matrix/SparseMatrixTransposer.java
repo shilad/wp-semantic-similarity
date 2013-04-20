@@ -42,7 +42,7 @@ public class SparseMatrixTransposer {
 
     private void countCellsPerColumn() throws IOException {
         for (int id : matrix.getRowIds()) {
-            SparseMatrixRow row = matrix.getRow(id);
+            MatrixRow row = matrix.getRow(id);
             for (int i = 0; i < row.getNumCols(); i++) {
                 colCounts.adjustOrPutValue(row.getColIndex(i), 1, 1);
             }

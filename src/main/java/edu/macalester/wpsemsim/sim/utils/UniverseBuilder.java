@@ -1,36 +1,43 @@
-package edu.macalester.wpsemsim.sim;
+package edu.macalester.wpsemsim.sim.utils;
 
+import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
-import edu.macalester.wpsemsim.utils.EnvConfigurator;
-import edu.macalester.wpsemsim.utils.ConfigurationFile;
-import edu.macalester.wpsemsim.utils.DefaultOptionBuilder;
-import edu.macalester.wpsemsim.utils.Env;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import org.apache.commons.cli.*;
+import edu.macalester.wpsemsim.utils.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 
-import java.io.*;
-import java.util.logging.Logger;
+import java.io.File;
+import java.io.IOException;
 
-public class BuilderMain {
+/**
+ * Builds the most similar and pairwise similarity matrix for a set of phrases.
+ */
+public class UniverseBuilder {
+    class PhraseInfo {
+        String phrase;
+        int wpId;
+        DocScoreList mostSimilar;
+        float otherPhraseScores[];
+    }
 
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, InterruptedException {
         Options options = new Options();              options.addOption(new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("name")
-                .withDescription("Name of similarity metric that should be built.")
+                .withDescription("Name of similarity metric that should be used.")
                 .create('n'));
         options.addOption(new DefaultOptionBuilder()
                 .isRequired()
                 .hasArg()
                 .withLongOpt("output")
-                .withDescription("Output file.")
+                .withDescription("Output directory.")
                 .create('o'));
         options.addOption(new DefaultOptionBuilder()
                 .hasArg()
-                .withLongOpt("buildids")
-                .withDescription("File listing ids that should be built.")
-                .create('i'));
+                .withLongOpt("phrases")
+                .withDescription("File listing phrases in the universe.")
+                .create('p'));
 
         EnvConfigurator conf;
         try {
@@ -47,6 +54,9 @@ public class BuilderMain {
 
         File outputFile = new File(cmd.getOptionValue("o"));
         SimilarityMetric m = conf.loadMetric(cmd.getOptionValue("n"), true);
+
+
+
         PairwiseSimilarityWriter writer = new PairwiseSimilarityWriter(m, outputFile);
         if (env.getValidIds() != null) {
             writer.setValidIds(env.getValidIds());

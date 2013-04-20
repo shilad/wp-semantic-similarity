@@ -16,14 +16,14 @@ public class TestMmapMemoryLeak {
 
     @Test
     public void testOnlyOnePageLoaded() throws IOException {
-        SparseMatrix m = TestUtils.createTestMatrix(NUM_ROWS, MAX_ROW_LENGTH, false, NUM_ROWS * 20, false);
-        SparseMatrixRow first = m.getRow(m.getRowIds()[0]); // force the first page to loadAllMetrics.
+        SparseMatrix m = TestUtils.createSparseTestMatrix(NUM_ROWS, MAX_ROW_LENGTH, false, NUM_ROWS * 20, false);
+        MatrixRow first = m.getRow(m.getRowIds()[0]); // force the first page to loadAllMetrics.
         first = null;
         MappedByteBuffer buffer = m.buffers.get(0).buffer;
         MemoryLeakVerifier verifier = new MemoryLeakVerifier(buffer);
         assertNotNull(buffer);
         int i = 0;
-        for (SparseMatrixRow row : m) {
+        for (MatrixRow row : m) {
             i++;
         }
         assertEquals(i, NUM_ROWS);

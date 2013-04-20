@@ -1,8 +1,6 @@
 package edu.macalester.wpsemsim.sim;
 
-import edu.macalester.wpsemsim.matrix.SparseMatrix;
-import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
-import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
+import edu.macalester.wpsemsim.matrix.*;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
 import edu.macalester.wpsemsim.utils.DocScore;
@@ -29,7 +27,7 @@ public class TestPairwiseSimilarity {
 
     @BeforeClass
     public static void createTestData() throws IOException {// Create test data and transpose
-        matrix = TestUtils.createTestMatrix(NUM_ROWS, NUM_ROWS, false);
+        matrix = TestUtils.createSparseTestMatrix(NUM_ROWS, NUM_ROWS, false);
         File tmpFile = File.createTempFile("matrix", null);
         tmpFile.deleteOnExit();
         new SparseMatrixTransposer(matrix, tmpFile, 10).transpose();
@@ -75,7 +73,7 @@ public class TestPairwiseSimilarity {
         }
 
         int numCells = 0;
-        for (SparseMatrixRow row : sims) {
+        for (MatrixRow row : sims) {
             for (int i = 0; i < row.getNumCols(); i++) {
                 if (row.getColValue(i) != 0) {
                     int id1 = row.getRowIndex();

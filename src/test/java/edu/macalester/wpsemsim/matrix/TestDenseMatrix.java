@@ -12,30 +12,31 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestSparseMatrix {
-    private List<SparseMatrixRow> srcRows;
+public class TestDenseMatrix {
+    private List<DenseMatrixRow> srcRows;
 
     private int NUM_ROWS = 1000;
-    private int MAX_COLS = NUM_ROWS * 2;
-    private int MAX_KEY = Math.max(NUM_ROWS, MAX_COLS) * 10;
+    private int NUM_COLS = NUM_ROWS * 2;
+    private int MAX_KEY = Math.max(NUM_ROWS, NUM_COLS) * 10;
+    private int PAGE_SIZE = (NUM_ROWS + NUM_COLS) * 16;
 
     @Before
     public void createTestData() throws IOException {
-        srcRows = TestUtils.createSparseTestMatrixRows(NUM_ROWS, MAX_COLS, false);
+        srcRows = TestUtils.createDenseTestMatrixRows(NUM_ROWS, NUM_COLS);
     }
 
     @Test
     public void testWrite() throws IOException {
         File tmp = File.createTempFile("matrix", null);
-        SparseMatrixWriter.write(tmp, srcRows.iterator());
+        DenseMatrixWriter.write(tmp, srcRows.iterator());
     }
 
     @Test
     public void testReadWrite() throws IOException {
         File tmp = File.createTempFile("matrix", null);
-        SparseMatrixWriter.write(tmp, srcRows.iterator());
-        Matrix m1 = new SparseMatrix(tmp, true, NUM_ROWS*20);
-        Matrix m2 = new SparseMatrix(tmp, false, NUM_ROWS*20);
+        DenseMatrixWriter.write(tmp, srcRows.iterator());
+        DenseMatrix m1 = new DenseMatrix(tmp, true, PAGE_SIZE);
+        DenseMatrix m2 = new DenseMatrix(tmp, false, PAGE_SIZE);
     }
 
     @Test
@@ -44,14 +45,14 @@ public class TestSparseMatrix {
             File tmp1 = File.createTempFile("matrix", null);
             File tmp2 = File.createTempFile("matrix", null);
             File tmp3 = File.createTempFile("matrix", null);
-            SparseMatrixWriter.write(tmp1, srcRows.iterator());
-            SparseMatrix m = new SparseMatrix(tmp1, loadAllPages, MAX_KEY * 50);
+            DenseMatrixWriter.write(tmp1, srcRows.iterator());
+            DenseMatrix m = new DenseMatrix(tmp1, loadAllPages, MAX_KEY * 50);
             verifyIsSourceMatrix(m);
-            new SparseMatrixTransposer(m, tmp2, 1).transpose();
-            SparseMatrix m2 = new SparseMatrix(tmp2, loadAllPages, MAX_KEY * 50);
-            new SparseMatrixTransposer(m2, tmp3, 1).transpose();
-            Matrix m3 = new SparseMatrix(tmp3, loadAllPages, MAX_KEY * 50);
-            verifyIsSourceMatrixUnordered(m3, .001);
+//            new SparseMatrixTransposer(m, tmp2, 1).transpose();
+//            SparseMatrix m2 = new SparseMatrix(tmp2, loadAllPages, MAX_KEY * 50);
+//            new SparseMatrixTransposer(m2, tmp3, 1).transpose();
+//            Matrix m3 = new SparseMatrix(tmp3, loadAllPages, MAX_KEY * 50);
+//            verifyIsSourceMatrixUnordered(m3, .001);
         }
     }
 
@@ -60,15 +61,17 @@ public class TestSparseMatrix {
     public void testRows() throws IOException {
         for (boolean loadAllPages : new boolean[] { true, false}) {
             File tmp = File.createTempFile("matrix", null);
-            SparseMatrixWriter.write(tmp, srcRows.iterator());
-            Matrix m = new SparseMatrix(tmp, loadAllPages, NUM_ROWS * 20);
+            DenseMatrixWriter.write(tmp, srcRows.iterator());
+            DenseMatrix m = new DenseMatrix(tmp, loadAllPages, PAGE_SIZE);
             verifyIsSourceMatrix(m);
         }
     }
 
 
     private void verifyIsSourceMatrix(Matrix m) throws IOException {
-        for (SparseMatrixRow srcRow : srcRows) {
+        int j = 0;
+        for (DenseMatrixRow srcRow : srcRows) {
+            System.err.println("checking row " + (j++));
             MatrixRow destRow = m.getRow(srcRow.getRowIndex());
             assertEquals(destRow.getRowIndex(), srcRow.getRowIndex());
             assertEquals(destRow.getNumCols(), srcRow.getNumCols());
@@ -80,7 +83,7 @@ public class TestSparseMatrix {
     }
 
     private void verifyIsSourceMatrixUnordered(Matrix m, double delta) throws IOException {
-        for (SparseMatrixRow srcRow : srcRows) {
+        for (DenseMatrixRow srcRow : srcRows) {
             MatrixRow destRow = m.getRow(srcRow.getRowIndex());
             LinkedHashMap<Integer, Float> destRowMap = destRow.asMap();
             assertEquals(destRow.getRowIndex(), srcRow.getRowIndex());

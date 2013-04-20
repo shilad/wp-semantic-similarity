@@ -1,5 +1,6 @@
 package edu.macalester.wpsemsim.sim.utils;
 
+import edu.macalester.wpsemsim.matrix.Matrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixTransposer;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;

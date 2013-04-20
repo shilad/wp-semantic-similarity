@@ -16,33 +16,36 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Implementation of a sparse matrix.
+ * Implementation of a dense matrix.
  * The rows are memory mapped, so they can be immediately read from disk.
+ * All rows must have the same columns in the same order.
  */
-public class SparseMatrix implements Matrix<SparseMatrixRow> {
+public class DenseMatrix implements Matrix<DenseMatrixRow> {
 
-    public static final Logger LOG = Logger.getLogger(SparseMatrix.class.getName());
+    public static final Logger LOG = Logger.getLogger(DenseMatrix.class.getName());
 
     public static int DEFAULT_MAX_PAGE_SIZE = Integer.MAX_VALUE;
     public static boolean DEFAULT_LOAD_ALL_PAGES = true;
 
-    public static final int FILE_HEADER = 0xabcdef;
+    public static final int FILE_HEADER = 0xabccba;
 
     public int maxPageSize = DEFAULT_MAX_PAGE_SIZE;
     private boolean loadAllPages = true;
     private TIntLongHashMap rowOffsets = new TIntLongHashMap();
     private int rowIds[];
+    private int colIds[];
     private FileChannel channel;
     private File path;
 
     protected List<MappedBufferWrapper> buffers = new ArrayList<MappedBufferWrapper>();
+
     private ValueConf vconf;
 
-    public SparseMatrix(File path) throws IOException {
+    public DenseMatrix(File path) throws IOException {
         this(path, DEFAULT_LOAD_ALL_PAGES, DEFAULT_MAX_PAGE_SIZE);
     }
 
-    public SparseMatrix(File path, boolean loadAllPages, int maxPageSize) throws IOException {
+    public DenseMatrix(File path, boolean loadAllPages, int maxPageSize) throws IOException {
         this.path = path;
         this.loadAllPages = loadAllPages;
         this.maxPageSize = maxPageSize;
@@ -53,24 +56,43 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
     }
 
     private void readHeaders() throws IOException {
+        int pos = 0;
         long size = Math.min(channel.size(), maxPageSize);
         MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, size);
-        if (buffer.getInt(0) != FILE_HEADER) {
-            throw new IOException("invalid file header: " + buffer.getInt(0));
+
+        // read header
+        if (buffer.getInt(pos) != FILE_HEADER) {
+            throw new IOException("invalid file header: " + buffer.getInt(pos));
         }
-        this.vconf = new ValueConf(buffer.getFloat(4), buffer.getFloat(8));
-        int numRows = buffer.getInt(12);
+        pos += 4;
+        this.vconf = new ValueConf(buffer.getFloat(pos), buffer.getFloat(pos + 4));
+        pos += 8;
+        int numRows = buffer.getInt(pos);
+        pos += 4;
+
+        // read row ids and offsets
         info("reading offsets for " + numRows + " rows");
         rowIds = new int[numRows];
         for (int i = 0; i < numRows; i++) {
-            int pos = 16 + 12 * i;
             int rowIndex = buffer.getInt(pos);
             long rowOffset = buffer.getLong(pos + 4);
             rowOffsets.put(rowIndex, rowOffset);
 //            debug("adding row index " + rowIndex + " at offset " + rowOffset);
             rowIds[i] = rowIndex;
+            pos += 12;
         }
         info("read " + numRows + " offsets");
+
+        // read column ids
+        int numCols = buffer.getInt(pos);
+        info("reading ids for " + numCols + " cols");
+        pos += 4;
+        colIds = new int[numCols];
+        for (int i = 0; i < numCols; i++) {
+            colIds[i] = buffer.getInt(pos);
+            pos += 4;
+        }
+        info("read " + colIds.length + " column ids");
     }
 
     private void pageInRows() throws IOException {
@@ -97,16 +119,16 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
     }
 
     @Override
-    public SparseMatrixRow getRow(int rowId) throws IOException {
+    public DenseMatrixRow getRow(int rowId) throws IOException {
         if (!rowOffsets.containsKey(rowId)) {
             return null;
         }
-        SparseMatrixRow row = null;
+        DenseMatrixRow row = null;
         long targetOffset = rowOffsets.get(rowId);
         for (int i = 0; i < buffers.size(); i++) {
             MappedBufferWrapper wrapper = buffers.get(i);
             if (wrapper.start <= targetOffset && targetOffset < wrapper.end) {
-                row = new SparseMatrixRow(vconf, wrapper.get(targetOffset));
+                row = new DenseMatrixRow(vconf, colIds, wrapper.get(targetOffset));
             } else if (!loadAllPages) {
                 wrapper.close();
             }
@@ -146,20 +168,20 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
     }
 
     @Override
-    public Iterator<SparseMatrixRow> iterator() {
-        return new SparseMatrixIterator();
+    public Iterator<DenseMatrixRow> iterator() {
+        return new DenseMatrixIterator();
     }
 
-    public class SparseMatrixIterator implements Iterator<SparseMatrixRow> {
+    public class DenseMatrixIterator implements Iterator<DenseMatrixRow> {
         private int i = 0;
         @Override
         public boolean hasNext() {
             return i < rowIds.length;
         }
         @Override
-        public SparseMatrixRow next() {
+        public DenseMatrixRow next() {
             try {
-                return (SparseMatrixRow)getRow(rowIds[i++]);
+                return getRow(rowIds[i++]);
             } catch (IOException e) {
                 LOG.log(Level.SEVERE, "getRow failed", e);
                 return null;
@@ -200,10 +222,10 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
     }
 
     private void info(String message) {
-        LOG.log(Level.INFO, "sparse matrix " + path + ": " + message);
+        LOG.log(Level.WARNING, "dense matrix " + path + ": " + message);
     }
 
     private void debug(String message) {
-        LOG.log(Level.FINEST, "sparse matrix " + path + ": " + message);
+        LOG.log(Level.FINEST, "dense matrix " + path + ": " + message);
     }
 }

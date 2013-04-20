@@ -2,6 +2,8 @@ package edu.macalester.wpsemsim.sim.pairwise;
 
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.matrix.Matrix;
+import edu.macalester.wpsemsim.matrix.MatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
@@ -61,9 +63,9 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
     @Override
     public double similarity(int wpId1, int wpId2) throws IOException {
         double sim = 0;
-        SparseMatrixRow row1 = matrix.getRow(wpId1);
+        MatrixRow row1 = matrix.getRow(wpId1);
         if (row1 != null) {
-            SparseMatrixRow row2 = matrix.getRow(wpId2);
+            MatrixRow row2 = matrix.getRow(wpId2);
             if (row2 != null) {
                     sim = cosineSimilarity(row1.asTroveMap(), row2.asTroveMap());
             }
@@ -90,7 +92,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
 
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
-        SparseMatrixRow row = matrix.getRow(wpId);
+        MatrixRow row = matrix.getRow(wpId);
         if (row == null) {
             LOG.info("unknown wpId: " + wpId);
             return new DocScoreList(0);
@@ -123,7 +125,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
 
         for (int id : vector.keys()) {
             float val1 = vector.get(id);
-            SparseMatrixRow row2 = transpose.getRow(id);
+            MatrixRow row2 = transpose.getRow(id);
             if (row2 != null) {
                 for (int j = 0; j < row2.getNumCols(); j++) {
                     int id2 = row2.getColIndex(j);

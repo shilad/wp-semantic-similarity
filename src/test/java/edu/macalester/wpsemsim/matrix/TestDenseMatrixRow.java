@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestSparseMatrixRow {
+public class TestDenseMatrixRow {
     private int[] keys = new int[] { 9, 11, 3, 26, 54 };
     private float[] vals = new float[] {1.0f, 0.7f, 2.0f, 0.1f, -0.1f};
     private int ROW_INDEX = 34;
@@ -22,8 +22,8 @@ public class TestSparseMatrixRow {
             float expected = vals[i];
 
             // pinch it
-            expected = Math.min(expected, SparseMatrixRow.MAX_SCORE);
-            expected = Math.max(expected, SparseMatrixRow.MIN_SCORE);
+            expected = Math.min(expected, DenseMatrixRow.MAX_SCORE);
+            expected = Math.max(expected, DenseMatrixRow.MIN_SCORE);
 
             assertEquals(k, keys[i]);
             assertEquals(v, expected, 0.0001);
@@ -36,6 +36,6 @@ public class TestSparseMatrixRow {
         for (int i = 0; i < keys.length; i++) {
             m.put(keys[i], vals[i]);
         }
-        return new SparseMatrixRow(new ValueConf(), ROW_INDEX, m);
+        return new DenseMatrixRow(new ValueConf(), ROW_INDEX, m);
     }
 }

@@ -1,5 +1,7 @@
 package edu.macalester.wpsemsim.topics;
 
+import edu.macalester.wpsemsim.matrix.Matrix;
+import edu.macalester.wpsemsim.matrix.MatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import gnu.trove.map.TIntIntMap;
@@ -101,7 +103,7 @@ public class FunkSVD {
     private void init() {
 
         LOG.info("creating dense indexing for column ids");
-        for (SparseMatrixRow row : matrix) {
+        for (MatrixRow row : matrix) {
             for (int i = 0; i < row.getNumCols(); i++) {
                 int colId = row.getColIndex(i);
                 if (!columnMap.containsKey(colId)) {
@@ -129,7 +131,7 @@ public class FunkSVD {
         LOG.info("calculating mean");
         this.meanVal = 0.0;
         long numCells = 0;
-        for (SparseMatrixRow row : matrix) {
+        for (MatrixRow row : matrix) {
             for (int i = 0; i < row.getNumCols(); i++) {
                 meanVal += row.getColValue(i);
                 numCells++;
@@ -139,7 +141,7 @@ public class FunkSVD {
 
         LOG.info("calculating std dev");
         double err2 = 0.0;
-        for (SparseMatrixRow row : matrix) {
+        for (MatrixRow row : matrix) {
             for (int i = 0; i < row.getNumCols(); i++) {
                 err2 += Math.pow(row.getColValue(i) - meanVal, 2.0);
             }

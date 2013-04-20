@@ -2,10 +2,7 @@ package edu.macalester.wpsemsim.utils;
 
 import edu.macalester.wpsemsim.lucene.AllIndexBuilder;
 import edu.macalester.wpsemsim.lucene.Page;
-import edu.macalester.wpsemsim.matrix.SparseMatrix;
-import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
-import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
-import edu.macalester.wpsemsim.matrix.ValueConf;
+import edu.macalester.wpsemsim.matrix.*;
 import edu.macalester.wpsemsim.sim.*;
 import edu.macalester.wpsemsim.sim.utils.SimilarityMetricBuilder;
 import gnu.trove.set.hash.TIntHashSet;
@@ -23,6 +20,7 @@ public class TestUtils {
     public static File TEST_INPUT_FILE = new File("dat/test/dump/wp.test.xml");
     public static final File TEST_CATEGORIES = new File("dat/test/article_cats.txt");
     public static final File TEST_CONF = new File("conf/test-configuration.json");
+
     /**
      * Build a lucene index for the test data.
      * @return
@@ -135,8 +133,11 @@ public class TestUtils {
      * @param sameIds
      * @return
      */
-    public static List<SparseMatrixRow> createTestMatrixRows(int nRows, int maxRowLen, boolean sameIds) throws IOException {
-        return createTestMatrixRowsInternal(nRows, maxRowLen, sameIds, null);
+    public static List<SparseMatrixRow> createSparseTestMatrixRows(int nRows, int maxRowLen, boolean sameIds) throws IOException {
+        return createSparseTestMatrixRowsInternal(nRows, maxRowLen, sameIds, null);
+    }
+    public static List<DenseMatrixRow> createDenseTestMatrixRows(int nRows, int numCols) throws IOException {
+        return createDenseTestMatrixRowsInternal(nRows, numCols, null);
     }
 
 
@@ -149,16 +150,27 @@ public class TestUtils {
      * @param sameIds
      * @return
      */
-    public static SparseMatrix createTestMatrix(int nRows, int maxRowLen, boolean sameIds) throws IOException {
-        return createTestMatrix(nRows, maxRowLen, SparseMatrix.DEFAULT_LOAD_ALL_PAGES, SparseMatrix.DEFAULT_MAX_PAGE_SIZE, sameIds);
+    public static SparseMatrix createSparseTestMatrix(int nRows, int maxRowLen, boolean sameIds) throws IOException {
+        return createSparseTestMatrix(nRows, maxRowLen, SparseMatrix.DEFAULT_LOAD_ALL_PAGES, SparseMatrix.DEFAULT_MAX_PAGE_SIZE, sameIds);
     }
-    public static SparseMatrix createTestMatrix(int nRows, int maxRowLen, boolean readAllRows, int pageSize, boolean sameIds) throws IOException {
+    public static SparseMatrix createSparseTestMatrix(int nRows, int maxRowLen, boolean readAllRows, int pageSize, boolean sameIds) throws IOException {
         File tmpFile = File.createTempFile("matrix", null);
         tmpFile.deleteOnExit();
         SparseMatrixWriter writer = new SparseMatrixWriter(tmpFile, new ValueConf());
-        createTestMatrixRowsInternal(nRows, maxRowLen, sameIds, writer);
+        createSparseTestMatrixRowsInternal(nRows, maxRowLen, sameIds, writer);
         writer.finish();
         return new SparseMatrix(tmpFile, readAllRows, pageSize);
+    }
+    public static DenseMatrix createDenseTestMatrix(int nRows, int numCols) throws IOException {
+        return createDenseTestMatrix(nRows, numCols, SparseMatrix.DEFAULT_LOAD_ALL_PAGES, SparseMatrix.DEFAULT_MAX_PAGE_SIZE);
+    }
+    public static DenseMatrix createDenseTestMatrix(int nRows, int numCols, boolean readAllRows, int pageSize) throws IOException {
+        File tmpFile = File.createTempFile("matrix", null);
+        tmpFile.deleteOnExit();
+        DenseMatrixWriter writer = new DenseMatrixWriter(tmpFile, new ValueConf());
+        createDenseTestMatrixRowsInternal(nRows, numCols, writer);
+        writer.finish();
+        return new DenseMatrix(tmpFile, readAllRows, pageSize);
     }
 
 
@@ -170,7 +182,7 @@ public class TestUtils {
      * @param writer
      * @return if writer == null the list of rows, else null
      */
-    private static List<SparseMatrixRow> createTestMatrixRowsInternal(
+    private static List<SparseMatrixRow> createSparseTestMatrixRowsInternal(
             int nRows, int maxRowLen, boolean sameIds, SparseMatrixWriter writer)
             throws IOException {
         Random random = new Random();
@@ -184,6 +196,35 @@ public class TestUtils {
                 data.put(id2, random.nextFloat());
             }
             SparseMatrixRow row = new SparseMatrixRow(new ValueConf(), id1, data);
+            if (writer == null) {
+                rows.add(row);
+            } else {
+                writer.writeRow(row);
+            }
+        }
+        return (writer == null) ? rows : null;
+    }
+
+    /**
+     * Either writes or returns the sparse matrix rows depending on whether the writer is passed.
+     * @param nRows
+     * @param numCols
+     * @param writer
+     * @return if writer == null the list of rows, else null
+     */
+    private static List<DenseMatrixRow> createDenseTestMatrixRowsInternal(
+            int nRows, int numCols, DenseMatrixWriter writer)
+            throws IOException {
+        Random random = new Random();
+        List<DenseMatrixRow> rows = new ArrayList<DenseMatrixRow>();
+        int rowIds[] = pickIds(nRows, nRows * 2);
+        int colIds[] = pickIds(numCols, numCols * 2);
+        for (int id1 : rowIds) {
+            LinkedHashMap<Integer, Float> data = new LinkedHashMap<Integer, Float>();
+            for (int id2 : colIds) {
+                data.put(id2, random.nextFloat());
+            }
+            DenseMatrixRow row = new DenseMatrixRow(new ValueConf(), id1, data);
             if (writer == null) {
                 rows.add(row);
             } else {

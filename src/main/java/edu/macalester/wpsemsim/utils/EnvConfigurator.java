@@ -3,6 +3,7 @@ package edu.macalester.wpsemsim.utils;
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.*;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.matrix.Matrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.LoessNormalizer;
@@ -70,37 +71,49 @@ public class EnvConfigurator {
     public EnvConfigurator(Options options, String args[]) throws ParseException, IOException, ConfigurationException {
         this.env = new Env();
 
-        options.addOption(new DefaultOptionBuilder()
+        Option newOpts[] = new Option[] {
+            new DefaultOptionBuilder()
                 .isRequired()
                 .hasArg()
                 .withLongOpt("conf")
                 .withDescription("Path to configuration file.")
-                .create('c'));
-        options.addOption(new DefaultOptionBuilder()
+                .create('c'),
+            new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("gold")
                 .withDescription("Path to gold standard")
-                .create('g'));
-        options.addOption(new DefaultOptionBuilder()
+                .create('g'),
+            new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("threads")
                 .withDescription("Number of threads")
-                .create('e'));
-        options.addOption(new DefaultOptionBuilder()
+                .create('e'),
+            new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("titles")
                 .withDescription("Input phrases are article titles (takes path to dictionary database).")
-                .create('t'));
-        options.addOption(new DefaultOptionBuilder()
+                .create('t'),
+            new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("results")
                 .withDescription("Maximum number of similar wikipedia pages.")
-                .create('r'));
-        options.addOption(new DefaultOptionBuilder()
+                .create('r'),
+            new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("validIds")
                 .withDescription("Ids that can be included in results list.")
-                .create('v'));
+                .create('v')
+        };
+
+        for (Option o : newOpts) {
+            if (options.hasOption(o.getOpt())) {
+                throw new IllegalArgumentException("option " + o.getOpt() + " appears twice.");
+            }
+            if (options.hasOption(o.getLongOpt())) {
+                throw new IllegalArgumentException("option " + o.getOpt() + " appears twice.");
+            }
+            options.addOption(o);
+        }
 
         CommandLineParser parser = new PosixParser();
         this.cmd = parser.parse(options, args);
@@ -251,6 +264,8 @@ public class EnvConfigurator {
                 mapper = getLuceneMapper(name);
             } else if (type.equals("ensemble")) {
                 mapper = getEnsembleMapper(name);
+            } else if (type.equals("hierarchical")) {
+                mapper = getHierarchicalMapper(name);
             } else {
                 throw new ConfigurationException("unknown type for mapper " + name + ": " + type);
             }
@@ -512,6 +527,15 @@ public class EnvConfigurator {
         } catch (DatabaseException e) {
             throw new IOException(e);
         }
+    }
+
+    private ConceptMapper getHierarchicalMapper(String name) throws IOException, ConfigurationException {
+        JSONObject params = configuration.getMapper(name);
+        List<ConceptMapper> delegates = new ArrayList<ConceptMapper>();
+        for (String n : requireListOfStrings(params, "delegates")) {
+            delegates.add(loadMapper(n));
+        }
+        return new HierarchicalMapper(delegates);
     }
 
     private void info(String message) {
