@@ -9,9 +9,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,7 +23,6 @@ public class DenseMatrix implements Matrix<DenseMatrixRow> {
     public static final Logger LOG = Logger.getLogger(DenseMatrix.class.getName());
 
     public static int DEFAULT_MAX_PAGE_SIZE = Integer.MAX_VALUE;
-    public static boolean DEFAULT_LOAD_ALL_PAGES = true;
 
     public static final int FILE_HEADER = 0xabccba;
 
@@ -39,17 +36,23 @@ public class DenseMatrix implements Matrix<DenseMatrixRow> {
     MemoryMappedMatrix rowBuffers;
     private ValueConf vconf;
 
-    public DenseMatrix(File path) throws IOException {
-        this(path, DEFAULT_LOAD_ALL_PAGES, DEFAULT_MAX_PAGE_SIZE);
-    }
-
-    public DenseMatrix(File path, boolean loadAllPages, int maxPageSize) throws IOException {
+    /**
+     * Create a dense matrix based on the data in a particular file.
+     * @param path Path to the matrix data file.
+     * @param maxOpenPages The maximum number of memory mapped pages that can be open at once.
+     * @param maxPageSize The maximum size of a memory mapped page.
+     * @throws IOException
+     */
+    public DenseMatrix(File path, int maxOpenPages, int maxPageSize) throws IOException {
+        if (maxOpenPages <= 0) {
+            throw new IllegalArgumentException("maxOpenPages must be at least 1");
+        }
         this.path = path;
         this.maxPageSize = maxPageSize;
         info("initializing sparse matrix with file length " + FileUtils.sizeOf(path));
         this.channel = (new FileInputStream(path)).getChannel();
         readHeaders();
-        rowBuffers = new MemoryMappedMatrix(path, channel, rowOffsets, loadAllPages, maxPageSize);
+        rowBuffers = new MemoryMappedMatrix(path, channel, rowOffsets, maxOpenPages, maxPageSize);
     }
 
     private void readHeaders() throws IOException {

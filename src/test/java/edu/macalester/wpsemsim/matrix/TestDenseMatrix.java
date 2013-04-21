@@ -35,18 +35,18 @@ public class TestDenseMatrix {
     public void testReadWrite() throws IOException {
         File tmp = File.createTempFile("matrix", null);
         DenseMatrixWriter.write(tmp, srcRows.iterator());
-        DenseMatrix m1 = new DenseMatrix(tmp, true, PAGE_SIZE);
-        DenseMatrix m2 = new DenseMatrix(tmp, false, PAGE_SIZE);
+        DenseMatrix m1 = new DenseMatrix(tmp, Integer.MAX_VALUE, PAGE_SIZE);
+        DenseMatrix m2 = new DenseMatrix(tmp, 1, PAGE_SIZE);
     }
 
     @Test
     public void testTranspose() throws IOException {
-        for (boolean loadAllPages : new boolean[] { true, false}) {
+        for (int numOpenPages: new int[] { 1, Integer.MAX_VALUE}) {
             File tmp1 = File.createTempFile("matrix", null);
             File tmp2 = File.createTempFile("matrix", null);
             File tmp3 = File.createTempFile("matrix", null);
             DenseMatrixWriter.write(tmp1, srcRows.iterator());
-            DenseMatrix m = new DenseMatrix(tmp1, loadAllPages, MAX_KEY * 50);
+            DenseMatrix m = new DenseMatrix(tmp1, numOpenPages, MAX_KEY * 50);
             verifyIsSourceMatrix(m);
 //            new SparseMatrixTransposer(m, tmp2, 1).transpose();
 //            SparseMatrix m2 = new SparseMatrix(tmp2, loadAllPages, MAX_KEY * 50);
@@ -59,10 +59,10 @@ public class TestDenseMatrix {
 
     @Test
     public void testRows() throws IOException {
-        for (boolean loadAllPages : new boolean[] { true, false}) {
+        for (int numOpenPages: new int[] { 1, Integer.MAX_VALUE}) {
             File tmp = File.createTempFile("matrix", null);
             DenseMatrixWriter.write(tmp, srcRows.iterator());
-            DenseMatrix m = new DenseMatrix(tmp, loadAllPages, PAGE_SIZE);
+            DenseMatrix m = new DenseMatrix(tmp, numOpenPages, PAGE_SIZE);
             verifyIsSourceMatrix(m);
         }
     }

@@ -24,7 +24,6 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
     public static final Logger LOG = Logger.getLogger(SparseMatrix.class.getName());
 
     public static int DEFAULT_MAX_PAGE_SIZE = Integer.MAX_VALUE;
-    public static boolean DEFAULT_LOAD_ALL_PAGES = true;
 
     public static final int FILE_HEADER = 0xabcdef;
 
@@ -39,16 +38,16 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
     private ValueConf vconf;
 
     public SparseMatrix(File path) throws IOException {
-        this(path, DEFAULT_LOAD_ALL_PAGES, DEFAULT_MAX_PAGE_SIZE);
+        this(path, Integer.MAX_VALUE, DEFAULT_MAX_PAGE_SIZE);
     }
 
-    public SparseMatrix(File path, boolean loadAllPages, int maxPageSize) throws IOException {
+    public SparseMatrix(File path, int maxOpenPages, int maxPageSize) throws IOException {
         this.path = path;
         this.maxPageSize = maxPageSize;
         info("initializing sparse matrix with file length " + FileUtils.sizeOf(path));
         this.channel = (new FileInputStream(path)).getChannel();
         readHeaders();
-        rowBuffers = new MemoryMappedMatrix(path, channel, rowOffsets, loadAllPages, maxPageSize);
+        rowBuffers = new MemoryMappedMatrix(path, channel, rowOffsets, maxOpenPages, maxPageSize);
     }
 
     private void readHeaders() throws IOException {

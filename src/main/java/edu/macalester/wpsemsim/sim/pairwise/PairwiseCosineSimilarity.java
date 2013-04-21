@@ -185,7 +185,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
                     + " path_matrix path_matrix_transpose path_output maxResultsPerDoc [num-cores]");
             System.exit(1);
         }
-        SparseMatrix matrix = new SparseMatrix(new File(args[0]), false, PAGE_SIZE);
+        SparseMatrix matrix = new SparseMatrix(new File(args[0]), 1, PAGE_SIZE);
         SparseMatrix transpose = new SparseMatrix(new File(args[1]));
         PairwiseCosineSimilarity sim = new PairwiseCosineSimilarity(matrix, transpose);
         int cores = (args.length == 5)

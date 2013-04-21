@@ -2,16 +2,14 @@ package edu.macalester.wpsemsim.matrix;
 
 import gnu.trove.map.hash.TIntLongHashMap;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.collections.map.LinkedMap;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,18 +22,20 @@ public class MemoryMappedMatrix {
     public static final Logger LOG = Logger.getLogger(MemoryMappedMatrix.class.getName());
 
     private int maxPageSize;
-    private boolean loadAllPages = true;
     private TIntLongHashMap rowOffsets = new TIntLongHashMap();
     private FileChannel channel;
     protected List<MappedBufferWrapper> buffers = new ArrayList<MappedBufferWrapper>();
     private File path;
 
+    private LruQueue<MappedBufferWrapper> queue = new LruQueue<MappedBufferWrapper>();
+    private int maxOpenPages;
+
     public MemoryMappedMatrix(File path, FileChannel channel,TIntLongHashMap rowOffsets,
-                              boolean loadAllPages, int maxPageSize) throws IOException {
+                              int maxOpenPages, int maxPageSize) throws IOException {
         this.path = path;
         this.channel = channel;
         this.rowOffsets = rowOffsets;
-        this.loadAllPages = loadAllPages;
+        this.maxOpenPages = maxOpenPages;
         this.maxPageSize = maxPageSize;
         pageInRows();
     }
@@ -71,19 +71,32 @@ public class MemoryMappedMatrix {
             return null;
         }
         long targetOffset = rowOffsets.get(rowId);
-        ByteBuffer row = null;
+        MappedBufferWrapper row = null;
         for (int i = 0; i < buffers.size(); i++) {
             MappedBufferWrapper wrapper = buffers.get(i);
             if (wrapper.start <= targetOffset && targetOffset < wrapper.end) {
-                row = wrapper.get(targetOffset);
-            } else if (!loadAllPages) {
-                wrapper.close();
+                row = wrapper;
             }
         }
         if (row == null) {
             throw new IllegalArgumentException("did not find row " + rowId + " with offset " + targetOffset);
+        }
+        // free queued pages if necessary
+        if (rowOffsets.size() > maxOpenPages) {
+            synchronized (queue) {
+                queue.enqueue(row);
+                while (queue.size() > maxOpenPages) {
+                    MappedBufferWrapper last = queue.dequeue();
+//                    info("closing " + last.start);
+                    last.close();
+                }
+//                info("opening " + row.start);
+                // buffer allocation must happen in the synchronized block
+                // so other calls do not simultaneously free the buffer
+                return row.get(targetOffset);
+            }
         } else {
-            return row;
+            return row.get(targetOffset);
         }
     }
 
@@ -123,6 +136,24 @@ public class MemoryMappedMatrix {
 
     private void info(String message) {
         LOG.log(Level.INFO, "sparse matrix " + path + ": " + message);
+    }
+
+    static class LruQueue<T> {
+        private LinkedMap lruMap = new LinkedMap();
+
+        public void enqueue(T elem) {
+            lruMap.put(elem, null);
+        }
+
+        public T dequeue() {
+            T first = (T) lruMap.firstKey();
+            lruMap.remove(first);
+            return first;
+        }
+
+        public int size() {
+            return lruMap.size();
+        }
     }
 
 }

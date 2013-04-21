@@ -34,23 +34,23 @@ public class TestSparseMatrix {
     public void testReadWrite() throws IOException {
         File tmp = File.createTempFile("matrix", null);
         SparseMatrixWriter.write(tmp, srcRows.iterator());
-        Matrix m1 = new SparseMatrix(tmp, true, NUM_ROWS*20);
-        Matrix m2 = new SparseMatrix(tmp, false, NUM_ROWS*20);
+        Matrix m1 = new SparseMatrix(tmp, Integer.MAX_VALUE, NUM_ROWS*20);
+        Matrix m2 = new SparseMatrix(tmp, 1, NUM_ROWS*20);
     }
 
     @Test
     public void testTranspose() throws IOException {
-        for (boolean loadAllPages : new boolean[] { true, false}) {
+        for (int numOpenPages: new int[] { 1, Integer.MAX_VALUE}) {
             File tmp1 = File.createTempFile("matrix", null);
             File tmp2 = File.createTempFile("matrix", null);
             File tmp3 = File.createTempFile("matrix", null);
             SparseMatrixWriter.write(tmp1, srcRows.iterator());
-            SparseMatrix m = new SparseMatrix(tmp1, loadAllPages, MAX_KEY * 50);
+            SparseMatrix m = new SparseMatrix(tmp1, numOpenPages, MAX_KEY * 50);
             verifyIsSourceMatrix(m);
             new SparseMatrixTransposer(m, tmp2, 1).transpose();
-            SparseMatrix m2 = new SparseMatrix(tmp2, loadAllPages, MAX_KEY * 50);
+            SparseMatrix m2 = new SparseMatrix(tmp2, numOpenPages, MAX_KEY * 50);
             new SparseMatrixTransposer(m2, tmp3, 1).transpose();
-            Matrix m3 = new SparseMatrix(tmp3, loadAllPages, MAX_KEY * 50);
+            Matrix m3 = new SparseMatrix(tmp3, numOpenPages, MAX_KEY * 50);
             verifyIsSourceMatrixUnordered(m3, .001);
         }
     }
@@ -58,10 +58,10 @@ public class TestSparseMatrix {
 
     @Test
     public void testRows() throws IOException {
-        for (boolean loadAllPages : new boolean[] { true, false}) {
+        for (int numOpenPages: new int[] { 1, Integer.MAX_VALUE}) {
             File tmp = File.createTempFile("matrix", null);
             SparseMatrixWriter.write(tmp, srcRows.iterator());
-            Matrix m = new SparseMatrix(tmp, loadAllPages, NUM_ROWS * 20);
+            Matrix m = new SparseMatrix(tmp, numOpenPages, NUM_ROWS * 20);
             verifyIsSourceMatrix(m);
         }
     }

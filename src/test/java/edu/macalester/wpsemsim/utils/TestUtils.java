@@ -151,7 +151,7 @@ public class TestUtils {
      * @return
      */
     public static SparseMatrix createSparseTestMatrix(int nRows, int maxRowLen, boolean sameIds) throws IOException {
-        return createSparseTestMatrix(nRows, maxRowLen, SparseMatrix.DEFAULT_LOAD_ALL_PAGES, SparseMatrix.DEFAULT_MAX_PAGE_SIZE, sameIds);
+        return createSparseTestMatrix(nRows, maxRowLen, true, SparseMatrix.DEFAULT_MAX_PAGE_SIZE, sameIds);
     }
     public static SparseMatrix createSparseTestMatrix(int nRows, int maxRowLen, boolean readAllRows, int pageSize, boolean sameIds) throws IOException {
         File tmpFile = File.createTempFile("matrix", null);
@@ -159,8 +159,10 @@ public class TestUtils {
         SparseMatrixWriter writer = new SparseMatrixWriter(tmpFile, new ValueConf());
         createSparseTestMatrixRowsInternal(nRows, maxRowLen, sameIds, writer);
         writer.finish();
-        return new SparseMatrix(tmpFile, readAllRows, pageSize);
+        return new SparseMatrix(tmpFile, readAllRows ? Integer.MAX_VALUE : 1, pageSize);
     }
+
+    /*
     public static DenseMatrix createDenseTestMatrix(int nRows, int numCols) throws IOException {
         return createDenseTestMatrix(nRows, numCols, SparseMatrix.DEFAULT_LOAD_ALL_PAGES, SparseMatrix.DEFAULT_MAX_PAGE_SIZE);
     }
@@ -172,6 +174,7 @@ public class TestUtils {
         writer.finish();
         return new DenseMatrix(tmpFile, readAllRows, pageSize);
     }
+    */
 
 
     /**

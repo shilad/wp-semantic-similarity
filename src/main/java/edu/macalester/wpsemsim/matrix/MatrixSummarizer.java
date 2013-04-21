@@ -83,7 +83,7 @@ public class MatrixSummarizer {
                                 " path_matrix path_lucene_index");
             System.exit(1);
         }
-        SparseMatrix matrix = new SparseMatrix(new File(args[0]), false, 500*1024*1024);
+        SparseMatrix matrix = new SparseMatrix(new File(args[0]), 1, 500*1024*1024);
         IndexHelper helper = new IndexHelper(new File(args[1]), false);
         new MatrixSummarizer().summarize(matrix, helper);
     }
