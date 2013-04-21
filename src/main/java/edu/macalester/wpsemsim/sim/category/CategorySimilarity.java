@@ -46,6 +46,9 @@ public class CategorySimilarity extends BaseSimilarityMetric {
 
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet possibleWpIds) throws IOException {
+        if (hasCachedMostSimilar(wpId)) {
+            return getCachedMostSimilar(wpId);
+        }
         int luceneId = helper.wpIdToLuceneId(wpId);
         if (luceneId < 0) {
             LOG.info("unknown wpId: " + wpId);

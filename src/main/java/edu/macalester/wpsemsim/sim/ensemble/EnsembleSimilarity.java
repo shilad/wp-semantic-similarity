@@ -70,6 +70,9 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
 
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
+        if (hasCachedMostSimilar(wpId)) {
+            return getCachedMostSimilar(wpId);
+        }
         // build up example objects for each related page.
         Map<Integer, Example> features = new HashMap<Integer, Example>();
         for (int i = 0; i < components.size(); i++) {

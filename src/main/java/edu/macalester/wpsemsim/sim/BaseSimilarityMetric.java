@@ -3,6 +3,8 @@ package edu.macalester.wpsemsim.sim;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.concepts.Disambiguator;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.matrix.SparseMatrix;
+import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.utils.DocScoreList;
@@ -40,6 +42,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
 
     // turned off while training the normalizer
     private boolean useNormalizer = true;
+    protected SparseMatrix mostSimilarMatrix;
 
     public BaseSimilarityMetric(ConceptMapper mapper, IndexHelper helper) {
         this.mapper = mapper;
@@ -52,6 +55,29 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
             LOG.warning("IndexHelper is null. Will not be able to resolve phrases to concepts.");
         }
         this.disambiguator = new Disambiguator(mapper, this, helper, 5);
+    }
+
+    public void setMostSimilarMatrix(SparseMatrix matrix) {
+        this.mostSimilarMatrix = matrix;
+    }
+
+    public boolean hasCachedMostSimilar(int wpId) throws IOException {
+        return mostSimilarMatrix != null && mostSimilarMatrix.getRow(wpId) != null;
+    }
+
+    public DocScoreList getCachedMostSimilar(int wpId) throws IOException {
+        if (mostSimilarMatrix == null) {
+            return null;
+        }
+        SparseMatrixRow row = mostSimilarMatrix.getRow(wpId);
+        if (row == null) {
+            return null;
+        }
+        DocScoreList dsl = new DocScoreList(row.getNumCols());
+        for (int i = 0; i < row.getNumCols(); i++) {
+            dsl.set(i, row.getColIndex(i), row.getColValue(i));
+        }
+        return dsl;
     }
 
     /**

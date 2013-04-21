@@ -3,7 +3,6 @@ package edu.macalester.wpsemsim.utils;
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.*;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
-import edu.macalester.wpsemsim.matrix.Matrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.LoessNormalizer;

@@ -124,6 +124,9 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
 
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
+        if (hasCachedMostSimilar(wpId)) {
+            return getCachedMostSimilar(wpId);
+        }
         MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = helper.wpIdToLuceneId(wpId);
         if (luceneId < 0) {
