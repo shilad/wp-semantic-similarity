@@ -28,14 +28,14 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
 
     public static final int FILE_HEADER = 0xabcdef;
 
+    MemoryMappedMatrix rowBuffers;
+
     public int maxPageSize = DEFAULT_MAX_PAGE_SIZE;
-    private boolean loadAllPages = true;
     private TIntLongHashMap rowOffsets = new TIntLongHashMap();
     private int rowIds[];
     private FileChannel channel;
     private File path;
 
-    protected List<MappedBufferWrapper> buffers = new ArrayList<MappedBufferWrapper>();
     private ValueConf vconf;
 
     public SparseMatrix(File path) throws IOException {
@@ -44,12 +44,11 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
 
     public SparseMatrix(File path, boolean loadAllPages, int maxPageSize) throws IOException {
         this.path = path;
-        this.loadAllPages = loadAllPages;
         this.maxPageSize = maxPageSize;
         info("initializing sparse matrix with file length " + FileUtils.sizeOf(path));
         this.channel = (new FileInputStream(path)).getChannel();
         readHeaders();
-        pageInRows();
+        rowBuffers = new MemoryMappedMatrix(path, channel, rowOffsets, loadAllPages, maxPageSize);
     }
 
     private void readHeaders() throws IOException {
@@ -73,48 +72,14 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
         info("read " + numRows + " offsets");
     }
 
-    private void pageInRows() throws IOException {
-        // tricky: pages must align with row boundaries
-        long startPos = rowOffsets.get(rowIds[0]);
-        long lastPos = startPos;
-
-        for (int i = 1; i < getNumRows(); i++) {
-            long pos = rowOffsets.get(rowIds[i]);
-            if (pos - startPos > maxPageSize) {
-                assert(lastPos != startPos);
-                addBuffer(startPos, lastPos);
-                startPos = lastPos;
-            }
-            lastPos = pos;
-        }
-        addBuffer(startPos, FileUtils.sizeOf(path));
-    }
-
-    private void addBuffer(long startPos, long endPos) throws IOException {
-        long length = endPos - startPos;
-        info("adding page at " + startPos + " of length " + length);
-        buffers.add(new MappedBufferWrapper(channel, startPos, endPos));
-    }
 
     @Override
     public SparseMatrixRow getRow(int rowId) throws IOException {
-        if (!rowOffsets.containsKey(rowId)) {
+        ByteBuffer bb = rowBuffers.getRow(rowId);
+        if (bb == null) {
             return null;
-        }
-        SparseMatrixRow row = null;
-        long targetOffset = rowOffsets.get(rowId);
-        for (int i = 0; i < buffers.size(); i++) {
-            MappedBufferWrapper wrapper = buffers.get(i);
-            if (wrapper.start <= targetOffset && targetOffset < wrapper.end) {
-                row = new SparseMatrixRow(vconf, wrapper.get(targetOffset));
-            } else if (!loadAllPages) {
-                wrapper.close();
-            }
-        }
-        if (row == null) {
-            throw new IllegalArgumentException("did not find row " + rowId + " with offset " + targetOffset);
         } else {
-            return row;
+            return new SparseMatrixRow(vconf, bb);
         }
     }
 
@@ -168,29 +133,6 @@ public class SparseMatrix implements Matrix<SparseMatrixRow> {
         @Override
         public void remove() {
             throw new UnsupportedOperationException();
-        }
-    }
-
-    class MappedBufferWrapper {
-        FileChannel channel;
-        MappedByteBuffer buffer;
-        long start;
-        long end;
-
-        public MappedBufferWrapper(FileChannel channel, long start, long end) {
-            this.channel = channel;
-            this.start = start;
-            this.end = end;
-        }
-        public synchronized ByteBuffer get(long position) throws IOException {
-            if (buffer == null) {
-                buffer = channel.map(FileChannel.MapMode.READ_ONLY, start, end - start);
-            }
-            buffer.position((int) (position - start));
-            return buffer.slice();
-        }
-        public synchronized void close() {
-            buffer = null;
         }
     }
 

@@ -335,7 +335,8 @@ public class EnvConfigurator {
             return env.getMetric(name);
         }
         info("loading metric " + name);
-        String type = requireString(configuration.getMetric(name), "type");
+        JSONObject params = configuration.getMetric(name);
+        String type = requireString(params, "type");
         SimilarityMetric metric;
         if (type.equals("category")) {
             metric = createCategorySimilarity(name);
@@ -356,7 +357,11 @@ public class EnvConfigurator {
             ((BaseSimilarityMetric)metric).setNumThreads(env.getNumThreads());
         }
         metric.setName(name);
-        JSONObject params = configuration.getMetric(name);
+        if (params.containsKey("mostSimilarMatrix")) {
+            File path = requireFile(params, "mostSimilarMatrix");
+            SparseMatrix m = new SparseMatrix(path, false, 1024*1024*1024); // 1GB
+            ((BaseSimilarityMetric)metric).setMostSimilarMatrix(m);
+        }
         if (readModel) {
             LOG.info("reading model from " + getModelDirectory(metric));
             metric.read(getModelDirectory(metric));

@@ -19,7 +19,7 @@ public class TestMmapMemoryLeak {
         SparseMatrix m = TestUtils.createSparseTestMatrix(NUM_ROWS, MAX_ROW_LENGTH, false, NUM_ROWS * 20, false);
         MatrixRow first = m.getRow(m.getRowIds()[0]); // force the first page to loadAllMetrics.
         first = null;
-        MappedByteBuffer buffer = m.buffers.get(0).buffer;
+        MappedByteBuffer buffer = m.rowBuffers.buffers.get(0).buffer;
         MemoryLeakVerifier verifier = new MemoryLeakVerifier(buffer);
         assertNotNull(buffer);
         int i = 0;
@@ -27,7 +27,7 @@ public class TestMmapMemoryLeak {
             i++;
         }
         assertEquals(i, NUM_ROWS);
-        buffer = m.buffers.get(0).buffer;
+        buffer = m.rowBuffers.buffers.get(0).buffer;
         assertNull(buffer); // only the last page should be loaded
         verifier.assertGarbageCollected("mapped byte buffer");
     }
