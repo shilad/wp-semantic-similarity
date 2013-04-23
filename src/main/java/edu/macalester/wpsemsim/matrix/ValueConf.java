@@ -16,7 +16,7 @@ public class ValueConf implements Serializable {
     public final float minScore;
     public final float maxScore;
     public final float range;
-    public final int packedRange = (Short.MAX_VALUE - Short.MIN_VALUE);
+    public static final int PACKED_RANGE = (Short.MAX_VALUE - Short.MIN_VALUE);
 
     public ValueConf() {
         this(MIN_SCORE, MAX_SCORE);
@@ -30,11 +30,11 @@ public class ValueConf implements Serializable {
 
     public final short pack(float s) {
         float normalized = (pinchScore(s) - minScore) / range;
-        return  (short)(normalized * packedRange + Short.MIN_VALUE);
+        return  (short)(normalized * PACKED_RANGE + Short.MIN_VALUE);
     }
 
     public final float unpack(short s) {
-        float f = (1.0f * (s - Short.MIN_VALUE) / packedRange) * range + minScore;
+        float f = (1.0f * (s - Short.MIN_VALUE) / PACKED_RANGE) * range + minScore;
         assert(minScore <= f && f <= maxScore);
         return f;
     }
@@ -46,12 +46,11 @@ public class ValueConf implements Serializable {
     }
 
     public boolean almostEquals(ValueConf vconf) {
-        double delta = 0.001;   // allowed error
+        double delta = 0.001 * Math.min(range, vconf.range);   // allowed error
         return (
-                (Math.abs(1.0 - minScore / vconf.minScore) < delta) &&
-                (Math.abs(1.0 - maxScore / vconf.maxScore) < delta) &&
-                (Math.abs(1.0 - range / vconf.range) < delta) &&
-                (Math.abs(1.0 - 1.0 * packedRange / vconf.packedRange) < delta)
+                (Math.abs(minScore - vconf.minScore) < delta) &&
+                (Math.abs(maxScore - vconf.maxScore) < delta) &&
+                (Math.abs(range - vconf.range) < delta)
             );
     }
 }
