@@ -210,6 +210,9 @@ public class PhraseAnalyzer {
     }
 
     private double cosine(DocScoreList dsl1, DocScoreList dsl2) {
+        if (dsl1 == null || dsl2 == null) {
+            return 0.0;
+        }
         double len1 = 0.0;
         double len2 = 0.0;
         double dot = 0.0;
