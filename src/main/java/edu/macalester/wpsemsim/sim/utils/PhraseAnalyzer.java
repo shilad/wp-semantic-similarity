@@ -92,6 +92,7 @@ public class PhraseAnalyzer {
         ParallelForEach.loop(phrases, env.getNumThreads(), new Function<PhraseInfo>() {
             public void call(PhraseInfo pi) throws Exception {
                 pi.mostSimilar = metric.mostSimilar(pi.wpId, env.getNumMostSimilarResults(), env.getValidIds());
+                if (pi.mostSimilar == null) pi.mostSimilar = new DocScoreList(0);
                 pi.pairwiseSims = new float[phrases.size()];
             }
         });
@@ -210,7 +211,7 @@ public class PhraseAnalyzer {
     }
 
     private double cosine(DocScoreList dsl1, DocScoreList dsl2) {
-        if (dsl1 == null || dsl2 == null) {
+        if (dsl1.numDocs() == 0 || dsl2.numDocs() == 0) {
             return 0.0;
         }
         double len1 = 0.0;
