@@ -186,7 +186,7 @@ public class PhraseAnalyzer {
         int colIds[] = new int[phrases.size()];
         for (int i = 0; i < colIds.length; i++) { colIds[i] = i; }
         ValueConf vconf = new ValueConf((float)min, (float)max);
-        DenseMatrixWriter writer = new DenseMatrixWriter(path, new ValueConf());
+        DenseMatrixWriter writer = new DenseMatrixWriter(path, vconf);
         for (int i = 0; i < phrases.size(); i++) {
             writer.writeRow(new DenseMatrixRow(vconf, i, colIds, phrases.get(i).pairwiseSims));
         }
