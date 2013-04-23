@@ -116,6 +116,23 @@ public class PhraseAnalyzer {
         writePhraseMappings(new File(outputDir, "phrases.tsv"));
         writeMostSimilar(new File(outputDir, "mostSimilar.matrix"));
         writeSimilarity(new File(outputDir, "similarity.matrix"));
+        writePhraseSimilarities(new File(outputDir, "phrase_sims.tsv"));
+    }
+
+    private void writePhraseSimilarities(File file) throws IOException {
+        LOG.info("writing pairwise phrase sims to " + file);
+        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+        for (PhraseInfo pi : phrases) {
+            for (int i = 0; i < phrases.size(); i++) {
+                writer.write(
+                        "" + pi.pairwiseSims[i] +
+                        "\t" + pi.phrase +
+                        "\t" + phrases.get(i).phrase
+                );
+            }
+        }
+        writer.close();
+        LOG.info("finished writing pairwise phrase sims to " + file);
     }
 
     private void writeMostSimilar(File path) throws IOException {
