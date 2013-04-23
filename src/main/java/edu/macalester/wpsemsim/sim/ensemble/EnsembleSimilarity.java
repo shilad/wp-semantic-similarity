@@ -7,7 +7,9 @@ import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimScore;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.*;
+import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -74,7 +76,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
             return getCachedMostSimilar(wpId);
         }
         // build up example objects for each related page.
-        Map<Integer, Example> features = new HashMap<Integer, Example>();
+        TIntObjectMap<Example> features = new TIntObjectHashMap<Example>();
         for (int i = 0; i < components.size(); i++) {
             DocScoreList top = components.get(i).mostSimilar(wpId, maxResults * 2, validIds);
             if (top == null) {
@@ -97,7 +99,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
         // Generate predictions for all pages that have enough component scores
         int n = 0;
         DocScoreList list = new DocScoreList(features.size());
-        for (int wpId2 : features.keySet()) {
+        for (int wpId2 : features.keys()) {
             Example ex = features.get(wpId2).makeDense(components.size());
             if (ex.getNumNotNan() >= minComponents) {
                 double pred = ensemble.predict(ex, false);

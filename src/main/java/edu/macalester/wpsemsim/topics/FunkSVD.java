@@ -1,13 +1,14 @@
 package edu.macalester.wpsemsim.topics;
 
-import edu.macalester.wpsemsim.matrix.Matrix;
-import edu.macalester.wpsemsim.matrix.MatrixRow;
-import edu.macalester.wpsemsim.matrix.SparseMatrix;
-import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
+import edu.macalester.wpsemsim.matrix.*;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Random;
 import java.util.logging.Logger;
@@ -161,16 +162,77 @@ public class FunkSVD {
         }
     }
 
-    private void write(File file) {
+    public void write(File dir) throws IOException {
+        // write columns
+        BufferedWriter idFile = new BufferedWriter(new FileWriter(new File(dir, "column_ids.tsv")));
+        for (int wpId : reverseColumnMap) {
+            idFile.write(wpId + "\n");
+        }
+        idFile.close();
+
+        // write rows
+        idFile = new BufferedWriter(new FileWriter(new File(dir, "row_ids.tsv")));
+        for (int wpId : matrix.getRowIds()) {
+            idFile.write(wpId + "\n");
+        }
+        idFile.close();
+
+        // create fake dense ids
+        int colIds[] = new int[rank];
+        for (int i = 0; i < rank; i++) colIds[i] = i;
+
+        // write dense rows
+        double range[] = getMaxAndMin(rowApproximations);
+        ValueConf vconf = new ValueConf((float)range[0], (float)range[1]);
+        DenseMatrixWriter writer = new DenseMatrixWriter(new File(dir, "row_estimates.matrix"), vconf);
+        for (int i = 0; i < rowApproximations.length; i++) {
+            int rowId = matrix.getRowIds()[i];
+            float row[] = doubleArrayToFloats(rowApproximations[i]);
+            writer.writeRow(new DenseMatrixRow(vconf, rowId, colIds, row));
+        }
+        writer.finish();
+
+        // write dense cols
+        range = getMaxAndMin(columnApproximations);
+        vconf = new ValueConf((float)range[0], (float)range[1]);
+        writer = new DenseMatrixWriter(new File(dir, "col_estimates.matrix"), vconf);
+        for (int i = 0; i < columnApproximations.length; i++) {
+            int rowId = reverseColumnMap[i];
+            float row[] = doubleArrayToFloats(columnApproximations[i]);
+            writer.writeRow(new DenseMatrixRow(vconf, rowId, colIds, row));
+        }
+        writer.finish();
+    }
+
+    private double[] getMaxAndMin(double X[][]) {
+        double min = Double.POSITIVE_INFINITY;
+        double max = Double.NEGATIVE_INFINITY;
+        for (double Y[] : X) {
+            for (double x : Y) {
+                min = Math.min(x, min);
+                max = Math.max(x, min);
+            }
+        }
+        return new double[] { min, max };
+    }
+
+    private float[] doubleArrayToFloats(double X[]) {
+        float fX[] = new float[X.length];
+        for (int i = 0; i < X.length; i++) { fX[i] = (float)X[i]; }
+        return fX;
     }
 
     public static void main(String args[]) throws IOException {
-        if (args.length != 2) {
-            System.err.println("usage: java " + FunkSVD.class.getName() + " path_matrix rank");
+        if (args.length != 3) {
+            System.err.println("usage: java " + FunkSVD.class.getName() + " path_matrix output_dir rank");
             System.exit(1);
         }
-        SparseMatrix m = new SparseMatrix(new File(args[0]));
+        File pathIn = new File(args[0]);
+        File pathOut = new File(args[1]);
+        if (pathOut.exists()) { FileUtils.deleteDirectory(pathOut); }
+        SparseMatrix m = new SparseMatrix(pathIn);
         FunkSVD svd = new FunkSVD(m, Integer.valueOf(args[1]));
         svd.estimate();
+        svd.write(pathOut);
     }
 }

@@ -359,9 +359,9 @@ public class EnvConfigurator {
         metric.setName(name);
         if (params.containsKey("mostSimilarMatrix")) {
             File path = requireFile(params, "mostSimilarMatrix");
+            LOG.info("setting most similar matrix for " + name + " to " + path);
             SparseMatrix m = new SparseMatrix(path, 3, 1024*1024*1024); // 3 * 1GB
             ((BaseSimilarityMetric)metric).setMostSimilarMatrix(m);
-            LOG.info("setting most similar matrix for " + name + " to " + path);
         }
         if (readModel) {
             LOG.info("reading model from " + getModelDirectory(metric));
