@@ -107,11 +107,11 @@ public class Disambiguator {
         match.hint = hint;
 
         LinkedHashMap<String, Float> concept1s = mapper.map(phrase, maxConcepts);
-        if (concept1s.isEmpty()) {
+        if (concept1s == null || concept1s.isEmpty()) {
             LOG.info("no concepts for phrase " + phrase);
         }
 
-        if (hint == null) {
+        if (concept1s != null && hint == null) {
             for (String article1 : concept1s.keySet()) {
                 int wpId = helper.titleToWpId(article1);
                 if (wpId > 0) {
@@ -124,12 +124,12 @@ public class Disambiguator {
         }
 
         LinkedHashMap<String, Float> concept2s = mapper.map(hint, maxConcepts);
-        if (concept2s.isEmpty()) {
+        if (concept2s == null || concept2s.isEmpty()) {
             LOG.info("no concepts for phrase " + hint);
         }
 
         // hopeless!
-        if (concept1s.isEmpty()) {
+        if (concept1s == null || concept1s.isEmpty() || concept2s == null || concept2s.isEmpty()) {
             return null;
         }
 

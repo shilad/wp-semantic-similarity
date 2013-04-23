@@ -13,6 +13,7 @@ public class TimingAnalysis {
     List<String> labelOrder = new ArrayList<String>();
     Long overallStartTime;
     Long lastTime;
+    int restarts;
     String prefix;
 
     public TimingAnalysis(String prefix) {
@@ -37,6 +38,7 @@ public class TimingAnalysis {
     public void startTime() {
         lastTime = System.currentTimeMillis();
         overallStartTime = lastTime;
+        restarts++;
     }
 
     public String recordTime(String label) {
@@ -71,13 +73,24 @@ public class TimingAnalysis {
         }
     }
 
-    private static ThreadLocal<TimingAnalysis> local = new ThreadLocal<TimingAnalysis>();
-    public static TimingAnalysis getThreadTimer() {
-        TimingAnalysis t = local.get();
-        if (t == null) {
-            t = new TimingAnalysis();
-            local.set(t);
+    public int getNumRestarts() {
+        return restarts;
+    }
+
+    public static class Factory {
+        private ThreadLocal<TimingAnalysis> local = new ThreadLocal<TimingAnalysis>();
+        private String label;
+
+        public Factory(String label) {
+            this.label = label;
         }
-        return t;
+        public TimingAnalysis get() {
+            TimingAnalysis t = local.get();
+            if (t == null) {
+                t = new TimingAnalysis(label);
+                local.set(t);
+            }
+            return t;
+        }
     }
 }

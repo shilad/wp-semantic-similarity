@@ -10,6 +10,7 @@ import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.procedure.TIntObjectProcedure;
 import gnu.trove.set.TIntSet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -18,6 +19,7 @@ import org.apache.lucene.queryparser.surround.parser.ParseException;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 /**
@@ -70,17 +72,29 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
         throw new UnsupportedOperationException();
     }
 
+    private static final TimingAnalysis.Factory timerFactory = new TimingAnalysis.Factory("ensemble-sim");
+
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
         if (hasCachedMostSimilar(wpId)) {
             return getCachedMostSimilar(wpId);
         }
+        // These steps are staged to make timing analysis easier.
+        TimingAnalysis timer = timerFactory.get();
+        timer.startTime();
+
+        DocScoreList mostSimilar[] = new DocScoreList[components.size()];
+        for (int i = 0; i < components.size(); i++) {
+            mostSimilar[i] = components.get(i).mostSimilar(wpId, maxResults * 2, validIds);
+        }
+        timer.recordTime("component-most-similar");
+
         // build up example objects for each related page.
         TIntObjectMap<Example> features = new TIntObjectHashMap<Example>();
-        for (int i = 0; i < components.size(); i++) {
-            DocScoreList top = components.get(i).mostSimilar(wpId, maxResults * 2, validIds);
+        for (int i = 0; i < mostSimilar.length; i++) {
+            DocScoreList top= mostSimilar[i];
             if (top == null) {
-                return null;
+                continue;
             }
             for (int j = 0; j < top.numDocs(); j++) {
                 DocScore ds = top.get(j);
@@ -95,27 +109,42 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
                 }
             }
         }
+        timer.recordTime("make-examples");
 
         // Generate predictions for all pages that have enough component scores
-        int n = 0;
-        DocScoreList list = new DocScoreList(features.size());
-        for (int wpId2 : features.keys()) {
-            Example ex = features.get(wpId2).makeDense(components.size());
-            if (ex.getNumNotNan() >= minComponents) {
-                double pred = ensemble.predict(ex, false);
-                if (!Double.isNaN(pred)) {
-                    list.set(n++, wpId2, pred);
+        final DocScoreList list = new DocScoreList(features.size());
+        final int n[] = new int[1]; // hack for final, fast, counter!
+        features.forEachEntry(new TIntObjectProcedure<Example>() {
+            @Override
+            public boolean execute(int wpId2, Example ex) {
+                if (ex.getNumNotNan() >= minComponents) {
+                    ex = ex.makeDense(components.size());
+                    double pred = ensemble.predict(ex, false);
+                    if (!Double.isNaN(pred)) {
+                        list.set(n[0]++, wpId2, pred);
+                    }
                 }
+                return false;  //To change body of implemented methods use File | Settings | File Templates.
             }
-        }
+        });
+        timer.recordTime("predict");
 
         // Truncate and sort the list.
-        list.truncate(n);
+        list.truncate(n[0]);
         list.sort();
         if (list.numDocs() > maxResults) {
             list.truncate(maxResults);
         }
-        return normalize(list);
+        timer.recordTime("sort");
+
+        DocScoreList normalized = normalize(list);
+        timer.recordTime("normalize");
+
+        if (timer.getNumRestarts() % 5 == 0) {
+            timer.analyze();
+        }
+
+        return normalized;
     }
 
     /**

@@ -198,10 +198,12 @@ public class PhraseAnalyzer {
         LOG.info("writing phrase mappings to " + path);
         BufferedWriter mapping = new BufferedWriter(new FileWriter(path));
         for (int i = 0; i < phrases.size(); i++) {
+            PhraseInfo pi = phrases.get(i);
             mapping.write(
                     i + "\t" +
-                    phrases.get(i).wpId + "\t" +
-                    phrases.get(i).phrase.trim() + "\n"
+                    pi.wpId + "\t" +
+                    pi.phrase.trim() + "\t" +
+                    env.getMainIndex().wpIdToTitle(pi.wpId) + "\n"
             );
         }
         mapping.close();
