@@ -151,9 +151,7 @@ public class PhraseAnalyzer {
 
         LOG.info("writing mostSimilar matrix");
         ValueConf vconf = new ValueConf((float)min, (float)max);
-        SparseMatrixWriter mostSimilarWriter = new SparseMatrixWriter(
-                path,
-                new ValueConf());
+        SparseMatrixWriter mostSimilarWriter = new SparseMatrixWriter(path, vconf);
         TIntSet wpIds = getWpIds();
         for (int i = 0; i < phrases.size(); i++) {
             PhraseInfo pi = phrases.get(i);
