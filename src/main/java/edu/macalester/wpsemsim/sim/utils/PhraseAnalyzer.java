@@ -128,7 +128,7 @@ public class PhraseAnalyzer {
                 writer.write(
                         "" + pi.pairwiseSims[i] +
                         "\t" + pi.phrase +
-                        "\t" + phrases.get(i).phrase
+                        "\t" + phrases.get(i).phrase + "\n"
                 );
             }
         }
