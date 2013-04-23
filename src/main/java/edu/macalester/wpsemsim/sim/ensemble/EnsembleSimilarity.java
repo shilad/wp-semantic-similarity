@@ -103,9 +103,10 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
 //                        features.put(ds.getId(), Example.makeEmpty());
                         features.put(ds.getId(), Example.makeEmptyWithReverse());
                     }
-//                    features.get(ds.getId()).add(new SimScore(i, top, j));
+                    SimScore ss = new SimScore(i, top, j);
+//                    features.get(ds.getId()).add(ss);
                     // HACK!
-                    features.get(ds.getId()).add(new SimScore(i, top, j), new SimScore(i, top, j));
+                    features.get(ds.getId()).add(ss, ss);
                 }
             }
         }

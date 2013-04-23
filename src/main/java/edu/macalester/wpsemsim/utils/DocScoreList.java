@@ -10,6 +10,7 @@ public class DocScoreList implements Iterable<DocScore> {
     private DocScore[] results;
     private int numDocs;
     private double missingScore;    // score for missing documents.
+    private float scores[];         // performance optimization
 
     public DocScoreList(int maxNumDocs) {
         this.results = new DocScore[maxNumDocs];
@@ -70,11 +71,13 @@ public class DocScoreList implements Iterable<DocScore> {
     }
 
     public float[] getScoresAsFloat() {
-        float result[] = new float[numDocs];
-        for (int i = 0; i < numDocs; i++) {
-            result[i] = (float) results[i].score;
+        if (scores == null) {
+            scores = new float[numDocs];
+            for (int i = 0; i < numDocs; i++) {
+                scores[i] = (float) results[i].score;
+            }
         }
-        return result;
+        return scores;
     }
 
     public TIntFloatHashMap asTroveMap() {
