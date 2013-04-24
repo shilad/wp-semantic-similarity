@@ -231,7 +231,7 @@ public class FunkSVD {
         File pathOut = new File(args[1]);
         if (pathOut.exists()) { FileUtils.deleteDirectory(pathOut); }
         SparseMatrix m = new SparseMatrix(pathIn);
-        FunkSVD svd = new FunkSVD(m, Integer.valueOf(args[1]));
+        FunkSVD svd = new FunkSVD(m, Integer.valueOf(args[2]));
         svd.estimate();
         svd.write(pathOut);
     }
