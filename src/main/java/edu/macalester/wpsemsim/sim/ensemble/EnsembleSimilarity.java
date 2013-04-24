@@ -125,7 +125,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
                         list.set(n[0]++, wpId2, pred);
                     }
                 }
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
+                return true;  //To change body of implemented methods use File | Settings | File Templates.
             }
         });
         timer.recordTime("predict");
