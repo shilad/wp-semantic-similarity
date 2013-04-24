@@ -21,6 +21,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -122,11 +123,12 @@ public class PhraseAnalyzer {
 
     private void writePhraseSimilarities(File file) throws IOException {
         LOG.info("writing pairwise phrase sims to " + file);
+        DecimalFormat df = new DecimalFormat("#.#####");
         BufferedWriter writer = new BufferedWriter(new FileWriter(file));
         for (PhraseInfo pi : phrases) {
             for (int i = 0; i < phrases.size(); i++) {
                 writer.write(
-                        "" + pi.pairwiseSims[i] +
+                        df.format(pi.pairwiseSims[i]) +
                         "\t" + pi.phrase +
                         "\t" + phrases.get(i).phrase + "\n"
                 );
