@@ -18,8 +18,8 @@ public class VowpalTranslator {
                 writer.write("|" + row.getColIndex(i) +
                              ":" + df.format(row.getColValue(i)));
             }
-            writer.close();
         }
+        writer.close();
     }
 
     public static void usage() {
