@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 
 public class VowpalTranslator {
-    public static void matrixToVowpal(SparseMatrix matrix, File vowpal) throws IOException {
+    public static void encode(SparseMatrix matrix, File vowpal) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(vowpal));
         DecimalFormat df = new DecimalFormat("#.######");
         for (SparseMatrixRow row : matrix) {
@@ -35,7 +35,7 @@ public class VowpalTranslator {
         if (args[0].equals("encode")) {
             SparseMatrix m = new SparseMatrix(
                     new File(args[1]), 1, 1*1024*1024*1024);    // 1 x 1GB page
-            matrixToVowpal(m, new File(args[2]));
+            encode(m, new File(args[2]));
         } else if (args[0].equals("decode")) {
         } else {
             usage();
