@@ -490,6 +490,7 @@ public class EnvConfigurator {
         JSONObject params = configuration.getMetric(name);
         SimilarityMetric metric;
         IndexHelper helper = loadIndex(requireString(params, "lucene"));
+        //CategoryGraph graph = null;
         CategoryGraph graph = new CategoryGraph(helper);
         graph.init();
         metric = new CategorySimilarity(loadMainMapper(), graph, helper);

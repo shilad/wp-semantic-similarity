@@ -141,7 +141,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
         DocScoreList normalized = normalize(list);
         timer.recordTime("normalize");
 
-        if (timer.getNumRestarts() % 5 == 0) {
+        if (timer.getNumRestarts() % 10000 == 0) {
             timer.analyze();
         }
 

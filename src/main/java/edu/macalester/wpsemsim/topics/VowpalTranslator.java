@@ -14,10 +14,12 @@ public class VowpalTranslator {
         BufferedWriter writer = new BufferedWriter(new FileWriter(vowpal));
         DecimalFormat df = new DecimalFormat("#.######");
         for (SparseMatrixRow row : matrix) {
+            writer.write("|");
             for (int i = 0; i < row.getNumCols(); i++) {
-                writer.write("|" + row.getColIndex(i) +
+                writer.write(" " + row.getColIndex(i) +
                              ":" + df.format(row.getColValue(i)));
             }
+            writer.write("\n");
         }
         writer.close();
     }
