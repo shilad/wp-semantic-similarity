@@ -281,7 +281,7 @@ public class EnvConfigurator {
      * @throws IOException
      * @throws ConfigurationException
      */
-    private IndexHelper loadIndex(String name) throws IOException, ConfigurationException {
+    public IndexHelper loadIndex(String name) throws IOException, ConfigurationException {
         if (env.hasIndex(name)) {
             return env.getIndex(name);
         }
