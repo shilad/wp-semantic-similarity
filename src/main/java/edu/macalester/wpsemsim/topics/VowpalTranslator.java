@@ -3,7 +3,9 @@ package edu.macalester.wpsemsim.topics;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.matrix.*;
 import edu.macalester.wpsemsim.utils.ConfigurationFile;
+import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.EnvConfigurator;
+import edu.macalester.wpsemsim.utils.Leaderboard;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import org.apache.commons.io.FileUtils;
@@ -11,11 +13,58 @@ import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.io.*;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.logging.Logger;
 
+/**
+ * Also see the bin/vowpal.sh script to run this.
+ *
+ * Translates a mostSimilar() sparse matrix to and from vowpal wabbit format.
+ * Vowpal wabbit is presumed to be used in lda mode to reduce the rank of the matrix.
+ *
+ * The result of the entire process is a dense matrix with rows for each article
+ * and columns for each latent dimension.
+ *
+ * Also writes data files that can be used to interpret the results; both the lda topics
+ * and the latent dimensions for each wikipedia page.
+ *
+ * This is particularly important because vowpal wabbit expects dense ids, but wp ids are sparse.
+ *
+ * The encoding step takes a sparse mostSimilar() matrix and and index helper (for wp titles) and
+ * generates the following data files:
+ *
+ * - input.vw: Input file for vowpal.
+ * - row_ids.tsv: Dense row id mapping file (one entry per WP article).
+ * - col_ids.tsv: Dense column id mapping file (one entry per WP article that appears
+ *   in a mostSimilar() result.
+ *
+ * Row / col id files have columns: dense id, wp id, wp article title.
+ *
+ * After Vowpal wabbit runs, it adds the following files:
+ * - cache.vw: Cache file used internally by VW, not important.
+ * - articles.vw: Mapping between articles and latent topics.
+ * - topics.vw: Mapping between latent topics and WP articles.
+ *
+ * The decoding step takes the input directory and adds:
+ * - topics.txt: Human-interpretable summary of topics.
+ * - articles.matrix: Dense matrix between wp ids and latent topics.
+ */
 public class VowpalTranslator {
     private static final Logger LOG = Logger.getLogger(VowpalTranslator.class.getName());
 
+    /**
+     * Encode data into vowpal format.
+     * Any existing data in the directory is deleted.
+     *
+     * @param helper Used to map wp ids to titles.
+     * @param pathSimMatrix Matrix containing mostSimilar() results.
+     * @param vowpalDir Output directory
+     *
+     * @throws IOException
+     */
     public void encode(IndexHelper helper, File pathSimMatrix, File vowpalDir) throws IOException {
         SparseMatrix matrix = new SparseMatrix(pathSimMatrix,
                 1, 1*1024*1024*1024);    // 1 x 1GB page
@@ -72,15 +121,147 @@ public class VowpalTranslator {
         rowWriter.close();
     }
 
-    private void decodeArticles(File vowpalPreds, File destMatrix) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(vowpalPreds));
-        ValueConf vconf = new ValueConf(0.0f, 1.0f);
-        DenseMatrixWriter writer = new DenseMatrixWriter(destMatrix, vconf);
-        int colIds[] = null;
+    /**
+     * Decodes the results of vowpal into a format interpretable by humans and this framework.
+     *
+     * @param dir Directory containing all data files.
+     * @throws IOException
+     */
+    public void decode(File dir) throws IOException {
+        WpEntry [] cols = readIdMapping(new File(dir, "col_ids.tsv"));
+        decodeTopics(
+                new File(dir, "topics.vw"),
+                new File(dir, "topics.txt"), cols);
+        WpEntry [] rows = readIdMapping(new File(dir, "row_ids.tsv"));
+        decodeArticles(
+                new File(dir, "articles.vw"),
+                new File(dir, "articles.matrix"),
+                rows
+            );
+    }
+
+    private void decodeTopics(File pathVw, File pathOut, WpEntry[] cols) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(pathVw));
+
+        // read header, including number of topics
+        int numTopics = -1;
+        while (true) {
+            String line = reader.readLine();
+            if (line == null) {
+                throw new IOException("reached eof while reading header of " + pathVw);
+            }
+            if (line.startsWith("lda:")) {
+                numTopics = Integer.valueOf(line.substring(4).trim());
+            }
+            if (line.startsWith("options:")) {
+                break;
+            }
+        }
+
+        // create a leaderboard of most important articles for each latent topic
+        Leaderboard top[] = new Leaderboard[numTopics];
+        for (int i = 0; i < top.length; i++) { top[i] = new Leaderboard(20); }
+
+        // read rows. each row represents an article and its distribution in latent topic space.
+        for (int i = 0; i < cols.length; i++) {
+            String line = reader.readLine();
+            if (line == null) {
+                throw new IOException("reached eof while reading column " + i + " of " + cols.length);
+            }
+            String tokens[] = line.trim().split("\\s+");
+            if (tokens.length != numTopics+1) {
+                LOG.warning(
+                        "invalid line for entry " + i +
+                        ", expected " + numTopics + " topics, found " + (tokens.length-1) +
+                        ": " + StringEscapeUtils.escapeJava(line)
+                );
+                continue;
+            }
+            int denseId = Integer.valueOf(tokens[0]);
+            for (int t = 0; t < numTopics; t++) {
+                top[t].tallyScore(denseId, Double.valueOf(tokens[t + 1]));
+            }
+        }
+        reader.close();
+
+        // Write human-interpretable description
+        BufferedWriter writer = new BufferedWriter(new FileWriter(pathOut));
+        writer.write("Describing model in " + pathVw + " with " + numTopics + " latent topics.\n\n");
+        DecimalFormat df = new DecimalFormat("#.##");
+        for (int t = 0; t < numTopics; t++) {
+            writer.write("\nTopic " + t + ":\n");
+            DocScoreList dsl = top[t].getTop();
+            for (int i = 0; i < dsl.numDocs(); i++) {
+                WpEntry c = cols[dsl.getId(i)];
+                writer.write(
+                        "\t" + (i+1) + ". " +
+                        df.format(dsl.getScore(i)) + ", " +
+                        c.wpId + ": " + c.title);
+            }
+        }
+        writer.close();
+    }
+
+    /**
+     * Reads the mapping from dense vowpal ids to sparse wp ids with filenames.
+     * An entry at index i in the returned list will have dense id i.
+     *
+     * @param path
+     * @return
+     * @throws IOException
+     */
+    private WpEntry[] readIdMapping(File path) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(path));
+        List<WpEntry> entries = new ArrayList<WpEntry>();
         while (true) {
             String line = reader.readLine();
             if (line == null) {
                 break;
+            }
+            String tokens[] = line.trim().split("\t", 3);
+            if (tokens.length != 3) {
+                LOG.warning("invalid line in " + path + ": " +
+                            StringEscapeUtils.escapeJava(line));
+                continue;
+            }
+            WpEntry entry = new WpEntry();
+            entry.denseId = Integer.valueOf(tokens[0]);
+            entry.wpId = Integer.valueOf(tokens[1]);
+            entry.title = tokens[2];
+            entries.add(entry);
+        }
+        if (entries.isEmpty()) {
+            return new WpEntry[0];
+        }
+
+        // sort by dense id
+        Collections.sort(entries, new Comparator<WpEntry>() {
+            @Override
+            public int compare(WpEntry wp1, WpEntry wp2) {
+                return wp1.denseId - wp2.denseId;
+            }
+        });
+
+        // make dense array
+        int maxId = entries.get(entries.size() - 1).denseId;
+        WpEntry[] dense = new WpEntry[maxId + 1];
+        for (WpEntry e : entries) {
+            dense[e.denseId] = e;
+        }
+
+        return dense;
+    }
+
+    private void decodeArticles(File vowpalPreds, File destMatrix, WpEntry[] rows) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(vowpalPreds));
+        ValueConf vconf = new ValueConf(0.0f, 1.0f);
+        DenseMatrixWriter writer = new DenseMatrixWriter(destMatrix, vconf);
+
+        int colIds[] = null;
+        for (int denseId = 0; denseId < rows.length; denseId++) {
+            String line = reader.readLine();
+            if (line == null) {
+                throw new IOException("reached eof while reading row " + denseId + " of " + rows.length);
             }
             String tokens[] = line.trim().split("\\s+");
             if (colIds == null) {
@@ -104,15 +285,24 @@ public class VowpalTranslator {
                     nums[i] /= sum;
                 }
             }
-            int rowId = 1;      // FIXME
+            int rowId = rows[denseId].wpId;
             writer.writeRow(new DenseMatrixRow(vconf, rowId, colIds, nums));
         }
+        reader.close();
         writer.finish();
     }
-    
+
+    public static class WpEntry {
+        int denseId;
+        int wpId;
+        String title;
+    }
+
     public static void usage() {
         System.err.println("usage: java " + VowpalTranslator.class.getName() + "\n" +
-                "\t\tencode conf_file sparse_matrix vw_output_dir\n");
+                "\t\tencode conf_file sparse_matrix vw_output_dir\n" +
+                "\t\tdecode vw_dir\n"
+        );
         System.exit(1);
     }
 
@@ -122,11 +312,14 @@ public class VowpalTranslator {
         }
         VowpalTranslator t = new VowpalTranslator();
         if (args[0].equals("encode")) {
+            if (args.length != 4) usage();
             EnvConfigurator env = new EnvConfigurator(
                     new ConfigurationFile(new File(args[1])));
             IndexHelper helper = env.loadIndex("main");
             t.encode(helper, new File(args[2]), new File(args[3]));
         } else if (args[0].equals("decode")) {
+            if (args.length != 2) usage();
+            t.decode(new File(args[1]));
         } else {
             usage();
         }

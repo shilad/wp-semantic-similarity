@@ -9,7 +9,9 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntDoubleMap;
+import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.cli.CommandLine;
@@ -38,6 +40,7 @@ public class PhraseAnalyzer {
 
     private Env env;
     private final List<PhraseInfo> phrases = new ArrayList<PhraseInfo>();
+    TIntObjectMap<List<PhraseInfo>> wpIdPhrases = new TIntObjectHashMap<List<PhraseInfo>>();
     private final TIntHashSet phraseWpIds = new TIntHashSet();
     private File pathPhrases;
 

@@ -5,6 +5,7 @@ import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.set.TIntSet;
@@ -74,6 +75,14 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
             top.set(i, row.getColIndex(i), row.getColValue(i));
         }
         return top;
+    }
+
+    public List<PhraseScore> mostSimilarPhrases(String phrase, int maxResults) throws IOException {
+        DocScoreList dsl = mostSimilar(phrase, maxResults);
+        List<PhraseScore> phrases = new ArrayList<PhraseScore>();
+        for (DocScore ds : dsl) {
+        }
+        return phrases;
     }
 
     public static String normalize(String phrase) {
@@ -147,5 +156,10 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
     @Override
     public void write(File directory) throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    public static class PhraseScore {
+        public String phrase;
+        public double score;
     }
 }
