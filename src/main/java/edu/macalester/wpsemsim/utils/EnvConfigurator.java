@@ -98,6 +98,10 @@ public class EnvConfigurator {
                 .withDescription("Maximum number of similar wikipedia pages.")
                 .create('r'),
             new DefaultOptionBuilder()
+                .withLongOpt("skipcats")
+                .withDescription("Do not load the category graph.")
+                .create('p'),
+            new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("validIds")
                 .withDescription("Ids that can be included in results list.")
@@ -490,9 +494,11 @@ public class EnvConfigurator {
         JSONObject params = configuration.getMetric(name);
         SimilarityMetric metric;
         IndexHelper helper = loadIndex(requireString(params, "lucene"));
-        //CategoryGraph graph = null;
-        CategoryGraph graph = new CategoryGraph(helper);
-        graph.init();
+        CategoryGraph graph = null;
+        if (cmd == null || !cmd.hasOption("p")) {
+            graph = new CategoryGraph(helper);
+            graph.init();
+        }
         metric = new CategorySimilarity(loadMainMapper(), graph, helper);
         return metric;
     }
