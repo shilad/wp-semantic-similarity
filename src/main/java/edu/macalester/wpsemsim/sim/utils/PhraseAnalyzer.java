@@ -33,8 +33,10 @@ import java.util.regex.Pattern;
 /**
  * Given a list of phrases, constructs:
  * 1. A mapping from phrases to WP ids.
- * 2. A list of mostSimilar phrases for each phrase.
+ * 2. A sparse matrix listing mostSimilar phrases for each phrase.
  * 3. A dense pairwise similarity matrix for the phrases.
+ *
+ * All ids in the new matrices are "client ids," not WP ids.
  */
 public class PhraseAnalyzer {
     private static final Logger LOG = Logger.getLogger(PhraseAnalyzer.class.getName());
