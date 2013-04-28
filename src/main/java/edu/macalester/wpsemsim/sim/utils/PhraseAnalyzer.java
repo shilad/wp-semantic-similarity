@@ -18,6 +18,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -41,12 +42,12 @@ public class PhraseAnalyzer {
     private Env env;
     private final List<PhraseInfo> phrases = new ArrayList<PhraseInfo>();
     TIntObjectMap<List<PhraseInfo>> wpIdPhrases = new TIntObjectHashMap<List<PhraseInfo>>();
-    private final TIntHashSet phraseWpIds = new TIntHashSet();
     private File pathPhrases;
 
     class PhraseInfo {
         String phrase;
         int wpId;
+        int clientId;
         DocScoreList mostSimilar;
         float pairwiseSims[];
     }
@@ -68,25 +69,34 @@ public class PhraseAnalyzer {
      * @param file
      * @throws IOException
      */
-    private void mapPhrases(File file) throws IOException {
+    private void mapPhrases(final File file) throws IOException {
         LOG.info("mapping phrases");
-        phraseWpIds.clear();
         phrases.clear();
         final Disambiguator dab = new Disambiguator(env.getMainMapper(), null, env.getMainIndex(), 5);
         ParallelForEach.loop(FileUtils.readLines(file), env.getNumThreads(),
-                new Function<String>() {
-                    public void call(String line) throws Exception {
-                        PhraseInfo pi = new PhraseInfo();
-                        pi.phrase = line.trim();
-                        Disambiguator.Match m = dab.disambiguate(normalize(pi.phrase));
-                        if (m != null && m.hasPhraseMatch()) {
-                            pi.wpId = m.phraseWpId;
-                            synchronized (phrases) {
-                                phrases.add(pi);
-                                phraseWpIds.add(pi.wpId);
-                            }
+            new Function<String>() {
+                public void call(String line) throws Exception {
+                String tokens[] = line.split("\t", 2);
+                if (tokens.length != 2) {
+                    LOG.warning("invalid line in " + file +
+                            ": " + StringEscapeUtils.escapeJava(line));
+                    return;
+                }
+                PhraseInfo pi = new PhraseInfo();
+                pi.clientId = Integer.valueOf(tokens[0]);
+                pi.phrase = tokens[1].trim();
+                Disambiguator.Match m = dab.disambiguate(normalize(pi.phrase));
+                if (m != null && m.hasPhraseMatch()) {
+                    pi.wpId = m.phraseWpId;
+                    synchronized (phrases) {
+                        phrases.add(pi);
+                        if (!wpIdPhrases.containsKey(pi.wpId)) {
+                            wpIdPhrases.put(pi.wpId, new ArrayList<PhraseInfo>());
                         }
+                        wpIdPhrases.get(pi.wpId).add(pi);
                     }
+                }
+            }
         });
         LOG.info("finished mapping phrases");
     }
@@ -95,7 +105,7 @@ public class PhraseAnalyzer {
         LOG.info("building most similar");
         ParallelForEach.loop(phrases, env.getNumThreads(), new Function<PhraseInfo>() {
             public void call(PhraseInfo pi) throws Exception {
-                pi.mostSimilar = metric.mostSimilar(pi.wpId, env.getNumMostSimilarResults(), env.getValidIds());
+                pi.mostSimilar = metric.mostSimilar(pi.wpId, env.getNumMostSimilarResults(), wpIdPhrases.keySet());
                 if (pi.mostSimilar == null) pi.mostSimilar = new DocScoreList(0);
                 pi.pairwiseSims = new float[phrases.size()];
             }
@@ -158,15 +168,16 @@ public class PhraseAnalyzer {
         LOG.info("writing mostSimilar matrix");
         ValueConf vconf = new ValueConf((float)min, (float)max);
         SparseMatrixWriter mostSimilarWriter = new SparseMatrixWriter(path, vconf);
-        TIntSet wpIds = getWpIds();
         for (int i = 0; i < phrases.size(); i++) {
             PhraseInfo pi = phrases.get(i);
             TIntList ids = new TIntArrayList();
             TFloatList vals = new TFloatArrayList();
             for (DocScore ds : pi.mostSimilar) {
-                if (wpIds.contains(ds.getId())) {
-                    ids.add(ds.getId());
-                    vals.add((float) ds.getScore());
+                if (wpIdPhrases.containsKey(ds.getId())) {
+                    for (PhraseInfo pi2 : wpIdPhrases.get(ds.getId())) {
+                        ids.add(pi2.clientId);
+                        vals.add((float) ds.getScore());
+                    }
                 }
             }
             mostSimilarWriter.writeRow(new SparseMatrixRow(vconf, i, ids.toArray(), vals.toArray()));
@@ -190,7 +201,7 @@ public class PhraseAnalyzer {
 
         LOG.info("writing similarity matrix");
         int colIds[] = new int[phrases.size()];
-        for (int i = 0; i < colIds.length; i++) { colIds[i] = i; }
+        for (int i = 0; i < colIds.length; i++) { colIds[i] = phrases.get(i).clientId; }
         ValueConf vconf = new ValueConf((float)min, (float)max);
         DenseMatrixWriter writer = new DenseMatrixWriter(path, vconf);
         for (int i = 0; i < phrases.size(); i++) {
@@ -207,6 +218,7 @@ public class PhraseAnalyzer {
             PhraseInfo pi = phrases.get(i);
             mapping.write(
                     i + "\t" +
+                    pi.clientId + "\t" +
                     pi.wpId + "\t" +
                     pi.phrase.trim() + "\t" +
                     env.getMainIndex().wpIdToTitle(pi.wpId) + "\n"
@@ -236,13 +248,6 @@ public class PhraseAnalyzer {
         }
         return dot / Math.sqrt(len1 * len2);
     }
-
-    private TIntSet getWpIds() {
-        TIntSet wpIds = new TIntHashSet();
-        for (PhraseInfo pi : phrases) { wpIds.add(pi.wpId); }
-        return wpIds;
-    }
-
 
     private static Pattern REPLACE_WEIRD = Pattern.compile("[^\\p{L}\\p{N}]+");
     public static String normalize(String s) {
