@@ -110,7 +110,8 @@ public class PhraseAnalyzer {
             public void call(Integer i) throws Exception {
                 PhraseInfo pi = phrases.get(i);
                 for (int j = 0; j < phrases.size(); j++) {
-                    pi.pairwiseSims[j] = (float) cosine(pi.mostSimilar, phrases.get(j).mostSimilar);
+                    pi.pairwiseSims[j] = (float) metric.similarity(pi.wpId, phrases.get(j).wpId);
+//                    pi.pairwiseSims[j] = (float) cosine(pi.mostSimilar, phrases.get(j).mostSimilar);
                 }
             }
         });

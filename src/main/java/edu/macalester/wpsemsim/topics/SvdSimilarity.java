@@ -40,6 +40,7 @@ public class SvdSimilarity extends BaseSimilarityMetric {
      * @return
      * @throws IOException
      */
+    /*
     public float[][] getCosimilarities(int wpIds[]) throws IOException {
         float rows[][] = new float[wpIds.length][];
         for (int i = 0; i < wpIds.length; i++) {
@@ -57,10 +58,28 @@ public class SvdSimilarity extends BaseSimilarityMetric {
             }
         }
         return cosimilarity;
-    }
+    } */
 
     private double cosine(DenseMatrixRow X, DenseMatrixRow Y) {
-        return cosine(X.getValues(), Y.getValues());
+        double xx = 0.0;
+        double yy = 0.0;
+        double xy = 0.0;
+
+        if (X.getNumCols() != Y.getNumCols()) {
+            throw new IllegalArgumentException();
+        }
+        for (int i = 0; i < X.getNumCols(); i++) {
+            double x = X.getColValue(i);
+            double y = Y.getColValue(i);
+            xx += x * x;
+            yy += y * y;
+            xy += x * y;
+        }
+        if (xx == 0 || yy == 0) {
+            return 0.0;
+        } else {
+            return xy / Math.sqrt(xx * yy);
+        }
     }
 
     private double cosine(float X[], float Y[]) {
