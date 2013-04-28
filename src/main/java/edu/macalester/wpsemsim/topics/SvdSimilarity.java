@@ -9,6 +9,7 @@ import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.set.TIntSet;
 
+import java.io.File;
 import java.io.IOException;
 
 public class SvdSimilarity extends BaseSimilarityMetric {
@@ -102,6 +103,11 @@ public class SvdSimilarity extends BaseSimilarityMetric {
         } else {
             return xy / Math.sqrt(xx * yy);
         }
+    }
+
+    @Override
+    public void read(File path) {
+        // do nothing, for now.
     }
 
     @Override
