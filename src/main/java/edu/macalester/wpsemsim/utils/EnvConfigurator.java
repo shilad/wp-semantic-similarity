@@ -3,6 +3,7 @@ package edu.macalester.wpsemsim.utils;
 import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.concepts.*;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
+import edu.macalester.wpsemsim.matrix.DenseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.LoessNormalizer;
@@ -21,6 +22,7 @@ import edu.macalester.wpsemsim.sim.ensemble.SvmEnsemble;
 import edu.macalester.wpsemsim.sim.esa.ESAAnalyzer;
 import edu.macalester.wpsemsim.sim.esa.ESASimilarity;
 import edu.macalester.wpsemsim.sim.pairwise.PairwiseCosineSimilarity;
+import edu.macalester.wpsemsim.topics.SvdSimilarity;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.cli.*;
@@ -352,6 +354,8 @@ public class EnvConfigurator {
             metric = createLinkSimilarity(name);
         } else if (type.equals("pairwise")) {
             metric = createPairwiseSimilarity(name, readModel);
+        } else if (type.equals("svd")) {
+            metric = createSvdSimilarity(name, readModel);
         } else if (type.equals("ensemble")) {
             metric = loadEnsembleMetric(name, readModel);
         } else {
@@ -426,6 +430,16 @@ public class EnvConfigurator {
         }
         if (params.containsKey("buildPhraseVectors")) {
             metric.setBuildPhraseVectors(requireBoolean(params, "buildPhraseVectors"));
+        }
+        return metric;
+    }
+
+    private SimilarityMetric createSvdSimilarity(String name, boolean loadModels) throws IOException, ConfigurationException {
+        JSONObject params = configuration.getMetric(name);
+        DenseMatrix m = new DenseMatrix(requireFile(params, "matrix"));
+        SvdSimilarity metric = new SvdSimilarity(loadMainMapper(), loadMainIndex(), m);;
+        if (params.containsKey("mostSimilarMetric")) {
+            metric.setMostSimilarMetric(loadMetric(requireString(params, "mostSimilarMetric"), loadModels));
         }
         return metric;
     }

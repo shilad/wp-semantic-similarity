@@ -36,6 +36,10 @@ public class DenseMatrix implements Matrix<DenseMatrixRow> {
     MemoryMappedMatrix rowBuffers;
     private ValueConf vconf;
 
+    public DenseMatrix(File path) throws IOException {
+        this(path, Integer.MAX_VALUE, DEFAULT_MAX_PAGE_SIZE);
+    }
+
     /**
      * Create a dense matrix based on the data in a particular file.
      * @param path Path to the matrix data file.
@@ -108,6 +112,10 @@ public class DenseMatrix implements Matrix<DenseMatrixRow> {
     @Override
     public int[] getRowIds() {
         return rowIds;
+    }
+
+    public int[] getColIds() {
+        return colIds;
     }
 
     @Override
