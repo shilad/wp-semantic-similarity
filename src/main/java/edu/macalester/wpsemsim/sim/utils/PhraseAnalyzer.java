@@ -42,8 +42,13 @@ public class PhraseAnalyzer {
     private static final Logger LOG = Logger.getLogger(PhraseAnalyzer.class.getName());
 
     private Env env;
+
+    // information about each phrase
     private final List<PhraseInfo> phrases = new ArrayList<PhraseInfo>();
+
+    // mapping between a WP id and the list of phrases with that id.
     TIntObjectMap<List<PhraseInfo>> wpIdPhrases = new TIntObjectHashMap<List<PhraseInfo>>();
+
     private File pathPhrases;
 
     class PhraseInfo {
@@ -59,6 +64,11 @@ public class PhraseAnalyzer {
         this.pathPhrases = pathPhrases;
     }
 
+    /**
+     * Precompute similarity data associated with the universe of phrases
+     * @param metric
+     * @throws IOException
+     */
     public void build(SimilarityMetric metric) throws IOException {
         mapPhrases(pathPhrases);
         buildMostSimilar(metric);
@@ -103,6 +113,11 @@ public class PhraseAnalyzer {
         LOG.info("finished mapping phrases");
     }
 
+    /**
+     * Build the list of most similar results for each phrase.
+     * @param metric
+     * @throws IOException
+     */
     private void buildMostSimilar(final SimilarityMetric metric) throws IOException {
         LOG.info("building most similar");
         ParallelForEach.loop(phrases, env.getNumThreads(), new Function<PhraseInfo>() {
@@ -115,6 +130,11 @@ public class PhraseAnalyzer {
         LOG.info("finished building most similar");
     }
 
+    /**
+     * Build the cosimilarity matrix between all phrases.
+     * @param metric
+     * @throws IOException
+     */
     private void buildSimilarity(final SimilarityMetric metric) throws IOException {
         LOG.info("building similarity");
         ParallelForEach.range(0, phrases.size(), env.getNumThreads(), new Function<Integer>() {
@@ -130,6 +150,11 @@ public class PhraseAnalyzer {
         LOG.info("finished building similarity");
     }
 
+    /**
+     * Writes all similarity data to a directory.
+     * @param outputDir
+     * @throws IOException
+     */
     public void write(File outputDir) throws IOException {
         writePhraseMappings(new File(outputDir, "phrases.tsv"));
         writeMostSimilar(new File(outputDir, "mostSimilar.matrix"));
@@ -257,6 +282,13 @@ public class PhraseAnalyzer {
     }
 
 
+    /**
+     * Runs the program
+     * @param args
+     * @throws IOException
+     * @throws ConfigurationFile.ConfigurationException
+     * @throws InterruptedException
+     */
     public static void main(String args[]) throws IOException, ConfigurationFile.ConfigurationException, InterruptedException {
         Options options = new Options();              options.addOption(new DefaultOptionBuilder()
                 .hasArg()

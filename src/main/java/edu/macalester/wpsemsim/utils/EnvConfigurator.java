@@ -9,10 +9,7 @@ import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.LoessNormalizer;
 import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.normalize.RankAndScoreNormalizer;
-import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
-import edu.macalester.wpsemsim.sim.LinkSimilarity;
-import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import edu.macalester.wpsemsim.sim.TextSimilarity;
+import edu.macalester.wpsemsim.sim.*;
 import edu.macalester.wpsemsim.sim.category.CategoryGraph;
 import edu.macalester.wpsemsim.sim.category.CategorySimilarity;
 import edu.macalester.wpsemsim.sim.ensemble.Ensemble;
@@ -356,6 +353,8 @@ public class EnvConfigurator {
             metric = createPairwiseSimilarity(name, readModel);
         } else if (type.equals("svd")) {
             metric = createSvdSimilarity(name, readModel);
+        } else if (type.equals("split")) {
+            metric = createSplitSimilarity(name, readModel);
         } else if (type.equals("ensemble")) {
             metric = loadEnsembleMetric(name, readModel);
         } else {
@@ -437,11 +436,14 @@ public class EnvConfigurator {
     private SimilarityMetric createSvdSimilarity(String name, boolean loadModels) throws IOException, ConfigurationException {
         JSONObject params = configuration.getMetric(name);
         DenseMatrix m = new DenseMatrix(requireFile(params, "matrix"));
-        SvdSimilarity metric = new SvdSimilarity(loadMainMapper(), loadMainIndex(), m);;
-        if (params.containsKey("mostSimilarMetric")) {
-            metric.setMostSimilarMetric(loadMetric(requireString(params, "mostSimilarMetric"), loadModels));
-        }
-        return metric;
+        return new SvdSimilarity(loadMainMapper(), loadMainIndex(), m);
+    }
+
+    private SimilarityMetric createSplitSimilarity(String name, boolean loadModels) throws IOException, ConfigurationException {
+        JSONObject params = configuration.getMetric(name);
+        SimilarityMetric mostSimilar = loadMetric(requireString(params, "mostSimilarDelegate"));
+        SimilarityMetric similarity = loadMetric(requireString(params, "similarityDelegate"));
+        return new SplitSimilarityMetric(similarity, mostSimilar);
     }
 
     private SimilarityMetric createLinkSimilarity(String name) throws ConfigurationException, IOException {

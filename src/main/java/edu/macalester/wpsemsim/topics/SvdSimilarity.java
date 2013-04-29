@@ -14,15 +14,10 @@ import java.io.IOException;
 
 public class SvdSimilarity extends BaseSimilarityMetric {
     private DenseMatrix matrix = null;
-    private SimilarityMetric mostSimilarMetric = null;
 
     public SvdSimilarity(ConceptMapper mapper, IndexHelper helper, DenseMatrix matrix) {
         super(mapper, helper);
         this.matrix = matrix;
-    }
-
-    public void setMostSimilarMetric(SimilarityMetric metric) {
-        this.mostSimilarMetric = metric;
     }
 
     @Override
@@ -112,19 +107,11 @@ public class SvdSimilarity extends BaseSimilarityMetric {
 
     @Override
     public DocScoreList mostSimilar(int wpId1, int maxResults, TIntSet possibleWpIds) throws IOException {
-        if (mostSimilarMetric == null) {
-            throw new UnsupportedOperationException();
-        } else {
-            return mostSimilarMetric.mostSimilar(wpId1, maxResults, possibleWpIds);
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public DocScoreList mostSimilar(String phrase, int maxResults, TIntSet possibleWpIds) throws IOException {
-        if (mostSimilarMetric == null) {
-            throw new UnsupportedOperationException();
-        } else {
-            return mostSimilarMetric.mostSimilar(phrase, maxResults, possibleWpIds);
-        }
+        throw new UnsupportedOperationException();
     }
 }
