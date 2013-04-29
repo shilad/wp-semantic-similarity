@@ -305,7 +305,7 @@ public class PhraseAnalyzer {
                 .hasArg()
                 .withLongOpt("phrases")
                 .withDescription("File listing phrases in the universe.")
-                .create('p'));
+                .create('u'));
 
         EnvConfigurator conf;
         try {
@@ -320,7 +320,7 @@ public class PhraseAnalyzer {
         conf.setShouldLoadMetrics(false);
         Env env = conf.loadEnv();
 
-        File pathPhrases = new File(cmd.getOptionValue("p"));
+        File pathPhrases = new File(cmd.getOptionValue("u"));
         File outputDir = new File(cmd.getOptionValue("o"));
         if (!outputDir.exists()) {
             outputDir.mkdirs();

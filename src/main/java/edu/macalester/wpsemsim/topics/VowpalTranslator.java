@@ -20,10 +20,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Also see the bin/vowpal.sh script to run this.
- *
  * Translates a mostSimilar() sparse matrix to and from vowpal wabbit format.
- * Vowpal wabbit is presumed to be used in lda mode to reduce the rank of the matrix.
+ * Vowpal wabbit is used in lda mode to reduce the rank of the matrix.
+ * Also see the bin/vowpal.sh script to run this.
  *
  * The result of the entire process is a dense matrix with rows for each article
  * and columns for each latent dimension.
@@ -141,6 +140,7 @@ public class VowpalTranslator {
     }
 
     private void decodeTopics(File pathVw, File pathOut, WpEntry[] cols) throws IOException {
+        LOG.info("Decoding topics from " + pathVw + " to " + pathOut);
         BufferedReader reader = new BufferedReader(new FileReader(pathVw));
 
         // read header, including number of topics
@@ -160,10 +160,13 @@ public class VowpalTranslator {
 
         // create a leaderboard of most important articles for each latent topic
         Leaderboard top[] = new Leaderboard[numTopics];
-        for (int i = 0; i < top.length; i++) { top[i] = new Leaderboard(20); }
+        for (int i = 0; i < top.length; i++) { top[i] = new Leaderboard(100); }
 
         // read rows. each row represents an article and its distribution in latent topic space.
         for (int i = 0; i < cols.length; i++) {
+            if (i % 100000 == 0) {
+                LOG.info("decoding topics for column " + i + " of " + cols.length);
+            }
             String line = reader.readLine();
             if (line == null) {
                 throw new IOException("reached eof while reading column " + i + " of " + cols.length);
@@ -183,6 +186,7 @@ public class VowpalTranslator {
             }
         }
         reader.close();
+        LOG.info("finished decoding topics for " + cols.length + " columns");
 
         // Write human-interpretable description
         BufferedWriter writer = new BufferedWriter(new FileWriter(pathOut));
@@ -211,6 +215,7 @@ public class VowpalTranslator {
      * @throws IOException
      */
     private WpEntry[] readIdMapping(File path) throws IOException {
+        LOG.info("reading id mapping in " + path);
         BufferedReader reader = new BufferedReader(new FileReader(path));
         List<WpEntry> entries = new ArrayList<WpEntry>();
         while (true) {
@@ -248,17 +253,22 @@ public class VowpalTranslator {
         for (WpEntry e : entries) {
             dense[e.denseId] = e;
         }
+        LOG.info("finished reading " + dense.length + " entries in mapping");
 
         return dense;
     }
 
     private void decodeArticles(File vowpalPreds, File destMatrix, WpEntry[] rows) throws IOException {
+        LOG.info("decoding articles from " + vowpalPreds + " to " + destMatrix);
         BufferedReader reader = new BufferedReader(new FileReader(vowpalPreds));
         ValueConf vconf = new ValueConf(0.0f, 1.0f);
         DenseMatrixWriter writer = new DenseMatrixWriter(destMatrix, vconf);
 
         int colIds[] = null;
         for (int denseId = 0; denseId < rows.length; denseId++) {
+            if (denseId % 100000 == 0) {
+                LOG.info("decoding article " + denseId + " of " + rows.length);
+            }       
             String line = reader.readLine();
             if (line == null) {
                 throw new IOException("reached eof while reading row " + denseId + " of " + rows.length);
@@ -290,6 +300,7 @@ public class VowpalTranslator {
         }
         reader.close();
         writer.finish();
+        LOG.info("finishinged decoding " + rows.length + " articles");
     }
 
     public static class WpEntry {
