@@ -138,10 +138,6 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
         throw new UnsupportedOperationException();
     }
     @Override
-    public void setNormalizer(Normalizer n) {
-        throw new UnsupportedOperationException();
-    }
-    @Override
     public void trainSimilarity(List<KnownSim> labeled) {
         throw new UnsupportedOperationException();
     }

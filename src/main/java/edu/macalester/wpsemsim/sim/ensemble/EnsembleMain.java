@@ -4,15 +4,11 @@ import com.sleepycat.je.DatabaseException;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.EnvConfigurator;
 import edu.macalester.wpsemsim.utils.*;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,7 +106,7 @@ public class EnsembleMain {
         }
 
         ensembleSim.setComponents(metrics);
-        ensembleSim.trainMostSimilar(env.getGold(), env.getNumMostSimilarResults(), env.getValidIds());
+        ensembleSim.trainMostSimilar(env.getMostSimilarGold(), env.getNumMostSimilarResults(), env.getValidIds());
         ensembleSim.write(outputFile);
 
         // test it!

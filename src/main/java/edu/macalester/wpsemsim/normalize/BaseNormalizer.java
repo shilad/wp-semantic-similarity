@@ -36,6 +36,7 @@ public abstract class BaseNormalizer implements Serializable, Normalizer {
     // accumulators for missing values
     private double missingSum = 0.0;
     private int missingCount = 0;
+    private boolean trained = false;
 
     /**
      * To meet the serializable contract.
@@ -88,6 +89,7 @@ public abstract class BaseNormalizer implements Serializable, Normalizer {
             missingSum = 0.0;
             missingCount = 0;
         }
+        trained = true;
     }
 
     /**
@@ -116,4 +118,8 @@ public abstract class BaseNormalizer implements Serializable, Normalizer {
     }
 
     public abstract String dump();
+
+    public boolean isTrained() {
+        return trained;
+    }
 }

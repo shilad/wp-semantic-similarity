@@ -43,12 +43,15 @@ public class LoessNormalizer extends BaseNormalizer {
                 Y.add(y);
             }
         }
+        super.observe(x, y);
     }
 
     @Override
     public void observationsFinished(){
         // lazily initialized to overcome problems
         // with PolynomialSplineFunction serialization.
+        super.observationsFinished();
+
     }
 
     private static final double EPSILON = 1E-10;

@@ -1,8 +1,6 @@
 package edu.macalester.wpsemsim.normalize;
 
 public class IdentityNormalizer extends BaseNormalizer{
-    private boolean NeedsTraining=false;
-
     @Override
     public double normalize(double x) { return x; }
 
@@ -18,5 +16,10 @@ public class IdentityNormalizer extends BaseNormalizer{
     @Override
     public String dump() {
         return "identity normalizer";
+    }
+
+    @Override
+    public boolean isTrained() {
+        return true;
     }
 }

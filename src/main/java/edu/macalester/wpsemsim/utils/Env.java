@@ -26,7 +26,8 @@ public class Env {
     private Map<String, ConceptMapper> mappers = new HashMap<String, ConceptMapper>();
     private Map<String, SimilarityMetric> metrics = new HashMap<String, SimilarityMetric>();
     private Map<String, IndexHelper> indexes = new HashMap<String, IndexHelper>();
-    private List<KnownSim> gold;
+    private List<KnownSim> mostSimilarGold;
+    private List<KnownSim> similarityGold;
 
     private int numMostSimilarResults = DEFAULT_NUM_RESULTS;
     private int numThreads = DEFAULT_NUM_THREADS;
@@ -86,12 +87,19 @@ public class Env {
         return metrics;
     }
 
-    public List<KnownSim> getGold(){
-        return gold;
+    public void setSimilarityGold(List<KnownSim> g){
+        similarityGold =g;
+    }
+    public List<KnownSim> getSimilarityGold(){
+        return similarityGold;
     }
 
-    public void setGold(List<KnownSim> g){
-        gold=g;
+    public List<KnownSim> getMostSimilarGold(){
+        return mostSimilarGold;
+    }
+
+    public void setMostSimilarGold(List<KnownSim> g){
+        mostSimilarGold =g;
     }
 
     public int getNumMostSimilarResults() {

@@ -16,11 +16,6 @@ import java.util.List;
 public interface SimilarityMetric {
 
     /**
-     * Sets the normalizer for the metric
-     */
-    public void setNormalizer(Normalizer n);
-
-    /**
      * Train the similarity() function.
      * The KnownSims may already be associated with Wikipedia ids (check wpId1 and wpId2)
      */

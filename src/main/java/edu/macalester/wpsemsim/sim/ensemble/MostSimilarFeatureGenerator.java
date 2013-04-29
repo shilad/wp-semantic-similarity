@@ -77,5 +77,4 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
             return featureName;
         }
     }
-
 }

@@ -1,21 +1,14 @@
 package edu.macalester.wpsemsim.sim.utils;
 
 import com.sleepycat.je.DatabaseException;
-import edu.macalester.wpsemsim.concepts.TitleMapper;
-import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.*;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.List;
 import java.util.logging.Logger;
 
 public class Trainer {
@@ -33,6 +26,11 @@ public class Trainer {
                 .withLongOpt("output")
                 .withDescription("Output directory.")
                 .create('o'));
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("mode")
+                .withDescription("Mode: mostSimilar, similarity, or both (default is both).")
+                .create('m'));
 
         EnvConfigurator conf;
         try {
@@ -62,7 +60,21 @@ public class Trainer {
         }
         outputDirectory.mkdirs();
 
-        metric.trainMostSimilar(env.getGold(), env.getNumMostSimilarResults(), env.getValidIds());
+        String mode = cmd.hasOption("m") ? cmd.getOptionValue("m") : "both";
+        if (!mode.equals("both") && !mode.equals("mostSimilar") && !mode.equals("similarity")) {
+            System.err.println( "Invalid mode: " + mode);
+            new HelpFormatter().printHelp( "Trainer", options );
+            return;
+        }
+        if (mode.equals("both") || mode.equals("similarity")) {
+            metric.trainSimilarity(env.getSimilarityGold());
+        }
+        if (mode.equals("both") || mode.equals("mostSimilar")) {
+            metric.trainMostSimilar(
+                    env.getMostSimilarGold(),
+                    env.getNumMostSimilarResults(),
+                    env.getValidIds());
+        }
         metric.write(outputDirectory);
 
         // test it out

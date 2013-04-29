@@ -77,10 +77,15 @@ public class EnvConfigurator {
                 .withDescription("Path to configuration file.")
                 .create('c'),
             new DefaultOptionBuilder()
-                .hasArg()
-                .withLongOpt("gold")
-                .withDescription("Path to gold standard")
-                .create('g'),
+                    .hasArg()
+                    .withLongOpt("mostSimilarGold")
+                    .withDescription("Path to most similar gold standard")
+                    .create('g'),
+            new DefaultOptionBuilder()
+                    .hasArg()
+                    .withLongOpt("similarityGold")
+                    .withDescription("Path to similarity gold standard")
+                    .create('y'),
             new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("threads")
@@ -371,13 +376,19 @@ public class EnvConfigurator {
             ((BaseSimilarityMetric)metric).setMostSimilarMatrix(m);
         }
         if (readModel) {
-            LOG.info("reading model from " + getModelDirectory(metric));
-            metric.read(getModelDirectory(metric));
-        } else {
-            metric.setNormalizer(parseNormalizer(params));
+            readModel(metric);
+        } else if (metric instanceof BaseSimilarityMetric) {
+            BaseSimilarityMetric m = (BaseSimilarityMetric)metric;
+            m.setMostSimilarNormalizer(parseNormalizer("mostSimilarNormalizer", params));
+            m.setSimilarityNormalizer(parseNormalizer("similarityNormalizer", params));
         }
         env.addMetric(name, metric);
         return metric;
+    }
+
+    public void readModel(SimilarityMetric metric) throws ConfigurationException, IOException {
+        LOG.info("reading model from " + getModelDirectory(metric));
+        metric.read(getModelDirectory(metric));
     }
 
     private SimilarityMetric loadEnsembleMetric(String key, boolean readModel) throws IOException, ConfigurationException {
@@ -620,8 +631,8 @@ public class EnvConfigurator {
         this.shouldLoadMetrics = shouldLoadMetrics;
     }
 
-    private Normalizer parseNormalizer(JSONObject parentParams)throws ConfigurationException{
-        JSONObject params = (JSONObject) parentParams.get("normalizer");
+    private Normalizer parseNormalizer(String paramKey, JSONObject parentParams)throws ConfigurationException{
+        JSONObject params = (JSONObject) parentParams.get(paramKey);
         if (params == null) {
             return new IdentityNormalizer();
         }
@@ -650,11 +661,16 @@ public class EnvConfigurator {
         }
     }
 
-    private List<KnownSim> loadGold() throws ConfigurationException, IOException {
+    private void loadGold() throws ConfigurationException, IOException {
         JSONObject params = configuration.getGold();
+        env.setMostSimilarGold(loadGold(requireJson(params, "mostSimilar"), "g"));
+        env.setSimilarityGold(loadGold(requireJson(params, "similarity"), "y"));
+    }
+
+    private List<KnownSim> loadGold(JSONObject params, String opt) throws ConfigurationException, IOException {
         String path = requireString(params, "path");
-        if (cmd != null && cmd.hasOption("g")) {
-            path = cmd.getOptionValue("g");
+        if (cmd != null && cmd.hasOption(opt)) {
+            path = cmd.getOptionValue(opt);
         }
         List<KnownSim> g = KnownSim.read(new File(path));
         LOG.info("read " + g.size() + " entries in gold standard " + path);
@@ -670,7 +686,6 @@ public class EnvConfigurator {
             }
             LOG.info("added in mapping for " + numMapped + " wikipedia ids.");
         }
-        env.setGold(g);
         return g;
     }
 

@@ -160,6 +160,16 @@ public class ConfigurationFile {
     //
     ///////////////////////////////////////////////////////////////////////////////
 
+    public static JSONObject requireJson(Map<String, Object> params, String key) throws ConfigurationException {
+        Object val = params.get(key);
+        if (val == null) {
+            throw new ConfigurationException("Missing configuration parameter " + key);
+        }
+        if (!(val instanceof JSONObject)) {
+            throw new ConfigurationException("expected " + key + " to be a JSONObject, was " + val.getClass().getName());
+        }
+        return (JSONObject)val;
+    }
     public static String requireString(Map<String, Object> params, String key) throws ConfigurationException {
         Object val = params.get(key);
         if (val == null) {

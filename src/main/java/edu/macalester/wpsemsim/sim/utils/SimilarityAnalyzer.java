@@ -260,7 +260,7 @@ public class SimilarityAnalyzer {
         }
 
         SimilarityAnalyzer analyzer = new SimilarityAnalyzer(
-                mode, env.getGold(), env.getMainMapper(), env.getMainIndex());
+                mode, env.getMostSimilarGold(), env.getMainMapper(), env.getMainIndex());
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
         analyzer.analyzeMetrics(metrics, writer);
         writer.close();

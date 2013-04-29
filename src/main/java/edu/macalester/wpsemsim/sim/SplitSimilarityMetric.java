@@ -1,6 +1,5 @@
 package edu.macalester.wpsemsim.sim;
 
-import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.set.TIntSet;
@@ -24,11 +23,6 @@ public class SplitSimilarityMetric implements SimilarityMetric {
         this.similarityDelegate = similarityDelegate;
         this.mostSimilarDelegate = mostSimilarDelegate;
         name = "split-" + similarityDelegate.getName() + "-" + mostSimilarDelegate.getName();
-    }
-
-    @Override
-    public void setNormalizer(Normalizer n) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

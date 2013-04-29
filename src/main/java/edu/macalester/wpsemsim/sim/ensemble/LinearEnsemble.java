@@ -43,6 +43,13 @@ public class LinearEnsemble implements Ensemble {
 
     @Override
     public void trainSimilarity(List<Example> examples) {
+        if (examples.isEmpty()) {
+            throw new IllegalArgumentException("no examples to train on!");
+        }
+        similarityGenerator.train(examples);
+
+        double X[][] = new double[examples.size()][];
+        double Y[] = new double[examples.size()];
         throw new UnsupportedOperationException();
     }
 

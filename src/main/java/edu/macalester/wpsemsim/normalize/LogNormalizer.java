@@ -9,6 +9,7 @@ import edu.macalester.wpsemsim.utils.DocScoreList;
  */
 public class LogNormalizer implements Normalizer{
     private double c;
+    private boolean trained = false;
 
     @Override
     public DocScoreList normalize(DocScoreList list) {
@@ -46,7 +47,14 @@ public class LogNormalizer implements Normalizer{
     }
 
     @Override
-    public void observationsFinished() { }
+    public void observationsFinished() {
+        trained = true;
+    }
+
+    @Override
+    public boolean isTrained() {
+        return trained;
+    }
 
     @Override
     public String dump() {

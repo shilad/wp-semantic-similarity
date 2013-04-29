@@ -31,27 +31,24 @@ public class SimilarityFeatureGenerator extends FeatureGenerator {
             SimScore cs1 = ex.sims.get(i);
             SimScore cs2 = ex.reverseSims.get(i);
             assert(cs1.component == cs2.component);
-//            if (cs1.hasValue() || cs2.hasValue()) {
-                // range normalizer
-                BaseNormalizer rn = rangeNormalizers.get(cs1.component);
-                double r1 = cs1.hasValue() ? rn.normalize(cs1.sim) : rn.getMin();
-                double r2 = cs2.hasValue() ? rn.normalize(cs2.sim) : rn.getMin();
-                features.put(fi++, 0.5 * r1 + 0.5 * r2);
 
-                // percent normalizer
-                BaseNormalizer pn = percentNormalizers.get(cs1.component);
-                double p1 = cs1.hasValue() ? pn.normalize(cs1.sim) : pn.getMin();
-                double p2 = cs2.hasValue() ? pn.normalize(cs2.sim) : pn.getMin();
-                features.put(fi++, percentileToScore(0.5 * p1 + 0.5 * p2));
+            // range normalizer
+            BaseNormalizer rn = rangeNormalizers.get(cs1.component);
+            double r1 = cs1.hasValue() ? rn.normalize(cs1.sim) : rn.getMin();
+            double r2 = cs2.hasValue() ? rn.normalize(cs2.sim) : rn.getMin();
+            features.put(fi++, 0.5 * r1 + 0.5 * r2);
 
-                // log rank (mean and min)
-                int rank1 = cs1.hasValue() ? cs1.rank : numResults * 2;
-                int rank2 = cs2.hasValue() ? cs2.rank : numResults * 2;
-                features.put(fi++, rankToScore(0.5 * rank1 + 0.5 * rank2, numResults * 2));
-                features.put(fi++, rankToScore(Math.min(rank1, rank2), numResults * 2));
-//            } else {
-//                fi += 4;
-//            }
+            // percent normalizer
+            BaseNormalizer pn = percentNormalizers.get(cs1.component);
+            double p1 = cs1.hasValue() ? pn.normalize(cs1.sim) : pn.getMin();
+            double p2 = cs2.hasValue() ? pn.normalize(cs2.sim) : pn.getMin();
+            features.put(fi++, percentileToScore(0.5 * p1 + 0.5 * p2));
+
+            // log rank (mean and min)
+            int rank1 = cs1.hasValue() ? cs1.rank : numResults * 2;
+            int rank2 = cs2.hasValue() ? cs2.rank : numResults * 2;
+            features.put(fi++, rankToScore(0.5 * rank1 + 0.5 * rank2, numResults * 2));
+            features.put(fi++, rankToScore(Math.min(rank1, rank2), numResults * 2));
         }
         assert(fi == components.size() * 4);
         return features;
@@ -79,5 +76,4 @@ public class SimilarityFeatureGenerator extends FeatureGenerator {
             return featureName;
         }
     }
-
 }

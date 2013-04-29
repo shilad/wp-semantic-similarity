@@ -11,7 +11,6 @@ import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.Function;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import edu.macalester.wpsemsim.utils.ParallelForEach;
-import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.set.TIntSet;
 import org.apache.commons.io.FileUtils;
@@ -34,14 +33,10 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     private String name = this.getClass().getSimpleName();
     private Disambiguator disambiguator;
     protected int numThreads = Runtime.getRuntime().availableProcessors();
-    private boolean trained = false;
 
-    private File path;
+    private Normalizer mostSimilarNormalizer = new IdentityNormalizer();
+    private Normalizer similarityNormalizer = new IdentityNormalizer();
 
-    private Normalizer normalizer = new IdentityNormalizer();
-
-    // turned off while training the normalizer
-    private boolean useNormalizer = true;
     protected SparseMatrix mostSimilarMatrix;
 
     public BaseSimilarityMetric(ConceptMapper mapper, IndexHelper helper) {
@@ -84,8 +79,8 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
      * Normalizers translate similarity scores to more meaningful values.
      * @param n
      */
-    public void setNormalizer(Normalizer n){
-        normalizer = n;
+    public void setMostSimilarNormalizer(Normalizer n){
+        mostSimilarNormalizer = n;
     }
 
     @Override
@@ -94,24 +89,20 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     }
 
     /**
-     * Trains the normalizer to support the similarity() method.
+     * Trains the mostSimilarNormalizer to support the similarity() method.
      * @param labeled
      */
-    protected void trainSimilarityNormalizer(List<KnownSim> labeled) {
-        useNormalizer = false;
+    protected synchronized void trainSimilarityNormalizer(List<KnownSim> labeled) {
+        final Normalizer trainee = similarityNormalizer;
+        this.similarityNormalizer = new IdentityNormalizer();
         ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
             public void call(KnownSim ks) throws IOException, ParseException {
-                double sim = similarity(ks.phrase1,ks.phrase2);
-                if (!Double.isNaN(sim) && !Double.isInfinite(sim)){
-                    synchronized (normalizer) {
-                        normalizer.observe(sim, ks.similarity);
-                    }
-                }
+                double sim = similarity(ks.phrase1, ks.phrase2);
+                trainee.observe(sim, ks.similarity);
             }
         });
-        normalizer.observationsFinished();
-        useNormalizer = true;
-        trained = true;
+        trainee.observationsFinished();
+        similarityNormalizer = trainee;
     }
 
     @Override
@@ -120,15 +111,16 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     }
 
     /**
-     * Trains the normalizer to support the mostSimilar() method.
+     * Trains the mostSimilarNormalizer to support the mostSimilar() method.
      * Also estimates the similarity score for articles that don't appear in top lists.
      * Note that this (probably) is an overestimate, and depends on how well the
      * distribution of scores in your gold standard matches your actual data.
      *
      * @param labeled
      */
-    protected void trainMostSimilarNormalizer(List<KnownSim> labeled, final int numResults, final TIntSet validIds) {
-        useNormalizer = false;
+    protected synchronized void trainMostSimilarNormalizer(List<KnownSim> labeled, final int numResults, final TIntSet validIds) {
+        final Normalizer trainee = mostSimilarNormalizer;
+        this.mostSimilarNormalizer = new IdentityNormalizer();
         ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
             public void call(KnownSim ks) throws IOException {
                 ks.maybeSwap();
@@ -136,20 +128,18 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
                 if (m != null) {
                     DocScoreList dsl = mostSimilar(m.phraseWpId, numResults, validIds);
                     if (dsl != null) {
-                        double sim = dsl.getScoreForId(m.hintWpId);
-                        normalizer.observe(dsl, dsl.getIndexForId(m.hintWpId), ks.similarity);
+                        trainee.observe(dsl, dsl.getIndexForId(m.hintWpId), ks.similarity);
                     }
                 }
             }
         });
-        normalizer.observationsFinished();
-        useNormalizer = true;
-        trained = true;
+        trainee.observationsFinished();
+        mostSimilarNormalizer = trainee;
     }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
-        ensureTrained();
+        ensureSimilarityTrained();
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
@@ -187,7 +177,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
 
     @Override
     public DocScoreList mostSimilar(String phrase, int maxResults, TIntSet possibleWpIds) throws IOException {
-        ensureTrained();
+        ensureMostSimilarTrained();
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");
         }
@@ -199,11 +189,19 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     }
 
     /**
-     * Throws an IllegalStateException if the model has not been trained.
+     * Throws an IllegalStateException if the model has not been mostSimilarTrained.
      */
-    protected void ensureTrained() {
-        if (!trained) {
-            throw new IllegalStateException("Model has not been trained.");
+    protected void ensureSimilarityTrained() {
+        if (!similarityNormalizer.isTrained()) {
+            throw new IllegalStateException("Model similarity has not been trained.");
+        }
+    }
+    /**
+     * Throws an IllegalStateException if the model has not been mostSimilarTrained.
+     */
+    protected void ensureMostSimilarTrained() {
+        if (!mostSimilarNormalizer.isTrained()) {
+            throw new IllegalStateException("Model mostSimilar has not been trained.");
         }
     }
 
@@ -222,31 +220,23 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     }
 
     /**
-     * Use the normalizer to normalize a similarity if it's available.
+     * Use the similarityNormalizer to normalize a similarity if it's available.
      * @param sim
      * @return
      */
     protected double normalize(double sim) {
-        if (normalizer == null || !useNormalizer || Double.isInfinite(sim) || Double.isNaN(sim)) {
-            return sim;
-        } else if (!trained) {
-            throw new IllegalStateException("Model has not been trained.");
-        } else {
-            return normalizer.normalize(sim);
-        }
+        ensureSimilarityTrained();
+        return similarityNormalizer.normalize(sim);
     }
 
     /**
-     * Use the normalizer to normalize a list of score if possible.
+     * Use the mostSimilarNormalizer to normalize a list of score if possible.
      * @param dsl
      * @return
      */
     protected DocScoreList normalize(DocScoreList dsl) {
-        if (normalizer == null || !useNormalizer) {
-            return dsl;
-        } else {
-            return normalizer.normalize(dsl);
-        }
+        ensureMostSimilarTrained();
+        return mostSimilarNormalizer.normalize(dsl);
     }
 
     /**
@@ -257,10 +247,13 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     @Override
     public void write(File directory) throws IOException {
         ObjectOutputStream out = new ObjectOutputStream(
-                new FileOutputStream(new File(directory, "normalizer")));
-        out.writeObject(normalizer);
+                new FileOutputStream(new File(directory, "mostSimilarNormalizer")));
+        out.writeObject(mostSimilarNormalizer);
         out.close();
-        FileUtils.write(new File(directory, "trained"), "" + trained);
+        out = new ObjectOutputStream(
+                new FileOutputStream(new File(directory, "similarityNormalizer")));
+        out.writeObject(similarityNormalizer);
+        out.close();
     }
     /**
      * Reads the metric from a directory.
@@ -270,15 +263,21 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     @Override
     public void read(File directory) throws IOException {
         ObjectInputStream in = new ObjectInputStream(
-                new FileInputStream(new File(directory, "normalizer")));
+                new FileInputStream(new File(directory, "mostSimilarNormalizer")));
         try {
-            this.normalizer = (Normalizer) in.readObject();
+            this.mostSimilarNormalizer = (Normalizer) in.readObject();
         } catch (ClassNotFoundException e) {
             throw new IOException(e);
         }
         in.close();
-        trained = Boolean.valueOf(
-                FileUtils.readFileToString(new File(directory, "trained")));
+        in = new ObjectInputStream(
+                new FileInputStream(new File(directory, "similarityNormalizer")));
+        try {
+            this.similarityNormalizer = (Normalizer) in.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new IOException(e);
+        }
+        in.close();
     }
 
     /**
@@ -289,39 +288,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         this.numThreads = n;
     }
 
-    /**
-     * Returns true iff the model has been trained.
-     * @return
-     */
-    public boolean isTrained() {
-        return trained;
-    }
-
-    public File getPath() {
-        return path;
-    }
-
-    public void setPath(File path) {
-        this.path = path;
-    }
-
-    public Normalizer getNormalizer() {
-        return normalizer;
-    }
-
-    public static TDoubleArrayList readDoubles(File file) throws IOException {
-        TDoubleArrayList vals = new TDoubleArrayList();
-        for (String line : FileUtils.readLines(file))  {
-            vals.add(Double.valueOf(line));
-        }
-        return vals;
-    }
-
-    public static void writeDoubles(TDoubleArrayList vals, File file) throws IOException {
-        StringBuffer buff = new StringBuffer();
-        for (double x : vals.toArray()) {
-            buff.append(x + "\n");
-        }
-        FileUtils.write(file, buff.toString());
+    public void setSimilarityNormalizer(Normalizer similarityNormalizer) {
+        this.similarityNormalizer = similarityNormalizer;
     }
 }
