@@ -61,7 +61,7 @@ public class SimilarityAnalyzer {
             Double coverage = (Double) r[2];
             double X[] = (double[]) r[3];
             writer.write("analyzing metric: " + metric.getName() + "\n");
-            writer.write("\tcoverage=" + coverage + "%\n");
+            writer.write("\tcoverage=" + (coverage*100) + "%\n");
             writer.write("\tpearson=" + pearson + "\n");
             writer.write("\tspearman=" + spearman + "\n");
             simMatrix.setColumn(i++, X);
@@ -203,7 +203,7 @@ public class SimilarityAnalyzer {
         } else {
             double pearson = new PearsonsCorrelation().correlation(prunedX, prunedY);
             double spearman = new SpearmansCorrelation().correlation(prunedX, prunedY);
-            return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), X.toArray() };
+            return new Object[] { pearson, spearman, 1.0 * prunedX.length / gold.size(), X.toArray() };
         }
     }
 

@@ -54,7 +54,7 @@ public class MathUtils {
         for (int i = 0; i < smoothedX.size();) {
             double x = smoothedX.get(i);
             int span = 0;
-            while (smoothedX.get(i + span) == x) {
+            while (i + span < smoothedX.size() && smoothedX.get(i + span) == x) {
                 span++;
             }
             if (span > 1) {

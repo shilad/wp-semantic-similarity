@@ -48,10 +48,10 @@ elif [ "$action"  == "build" ]; then
         --lda_alpha 0.1 \
         --lda_rho 0.1 \
         --lda_D 4000000 \
-         --minibatch 10000 \
+         --minibatch 100000 \
         --power_t 0.5 \
         --initial_t 1 \
-        --passes 3 \
+        --passes 2 \
         --cache_file $dir/cache.vw \
         -d $dir/input.vw \
         -p $dir/articles.vw \

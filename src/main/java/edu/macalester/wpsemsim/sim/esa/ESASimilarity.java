@@ -79,7 +79,9 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
         TIntDoubleHashMap scores1 = getConceptVector(phrase1, null);
         TIntDoubleHashMap scores2 = getConceptVector(phrase2, null);
-        return normalize(SimUtils.cosineSimilarity(scores1, scores2));
+        double sim = SimUtils.cosineSimilarity(scores1, scores2);
+        //sim = 10 + Math.log(0.0001 + sim);
+        return normalize(sim);
     }
 
     private Map<String, TIntDoubleHashMap> phraseCache = new HashMap<String, TIntDoubleHashMap>();

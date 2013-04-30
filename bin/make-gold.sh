@@ -2,18 +2,21 @@
 
 DL=./dat/gold/dl
 SRC=./dat/gold/src  # src datasets
+CLEANED=./dat/gold/cleaned  # cleaned source datasets
+
 
 rm -rf $DL
 mkdir -p $DL
 rm -rf $SRC
 mkdir -p $SRC
+rm -rf $CLEANED
+mkdir -p $CLEANED
 
 mkdir $SRC/titles   # wikipedia titles to similarity scores
 mkdir $SRC/phrases  # phrases similarity scores
 
 # Downloads datasets and combines them into a single gold standard
 
-#if false; then
 
 # Gabrilovich et al, 2002
 # see http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/
@@ -57,7 +60,6 @@ wget -P $DL http://sigwp.org/wikisimi/WikiSimi3000_1.csv &&
 cp -p $DL/WikiSimi3000_1.csv  $SRC/titles/WikiSimi3000.tab ||
 { echo "ERROR: preparing wikisimi dataset failed" >&2; exit 1;}
 
-#fi
 
 for d in titles phrases; do
     python src/main/python/combine_gold.py $SRC/$d/*.* |
@@ -67,6 +69,14 @@ for d in titles phrases; do
     python src/main/python/combine_gold.py $SRC/$d/*.* |
     python src/main/python/filter_gold.py 4 0.6 >dat/gold/gold.$d.mostSimilar.txt ||
         { echo "ERROR: combining $d datasets failed" >&2; exit 1;}
+done
+
+# Create individual datasets
+for d in $SRC/phrases $SRC/titles; do
+    for file in `ls $d`; do
+        txt=`echo $file | sed 's/\..*$/.txt/'`
+        python src/main/python/combine_gold.py $d/$file >$CLEANED/$txt
+    done
 done
 
 

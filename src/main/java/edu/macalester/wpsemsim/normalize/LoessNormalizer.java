@@ -58,6 +58,9 @@ public class LoessNormalizer extends BaseNormalizer {
 
     @Override
     public double normalize(double x) {
+        if (Double.isNaN(x) || Double.isInfinite(x)) {
+            return missingMean;
+        }
         init();
         x = logIfNeeded(x);
         double sMin = interpolatorMin;
@@ -76,7 +79,7 @@ public class LoessNormalizer extends BaseNormalizer {
             } else if (x > sMax) {
                 x2 = MathUtils.toAsymptote(x - sMax, halfLife, yMax, yMax + yDelta);
             } else {
-                throw new IllegalStateException();
+                throw new IllegalStateException("" + x + " not in [" + sMin + "," + sMax + "]");
             }
         }
         return x2;
@@ -124,6 +127,12 @@ public class LoessNormalizer extends BaseNormalizer {
                 10);
         double smoothedX[] = smoothed[0];
         double smoothedY[] = smoothed[1];
+
+        /*System.err.print("smoothed points: ");
+        for (int i = 0; i < smoothedX.length; i++) {
+            System.err.print(" (" + smoothedX[i] + ", " + smoothedY[i] + ")");
+        }
+        System.err.println();*/
         interpolatorMin = smoothedX[0];
         interpolatorMax = smoothedX[smoothedX.length - 1];
 
