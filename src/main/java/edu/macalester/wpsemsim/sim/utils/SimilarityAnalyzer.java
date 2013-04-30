@@ -154,8 +154,8 @@ public class SimilarityAnalyzer {
                             }
                             if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
                                 synchronized (allX) {
-                                    X.add(ks.similarity);
-                                    Y.add(sim);
+                                    X.add(sim);
+                                    Y.add(ks.similarity);
                                 }
                             }
                         } finally {
@@ -198,8 +198,8 @@ public class SimilarityAnalyzer {
                             }
                             if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
                                 synchronized (allX) {
-                                    X.add(ks.similarity);
-                                    Y.add(sim);
+                                    X.add(sim);
+                                    Y.add(ks.similarity);
                                 }
                             }
                         } finally {
@@ -238,6 +238,13 @@ public class SimilarityAnalyzer {
                 .withDescription("Name of similarity metric that should be built.")
                 .hasArgs()
                 .create('n'));
+        options.addOption(new DefaultOptionBuilder()
+                .hasArg()
+                .withLongOpt("output")
+                .withDescription("Output file (defaults to stdout).")
+                .hasArgs()
+                .create('o'));
+
 
         EnvConfigurator conf;
         try {
@@ -275,11 +282,15 @@ public class SimilarityAnalyzer {
         } else {
             throw new IllegalArgumentException("invalid mode: " + modeStr);
         }
-        System.err.println("mode is " + modeStr);
+        BufferedWriter writer;
+        if (cmd.hasOption("o")) {
+            writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
+        } else {
+            writer = new BufferedWriter(new OutputStreamWriter(System.out));
+        }
 
         SimilarityAnalyzer analyzer = new SimilarityAnalyzer(
                 mode, gold, env.getMainMapper(), env.getMainIndex());
-        BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
         analyzer.analyzeMetrics(metrics, writer);
         writer.close();
     }
