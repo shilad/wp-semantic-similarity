@@ -4,6 +4,9 @@ import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.stat.ranking.NaNStrategy;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
+import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.commons.math3.util.MathArrays;
 
 import java.util.Arrays;
@@ -46,6 +49,23 @@ public class MathUtils {
             smoothedX.add(X[i]);
             smoothedY.add(robustMean(subYs));   // median
         }
+
+        // replace duplicate X points with their mean
+        for (int i = 0; i < smoothedX.size();) {
+            double x = smoothedX.get(i);
+            int span = 0;
+            while (smoothedX.get(i + span) == x) {
+                span++;
+            }
+            if (span > 1) {
+                double mean = smoothedY.subList(i, i + span).sum() / span;
+                for (int j = i; j < i + span; j++) {
+                    smoothedY.set(j, mean);
+                }
+            }
+            i += span;
+        }
+
         return new double[][] { smoothedX.toArray(), smoothedY.toArray()};
     }
 
