@@ -173,17 +173,21 @@ public class SimilarityAnalyzer {
         final TDoubleArrayList X = new TDoubleArrayList();
         final TDoubleArrayList Y = new TDoubleArrayList();
         final TDoubleArrayList allX = new TDoubleArrayList();
+        final Disambiguator dab = new Disambiguator(mapper, metric, helper, 500);
 
         ParallelForEach.loop(gold, Runtime.getRuntime().availableProcessors() ,
                 new Function<KnownSim>() {
                     public void call(KnownSim ks) throws Exception {
                         double sim = Double.NaN;
                         try {
-                            sim = metric.similarity(ks.phrase1, ks.phrase2);
-                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-                                synchronized (allX) {
-                                    X.add(ks.similarity);
-                                    Y.add(sim);
+                            Disambiguator.Match m = dab.disambiguateMostSimilar(ks, 500, null);
+                            if (m != null && m.hasHintMatch() && m.hasPhraseMatch()) {
+                                sim = metric.similarity(m.phraseWpId, m.hintWpId);
+                                if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
+                                    synchronized (allX) {
+                                        X.add(ks.similarity);
+                                        Y.add(sim);
+                                    }
                                 }
                             }
                         } finally {
