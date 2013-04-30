@@ -103,6 +103,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         });
         trainee.observationsFinished();
         similarityNormalizer = trainee;
+        LOG.info("trained most similarityNormalizer for " + getName() + ": " + trainee.dump());
     }
 
     @Override
@@ -135,6 +136,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         });
         trainee.observationsFinished();
         mostSimilarNormalizer = trainee;
+        LOG.info("trained most similar normalizer for " + getName() + ": " + trainee.dump());
     }
 
     @Override
