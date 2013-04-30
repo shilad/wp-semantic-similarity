@@ -37,7 +37,7 @@ public class LoessNormalizer extends BaseNormalizer {
 
     @Override
     public void observe(double x, double y){
-        if (!Double.isNaN(y) && !Double.isInfinite(y)) {
+        if (!Double.isNaN(x) && !Double.isInfinite(x)) {
             synchronized (X) {
                 X.add(x);
                 Y.add(y);
@@ -93,10 +93,22 @@ public class LoessNormalizer extends BaseNormalizer {
             return;
         }
 
+        // remove infinite or nan values
+        for (int i = 0; i < X.size();) {
+            double x = X.get(i);
+            double y = Y.get(i);
+            if (Double.isNaN(x) || Double.isNaN(y) || Double.isInfinite(x) || Double.isInfinite(y)) {
+                X.removeAt(i);
+                Y.removeAt(i);
+            } else {
+                i++;
+            }
+        }
+
         // sort points by X coordinate
         double ranks[] =  new NaturalRanking(NaNStrategy.REMOVED, TiesStrategy.SEQUENTIAL).rank(X.toArray());
         if (ranks.length != X.size()) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("invalid sizes: " + ranks.length + " and " + X.size());
         }
         // spots in these arrays will be replaced.
         TDoubleList sortedX = new TDoubleArrayList(X);
