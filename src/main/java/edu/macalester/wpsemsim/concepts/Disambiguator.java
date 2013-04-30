@@ -101,6 +101,15 @@ public class Disambiguator {
         return disambiguate(phrase, null, null);
     }
 
+    public int bestNaiveDisambiguation(String phrase) throws IOException {
+        Match m = disambiguate(phrase, null, null);
+        if (m == null) {
+            return -1;
+        } else {
+            return m.phraseWpId;
+        }
+    }
+
     protected Match disambiguate(String phrase, String hint, Scorer scorer) throws IOException {
         Match match = new Match();
         match.phrase = phrase;

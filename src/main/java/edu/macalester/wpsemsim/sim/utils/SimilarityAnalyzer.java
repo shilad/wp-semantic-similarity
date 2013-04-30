@@ -131,20 +131,31 @@ public class SimilarityAnalyzer {
                     public void call(KnownSim ks) throws Exception {
                         double sim = Double.NaN;
                         try {
-                            Disambiguator.Match m = dab.disambiguateMostSimilar(ks, 500, null);
-                            if (m != null) {
-                                DocScoreList dsl = metric.mostSimilar(m.phraseWpId, 500);
-                                if (dsl != null) {
-                                    sim = dsl.getScoreForId(m.hintWpId);
+                            DocScoreList dsl;
+                            if (ks.wpId1 >= 0 && ks.wpId2 >= 0) {
+                                dsl = metric.mostSimilar(ks.wpId1, 500);
+                            } else {
+                                dsl = metric.mostSimilar(ks.phrase1, 500);
+                            }
+                            if (dsl != null) {
+                                int wpId2 = ks.wpId2;
+                                if (wpId2 < 0) {
+                                    wpId2 = new Disambiguator(mapper, metric, helper, 1)
+                                            .bestNaiveDisambiguation(ks.phrase2);
+                                }
+                                if (wpId2 < 0) {
+                                    LOG.warning("no mapping for gold standard " + ks.phrase2 + "; skipping it");
+                                } else {
+                                    sim = dsl.getScoreForId(wpId2);
                                     if (Double.isNaN(sim)) {
                                         sim = dsl.getMissingScore();
                                     }
                                 }
-                                if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-                                    synchronized (allX) {
-                                        X.add(ks.similarity);
-                                        Y.add(sim);
-                                    }
+                            }
+                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
+                                synchronized (allX) {
+                                    X.add(ks.similarity);
+                                    Y.add(sim);
                                 }
                             }
                         } finally {
@@ -180,14 +191,15 @@ public class SimilarityAnalyzer {
                     public void call(KnownSim ks) throws Exception {
                         double sim = Double.NaN;
                         try {
-                            Disambiguator.Match m = dab.disambiguateMostSimilar(ks, 500, null);
-                            if (m != null && m.hasHintMatch() && m.hasPhraseMatch()) {
-                                sim = metric.similarity(m.phraseWpId, m.hintWpId);
-                                if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-                                    synchronized (allX) {
-                                        X.add(ks.similarity);
-                                        Y.add(sim);
-                                    }
+                            if (ks.wpId1 >= 0 && ks.wpId2 >= 0) {
+                                sim = metric.similarity(ks.wpId1, ks.wpId2);
+                            } else {
+                                sim = metric.similarity(ks.phrase1, ks.phrase2);
+                            }
+                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
+                                synchronized (allX) {
+                                    X.add(ks.similarity);
+                                    Y.add(sim);
                                 }
                             }
                         } finally {
