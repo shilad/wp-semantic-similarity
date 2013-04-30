@@ -247,20 +247,22 @@ public class SimilarityAnalyzer {
         }
         System.err.println("metrics are " + metrics);
 
-        int mode = MODE_SIMILARITY;
-        if (cmd.hasOption("m")) {
-            String s = cmd.getOptionValue("m");
-            if (s.equals("mostSimilar")) {
-                mode = MODE_MOST_SIMILAR;
-            } else if (s.equals("similarity")) {
-                    mode = MODE_SIMILARITY;
-            } else {
-                throw new IllegalArgumentException("invalid mode: " + s);
-            }
+        String modeStr = cmd.hasOption("m") ? cmd.getOptionValue("m") : "similarity";
+        List<KnownSim> gold;
+        int mode;
+        if (modeStr.equals("mostSimilar")) {
+            mode = MODE_MOST_SIMILAR;
+            gold = env.getMostSimilarGold();
+        } else if (modeStr.equals("similarity")) {
+            mode = MODE_SIMILARITY;
+            gold = env.getSimilarityGold();
+        } else {
+            throw new IllegalArgumentException("invalid mode: " + modeStr);
         }
+        System.err.println("mode is " + modeStr);
 
         SimilarityAnalyzer analyzer = new SimilarityAnalyzer(
-                mode, env.getMostSimilarGold(), env.getMainMapper(), env.getMainIndex());
+                mode, gold, env.getMainMapper(), env.getMainIndex());
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
         analyzer.analyzeMetrics(metrics, writer);
         writer.close();
