@@ -64,11 +64,15 @@ public class KnownSim {
     public static List<KnownSim> read(File path) throws IOException {
         List<KnownSim> result = new ArrayList<KnownSim>();
         BufferedReader reader = new BufferedReader(new FileReader(path));
+        String delim = "\t";
+        if (path.getName().toLowerCase().endsWith("csv")) {
+            delim = ",";
+        }
         while (true) {
             String line = reader.readLine();
             if (line == null)
                 break;
-            String tokens[] = line.split("\t");
+            String tokens[] = line.split(delim);
             if (tokens.length == 3) {
                 result.add(new KnownSim(
                         tokens[0],
