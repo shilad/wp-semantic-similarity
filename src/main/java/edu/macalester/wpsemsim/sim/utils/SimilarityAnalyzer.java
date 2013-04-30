@@ -6,6 +6,7 @@ import edu.macalester.wpsemsim.concepts.Disambiguator;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.*;
+import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.commons.cli.*;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
@@ -31,6 +32,7 @@ public class SimilarityAnalyzer {
     private ConceptMapper mapper;
     private IndexHelper helper;
     private int mode = MODE_SIMILARITY;
+    private int numThreads = Runtime.getRuntime().availableProcessors();
 
     public SimilarityAnalyzer(int mode, List<KnownSim> gold, ConceptMapper mapper, IndexHelper helper) throws IOException {
         this.mode = mode;
@@ -121,58 +123,34 @@ public class SimilarityAnalyzer {
      * @throws IOException
      */
     public Object[] calculateMostSimilarCorrelation(final SimilarityMetric metric) throws IOException, ParseException {
-        final TDoubleArrayList X = new TDoubleArrayList();
-        final TDoubleArrayList Y = new TDoubleArrayList();
-        final TDoubleArrayList allX = new TDoubleArrayList();
-        final Disambiguator dab = new Disambiguator(mapper, metric, helper, 500);
-
-        ParallelForEach.loop(gold, Runtime.getRuntime().availableProcessors() ,
-                new Function<KnownSim>() {
-                    public void call(KnownSim ks) throws Exception {
-                        double sim = Double.NaN;
-                        try {
-                            DocScoreList dsl;
-                            if (ks.wpId1 >= 0 && ks.wpId2 >= 0) {
-                                dsl = metric.mostSimilar(ks.wpId1, 500);
-                            } else {
-                                dsl = metric.mostSimilar(ks.phrase1, 500);
-                            }
-                            if (dsl != null) {
-                                int wpId2 = ks.wpId2;
-                                if (wpId2 < 0) {
-                                    wpId2 = new Disambiguator(mapper, metric, helper, 1)
-                                            .bestNaiveDisambiguation(ks.phrase2);
-                                }
-                                if (wpId2 < 0) {
-                                    LOG.warning("no mapping for gold standard " + ks.phrase2 + "; skipping it");
-                                } else {
-                                    sim = dsl.getScoreForId(wpId2);
-                                    if (Double.isNaN(sim)) {
-                                        sim = dsl.getMissingScore();
-                                    }
-                                }
-                            }
-                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-                                synchronized (allX) {
-                                    X.add(sim);
-                                    Y.add(ks.similarity);
-                                }
-                            }
-                        } finally {
-                            allX.add(sim);  // add Double.NaN on errors.
+        final Disambiguator dab = new Disambiguator(mapper, metric, helper, 1);
+        return accumulateScores(metric, new Function<KnownSim, Double>() {
+            @Override
+            public Double call(KnownSim ks) throws Exception {
+                double sim = Double.NaN;
+                DocScoreList dsl;
+                if (ks.wpId1 >= 0 && ks.wpId2 >= 0) {
+                    dsl = metric.mostSimilar(ks.wpId1, 500);
+                } else {
+                    dsl = metric.mostSimilar(ks.phrase1, 500);
+                }
+                if (dsl != null) {
+                    int wpId2 = ks.wpId2;
+                    if (wpId2 < 0) {
+                        wpId2 = dab.bestNaiveDisambiguation(ks.phrase2);
+                    }
+                    if (wpId2 < 0) {
+                        LOG.warning("no mapping for gold standard " + ks.phrase2 + "; skipping it");
+                    } else {
+                        sim = dsl.getScoreForId(wpId2);
+                        if (Double.isNaN(sim)) {
+                            sim = dsl.getMissingScore();
                         }
                     }
-                });
-
-        if (X.size() < 4) {
-            LOG.info("metric " + metric.getName() + " only produced " + X.size() + " similarity scores.");
-            LOG.info("skipping calculation of Pearson, etc.");
-            return null;
-        } else {
-            double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
-            double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
-            return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX.toArray() };
-        }
+                }
+                return sim;
+            }
+        });
     }
     /**
      * Calculates the pearson correlation between the metric and the gold standard
@@ -181,42 +159,56 @@ public class SimilarityAnalyzer {
      * @throws IOException
      */
     public Object[] calculateSimilarityCorrelation(final SimilarityMetric metric) throws IOException, ParseException {
-        final TDoubleArrayList X = new TDoubleArrayList();
-        final TDoubleArrayList Y = new TDoubleArrayList();
-        final TDoubleArrayList allX = new TDoubleArrayList();
-        final Disambiguator dab = new Disambiguator(mapper, metric, helper, 500);
+        return accumulateScores(metric, new Function<KnownSim, Double>() {
+            @Override
+            public Double call(KnownSim ks) throws Exception {
+                double sim;
+                if (ks.wpId1 >= 0 && ks.wpId2 >= 0) {
+                    sim = metric.similarity(ks.wpId1, ks.wpId2);
+                } else {
+                    sim = metric.similarity(ks.phrase1, ks.phrase2);
+                }
+                return sim;
+            }
+        });
+    }
 
-        ParallelForEach.loop(gold, Runtime.getRuntime().availableProcessors() ,
-                new Function<KnownSim>() {
-                    public void call(KnownSim ks) throws Exception {
-                        double sim = Double.NaN;
-                        try {
-                            if (ks.wpId1 >= 0 && ks.wpId2 >= 0) {
-                                sim = metric.similarity(ks.wpId1, ks.wpId2);
-                            } else {
-                                sim = metric.similarity(ks.phrase1, ks.phrase2);
-                            }
-                            if (!Double.isInfinite(sim) && !Double.isNaN(sim)) {
-                                synchronized (allX) {
-                                    X.add(sim);
-                                    Y.add(ks.similarity);
-                                }
-                            }
-                        } finally {
-                            allX.add(sim);  // add Double.NaN on errors.
-                        }
-                    }
-                });
+    protected Object[] accumulateScores(SimilarityMetric metric, final Function<KnownSim, Double> fn) {
+        // Gather X values from similarity metric
+        final TDoubleList X = new TDoubleArrayList();
+        for (int i = 0; i < gold.size(); i++) { X.add(Double.NaN); }
 
-        if (X.size() < 4) {
+        // If exceptions occur in the parallel for each, the NaN will stick around.
+        ParallelForEach.range(0, gold.size(), numThreads, new Procedure<Integer>() {
+            public void call(Integer i) throws Exception {
+                double x = fn.call(gold.get(i));
+                synchronized (X) { X.set(i, x); }
+            }
+        });
+
+        // Gather Y values from gold standard
+        final TDoubleList Y = new TDoubleArrayList();
+        for (KnownSim ks : gold) Y.add(ks.similarity);
+
+        if (X.size() != Y.size()) {
+            throw new IllegalStateException("sizes of X and Y do not match!");
+        }
+        double pruned[][] = MathUtils.removeNotNumberPoints(X.toArray(), Y.toArray());
+        double prunedX[] = pruned[0];
+        double prunedY[] = pruned[1];
+        if (prunedX.length < 4) {
             LOG.info("metric " + metric.getName() + " only produced " + X.size() + " similarity scores.");
             LOG.info("skipping calculation of Pearson, etc.");
             return null;
         } else {
-            double pearson = new PearsonsCorrelation().correlation(X.toArray(), Y.toArray());
-            double spearman = new SpearmansCorrelation().correlation(X.toArray(), Y.toArray());
-            return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), allX.toArray() };
+            double pearson = new PearsonsCorrelation().correlation(prunedX, prunedY);
+            double spearman = new SpearmansCorrelation().correlation(prunedX, prunedY);
+            return new Object[] { pearson, spearman, 1.0 * X.size() / gold.size(), X.toArray() };
         }
+    }
+
+    public void setNumThreads(int numThreads) {
+        this.numThreads = numThreads;
     }
 
     public class MyOLS extends OLSMultipleLinearRegression {
@@ -291,6 +283,7 @@ public class SimilarityAnalyzer {
 
         SimilarityAnalyzer analyzer = new SimilarityAnalyzer(
                 mode, gold, env.getMainMapper(), env.getMainIndex());
+        analyzer.setNumThreads(env.getNumThreads());
         analyzer.analyzeMetrics(metrics, writer);
         writer.close();
     }

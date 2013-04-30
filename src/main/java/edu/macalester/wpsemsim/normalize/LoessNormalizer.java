@@ -94,16 +94,9 @@ public class LoessNormalizer extends BaseNormalizer {
         }
 
         // remove infinite or nan values
-        for (int i = 0; i < X.size();) {
-            double x = X.get(i);
-            double y = Y.get(i);
-            if (Double.isNaN(x) || Double.isNaN(y) || Double.isInfinite(x) || Double.isInfinite(y)) {
-                X.removeAt(i);
-                Y.removeAt(i);
-            } else {
-                i++;
-            }
-        }
+        TDoubleList pruned[] = MathUtils.removeNotNumberPoints(X, Y);
+        X = pruned[0];
+        Y = pruned[1];
 
         // sort points by X coordinate
         double ranks[] =  new NaturalRanking(NaNStrategy.REMOVED, TiesStrategy.SEQUENTIAL).rank(X.toArray());

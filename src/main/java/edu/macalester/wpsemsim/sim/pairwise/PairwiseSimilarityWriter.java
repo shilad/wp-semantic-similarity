@@ -5,7 +5,7 @@ import edu.macalester.wpsemsim.matrix.SparseMatrixWriter;
 import edu.macalester.wpsemsim.matrix.ValueConf;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScoreList;
-import edu.macalester.wpsemsim.utils.Function;
+import edu.macalester.wpsemsim.utils.Procedure;
 import edu.macalester.wpsemsim.utils.ParallelForEach;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -46,7 +46,7 @@ public class PairwiseSimilarityWriter {
     }
 
     public void writeSims(List<Integer> wpIds, int threads, final int maxSimsPerDoc) throws IOException, InterruptedException {
-        ParallelForEach.loop(wpIds, threads, new Function<Integer>() {
+        ParallelForEach.loop(wpIds, threads, new Procedure<Integer>() {
             public void call(Integer wpId) throws IOException {
                 writeSim(wpId, maxSimsPerDoc);
             }

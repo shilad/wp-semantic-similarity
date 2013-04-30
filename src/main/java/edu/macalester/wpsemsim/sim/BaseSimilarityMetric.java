@@ -8,12 +8,10 @@ import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.utils.DocScoreList;
-import edu.macalester.wpsemsim.utils.Function;
+import edu.macalester.wpsemsim.utils.Procedure;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import edu.macalester.wpsemsim.utils.ParallelForEach;
-import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.set.TIntSet;
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.*;
@@ -95,7 +93,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     protected synchronized void trainSimilarityNormalizer(List<KnownSim> labeled) {
         final Normalizer trainee = similarityNormalizer;
         this.similarityNormalizer = new IdentityNormalizer();
-        ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
+        ParallelForEach.loop(labeled, numThreads, new Procedure<KnownSim>() {
             public void call(KnownSim ks) throws IOException, ParseException {
                 double sim = similarity(ks.phrase1, ks.phrase2);
                 trainee.observe(sim, ks.similarity);
@@ -122,7 +120,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     protected synchronized void trainMostSimilarNormalizer(List<KnownSim> labeled, final int numResults, final TIntSet validIds) {
         final Normalizer trainee = mostSimilarNormalizer;
         this.mostSimilarNormalizer = new IdentityNormalizer();
-        ParallelForEach.loop(labeled, numThreads, new Function<KnownSim>() {
+        ParallelForEach.loop(labeled, numThreads, new Procedure<KnownSim>() {
             public void call(KnownSim ks) throws IOException {
                 ks.maybeSwap();
                 Disambiguator.Match m = disambiguator.disambiguateMostSimilar(ks, numResults, validIds);

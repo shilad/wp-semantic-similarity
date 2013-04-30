@@ -19,7 +19,6 @@ import org.apache.lucene.queryparser.surround.parser.ParseException;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 /**
@@ -210,7 +209,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
     @Override
     public void trainMostSimilar(final List<KnownSim> gold, final int numResults, final TIntSet validIds) {
         final List<Example> examples = Collections.synchronizedList(new ArrayList<Example>());
-        ParallelForEach.loop(gold, numThreads, new Function<KnownSim>() {
+        ParallelForEach.loop(gold, numThreads, new Procedure<KnownSim>() {
             @Override
             public void call(KnownSim ks) throws Exception {
                 Example ex = getComponentSimilarities(ks, numResults, validIds);

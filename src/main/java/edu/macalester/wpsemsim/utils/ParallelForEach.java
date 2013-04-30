@@ -23,22 +23,47 @@ public class ParallelForEach {
      * @param numThreads
      * @param fn callback
      */
-    public static void range(int from, int to, int numThreads, final Function<Integer> fn) {
+    public static void range(int from, int to, int numThreads, final Procedure<Integer> fn) {
         List<Integer> range = new ArrayList<Integer>();
         for (int i = from; i < to; i++) { range.add(i); }
         loop(range, numThreads, fn);
     }
+    public static <T,R> List<R> range(int from, int to, int numThreads, final Function<Integer, R> fn) {
+        List<Integer> range = new ArrayList<Integer>();
+        for (int i = from; i < to; i++) { range.add(i); }
+        return loop(range, numThreads, fn);
+    }
+    public static <T,R> List<R> loop(
+            Collection<T> collection,
+            int numThreads,
+            final Function<T,R> fn) {
+        return loop(collection, numThreads, fn, 50);
+    }
     public static <T> void loop(
             Collection<T> collection,
             int numThreads,
-            final Function<T> fn) {
+            final Procedure<T> fn) {
         loop(collection, numThreads, fn, 50);
     }
     public static <T> void loop(
             Collection<T> collection,
             int numThreads,
-            final Function<T> fn,
+            final Procedure<T> fn,
             final int logModulo) {
+        loop(collection, numThreads, new Function<T, Object> () {
+            public Object call(T arg) throws Exception {
+                fn.call(arg);
+                return null;
+            }
+        }, logModulo);
+    }
+    public static <T,R> List<R> loop(
+            Collection<T> collection,
+            int numThreads,
+            final Function<T,R> fn,
+            final int logModulo) {
+        final List<R> result = new ArrayList<R>();
+        for (int i = 0; i < collection.size(); i++) result.add(null);
         final ExecutorService exec = Executors.newFixedThreadPool(numThreads);
         final CountDownLatch latch = new CountDownLatch(collection.size());
         try {
@@ -53,7 +78,8 @@ public class ParallelForEach {
                             if (finalI % logModulo == 0) {
                                 LOG.info("processing list element " + finalI + " of " + asList.size());
                             }
-                            fn.call(obj);
+                            R r = fn.call(obj);
+                            result.set(finalI, r);
                         } catch (Exception e) {
                             LOG.log(Level.SEVERE, "error processing list element " + obj, e);
                             LOG.log(Level.SEVERE, "stacktrace: " + ExceptionUtils.getStackTrace(e).replaceAll("\n", " ").replaceAll("\\s+", " "));
@@ -63,6 +89,7 @@ public class ParallelForEach {
                     }});
             }
             latch.await();
+            return result;
         } catch (InterruptedException e) {
             LOG.log(Level.SEVERE, "Interrupted parallel for each", e);
             throw new RuntimeException(e);

@@ -16,7 +16,7 @@ public class SynchronizedBenchmark {
         for (int i = 0; i < NUM_THREADS; i++) { range.add(i); }
 
         final SynchronizedBenchmark bench = new SynchronizedBenchmark();
-        ParallelForEach.loop(range, NUM_THREADS, new Function<Integer>() {
+        ParallelForEach.loop(range, NUM_THREADS, new Procedure<Integer>() {
             @Override
             public void call(Integer arg) throws Exception {
                 bench.thread();

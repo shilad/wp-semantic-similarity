@@ -12,8 +12,6 @@ import gnu.trove.map.TIntDoubleMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
@@ -86,7 +84,7 @@ public class PhraseAnalyzer {
         phrases.clear();
         final Disambiguator dab = new Disambiguator(env.getMainMapper(), null, env.getMainIndex(), 5);
         ParallelForEach.loop(FileUtils.readLines(file), env.getNumThreads(),
-            new Function<String>() {
+            new Procedure<String>() {
                 public void call(String line) throws Exception {
                 String tokens[] = line.split("\t", 2);
                 if (tokens.length != 2) {
@@ -120,7 +118,7 @@ public class PhraseAnalyzer {
      */
     private void buildMostSimilar(final SimilarityMetric metric) throws IOException {
         LOG.info("building most similar");
-        ParallelForEach.loop(phrases, env.getNumThreads(), new Function<PhraseInfo>() {
+        ParallelForEach.loop(phrases, env.getNumThreads(), new Procedure<PhraseInfo>() {
             public void call(PhraseInfo pi) throws Exception {
                 pi.mostSimilar = metric.mostSimilar(pi.wpId, env.getNumMostSimilarResults(), wpIdPhrases.keySet());
                 if (pi.mostSimilar == null) pi.mostSimilar = new DocScoreList(0);
@@ -137,7 +135,7 @@ public class PhraseAnalyzer {
      */
     private void buildSimilarity(final SimilarityMetric metric) throws IOException {
         LOG.info("building similarity");
-        ParallelForEach.range(0, phrases.size(), env.getNumThreads(), new Function<Integer>() {
+        ParallelForEach.range(0, phrases.size(), env.getNumThreads(), new Procedure<Integer>() {
             @Override
             public void call(Integer i) throws Exception {
                 PhraseInfo pi = phrases.get(i);

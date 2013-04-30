@@ -116,4 +116,36 @@ public class MathUtils {
         makeMonotonicIncreasing(X2, epsilon);
         X.set(0, X2);
     }
+
+    /**
+     * Given two parallel arrays of doubles representing x,y pairs
+     * remove all pairs that are NaN or Infinite, and return the result.
+     *
+     * @param X
+     * @param Y
+     *
+     * @return
+     */
+    public static double[][] removeNotNumberPoints(double X[], double Y[]) {
+        TDoubleArrayList prunedX = new TDoubleArrayList();
+        TDoubleArrayList prunedY = new TDoubleArrayList();
+        for (int i = 0; i < X.length; i++) {
+            double x = X[i];
+            double y = Y[i];
+            if (Double.isNaN(x) || Double.isNaN(y) || Double.isInfinite(x) || Double.isInfinite(y)) {
+                // skip
+            } else {
+                prunedX.add(x);
+                prunedY.add(y);
+            }
+        }
+        return new double[][] { prunedX.toArray(), prunedY.toArray() };
+    }
+    public static TDoubleList[] removeNotNumberPoints(TDoubleList X, TDoubleList Y) {
+        double pruned[][] = removeNotNumberPoints(X.toArray(), Y.toArray());
+        return new TDoubleList[] {
+                new TDoubleArrayList(pruned[0]),
+                new TDoubleArrayList(pruned[1])
+        };
+    }
 }
