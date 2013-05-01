@@ -14,16 +14,22 @@ import java.util.regex.Pattern;
 
 
 /**
- * An linear regression implementation of a supervised ensemble of similarity metrics.
+ * A linear regression implementation of a supervised ensemble of similarity metrics.
  */
 public class LinearEnsemble implements Ensemble {
     private static final Logger LOG = Logger.getLogger(LinearEnsemble.class.getName());
 
+    // feature generators for similarity / mostSimilar
     protected FeatureGenerator similarityGenerator = new SimilarityFeatureGenerator();
     protected FeatureGenerator mostSimilarGenerator = new MostSimilarFeatureGenerator();
-    protected List<SimilarityMetric> components;
-    protected int numFeatures = -1;
 
+    // underlying similarity metrics
+    protected List<SimilarityMetric> components;
+
+    // coefficients for linear equations.
+    // the first value in the array is the constant term.
+    // the length of each array should equal the number of features returned
+    // by the generator + 1 because of the constant term.
     protected double[] mostSimilarCoefficients = new double[0];
     protected double[] similarityCoefficients = new double[0];;
 
@@ -52,11 +58,15 @@ public class LinearEnsemble implements Ensemble {
         double X[][] = new double[examples.size()][];
         double Y[] = new double[examples.size()];
 
-        this.numFeatures = -1;
+        int numFeatures = similarityGenerator.getNumFeatures();
         int rowNum = 0;
         for (Example ex : examples) {
-            X[rowNum] = similarityExampleFeatures(ex);
+            X[rowNum] = similarityGenerator.generate(ex);
             Y[rowNum] = ex.label.similarity;
+            if (X[rowNum].length != numFeatures) {
+                throw new IllegalStateException(
+                        "num features returned by similarity generator is inconsistent");
+            }
             rowNum++;
         }
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
@@ -78,11 +88,15 @@ public class LinearEnsemble implements Ensemble {
         double X[][] = new double[examples.size()][];
         double Y[] = new double[examples.size()];
 
-        this.numFeatures = -1;
+        int numFeatures = mostSimilarGenerator.getNumFeatures();
         int rowNum = 0;
         for (Example ex : examples) {
-            X[rowNum] = mostSimilarExampleFeatures(ex);
+            X[rowNum] = mostSimilarGenerator.generate(ex);
             Y[rowNum] = ex.label.similarity;
+            if (X[rowNum].length != numFeatures) {
+                throw new IllegalStateException(
+                        "num features returned by mostSimilar generator is inconsistent");
+            }
             rowNum++;
         }
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
@@ -125,33 +139,11 @@ public class LinearEnsemble implements Ensemble {
         return buffer.toString();
     }
 
-    private double[] mostSimilarExampleFeatures(Example ex) {
-        double features[] = mostSimilarGenerator.generate(ex);
-        if (numFeatures < 0) {
-            numFeatures = features.length;
-        }
-        if (features.length != numFeatures) {
-            throw new IllegalArgumentException("expected numFeatures to be " + numFeatures + ", but was " + features.length);
-        }
-        return features;
-    }
-
-    private double[] similarityExampleFeatures(Example ex) {
-        double features[] = similarityGenerator.generate(ex);
-        if (numFeatures < 0) {
-            numFeatures = features.length;
-        }
-        if (features.length != numFeatures) {
-            throw new IllegalArgumentException("expected numFeatures to be " + numFeatures + ", but was " + features.length);
-        }
-        return features;
-    }
-
     @Override
     public double predictMostSimilar(Example ex, boolean truncate) {
         assert(ex.sims.size() == components.size());
-        double features[] = mostSimilarExampleFeatures(ex);
-        if (features.length!= mostSimilarCoefficients.length - 1) {
+        double features[] = mostSimilarGenerator.generate(ex);
+        if (features.length != mostSimilarCoefficients.length - 1) {
             throw new IllegalStateException();
         }
         double sum = mostSimilarCoefficients[0];
@@ -164,7 +156,7 @@ public class LinearEnsemble implements Ensemble {
     @Override
     public double predictSimilarity(Example ex, boolean truncate) {
         assert(ex.sims.size() == components.size());
-        double features[] = similarityExampleFeatures(ex);
+        double features[] = similarityGenerator.generate(ex);
         if (features.length!= similarityCoefficients.length - 1) {
             throw new IllegalStateException();
         }
