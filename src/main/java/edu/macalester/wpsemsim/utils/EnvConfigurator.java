@@ -412,8 +412,6 @@ public class EnvConfigurator {
         }
         EnsembleSimilarity similarity = new EnsembleSimilarity(ensemble, loadMainMapper(), env.getMainIndex());
         similarity.setComponents(metrics);
-        similarity.read(requireDirectory(params, "model"));
-        similarity.setName(key);
         if (params.containsKey("minComponents")) {
             similarity.setMinComponents(requireInteger(params, "minComponents"));
         }
