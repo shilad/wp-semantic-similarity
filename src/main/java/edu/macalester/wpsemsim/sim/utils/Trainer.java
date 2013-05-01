@@ -46,7 +46,7 @@ public class Trainer {
         Env env = conf.loadEnv();
 
         // load metric
-        SimilarityMetric metric = conf.loadMetric(cmd.getOptionValue("n"));
+        SimilarityMetric metric = conf.loadMetric(cmd.getOptionValue("n"), false);
 
         // override output directory if necessary.
         File outputDirectory = conf.getModelDirectory(metric);

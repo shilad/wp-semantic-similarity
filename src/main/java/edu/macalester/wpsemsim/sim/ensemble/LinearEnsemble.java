@@ -62,7 +62,7 @@ public class LinearEnsemble implements Ensemble {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(Y, X);
 
-        this.mostSimilarCoefficients = regression.estimateRegressionParameters();
+        this.similarityCoefficients = regression.estimateRegressionParameters();
         double pearson = Math.sqrt(regression.calculateRSquared());
         LOG.info("equation is " + getSimilarityEquationString());
         LOG.info("pearson for multiple regression is " + pearson);
