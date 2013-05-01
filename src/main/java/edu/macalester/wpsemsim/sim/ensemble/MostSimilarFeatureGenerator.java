@@ -3,6 +3,7 @@ package edu.macalester.wpsemsim.sim.ensemble;
 import edu.macalester.wpsemsim.normalize.BaseNormalizer;
 import edu.macalester.wpsemsim.sim.SimScore;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import gnu.trove.list.array.TDoubleArrayList;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,7 +20,7 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
     protected Random random = new Random();
 
     @Override
-    public LinkedHashMap<Integer, Double> generate(Example ex) {
+    public double[] generate(Example ex) {
         if (components == null) throw new NullPointerException("components not set");
         if (!ex.hasReverse()) {
             throw new UnsupportedOperationException();  // TODO: fixme
@@ -28,7 +29,7 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
             throw new IllegalStateException();
         }
 
-        LinkedHashMap<Integer, Double> features = new LinkedHashMap<Integer, Double>();
+        TDoubleArrayList features = new TDoubleArrayList();
         int fi = 0; // feature index
 
         for (int i = 0; i < ex.sims.size(); i++) {
@@ -41,19 +42,19 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
 
             // range normalizer
             BaseNormalizer rn = rangeNormalizers.get(cs.component);
-            features.put(fi++, rn.normalize(x));
+            features.add(rn.normalize(x));
 
             // percent normalizer
             BaseNormalizer pn = percentNormalizers.get(cs.component);
             double p = cs.hasValue() ? pn.normalize(x) : -0.2;
-            features.put(fi++, percentileToScore(p));
+            features.add(percentileToScore(p));
 
                 // log rank (mean and min)
             int rank = cs.hasValue() ? cs.rank : numResults * 2;
-            features.put(fi++, rankToScore(rank, numResults * 2));
+            features.add(rankToScore(rank, numResults * 2));
         }
         assert(fi == components.size() * 3);
-        return features;
+        return features.toArray();
     }
 
     @Override

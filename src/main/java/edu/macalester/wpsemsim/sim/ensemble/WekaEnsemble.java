@@ -52,10 +52,9 @@ public class WekaEnsemble implements Ensemble {
 
         outputBuffer.append("@data\n");
         for (Example x : examples) {
-            Map<Integer, Double> features = generator.generate(x);
-            int maxIndex = Collections.max(features.keySet());
-            for (int i = 0; i <= maxIndex; i++) {
-                Double val = features.get(i);
+            double features[] = generator.generate(x);
+            for (int i = 0; i < features.length; i++) {
+                Double val = features[i];
                 if (val == null || Double.isNaN(val)) {
                     outputBuffer.append("?");
                 } else {

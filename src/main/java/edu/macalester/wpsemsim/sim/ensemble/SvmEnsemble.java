@@ -147,16 +147,13 @@ public class SvmEnsemble implements Ensemble {
     protected svm_node[] simsToNodes(Example ex, boolean truncate) {
         if (!ex.hasReverse()) throw new UnsupportedOperationException();
 
-        Map<Integer, Double> features = featureGenerator.generate(ex);
-        svm_node nodes[] = new svm_node[features.size()];
-        int ni = 0; // node index
-        for (int fi : features.keySet()) {
-            nodes[ni] = new svm_node();
-            nodes[ni].index = fi;
-            nodes[ni].value = features.get(fi);
-            ni++;
+        double features[] = featureGenerator.generate(ex);
+        svm_node nodes[] = new svm_node[features.length];
+        for (int i = 0; i < features.length; i++) {
+            nodes[i] = new svm_node();
+            nodes[i].index = i;
+            nodes[i].value = features[i];
         }
-
         return nodes;
     }
 

@@ -102,20 +102,17 @@ public class LinearEnsemble implements Ensemble {
     }
 
     private double[] exampleFeatures(Example ex) {
-        Map<Integer, Double> features = mostSimilarGenerator.generate(ex);
-        if (features.size() != Collections.max(features.keySet()) + 1) {
-            throw new IllegalArgumentException("features array not dense!");
-        }
+        double features[] = mostSimilarGenerator.generate(ex);
         if (numFeatures < 0) {
-            numFeatures = features.size();
+            numFeatures = features.length;
         }
-        if (features.size() != numFeatures) {
-            throw new IllegalArgumentException("expected numFeatures to be " + numFeatures + ", but was " + features.size());
+        if (features.length != numFeatures) {
+            throw new IllegalArgumentException("expected numFeatures to be " + numFeatures + ", but was " + features.length);
         }
 
         double result[] = new double[numFeatures];
         for (int i = 0; i < numFeatures; i++) {
-            result[i] = features.get(i);
+            result[i] = features[i];
         }
         return result;
     }

@@ -153,7 +153,7 @@ public abstract class FeatureGenerator implements Serializable {
      * @param ex
      * @return
      */
-    public abstract LinkedHashMap<Integer, Double> generate(Example ex);
+    public abstract double[] generate(Example ex);
 
     /**
      * Return a list of feature names. The index of a name in the resulting list
