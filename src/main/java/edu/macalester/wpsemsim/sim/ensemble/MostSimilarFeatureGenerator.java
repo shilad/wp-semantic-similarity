@@ -30,8 +30,6 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
         }
 
         TDoubleArrayList features = new TDoubleArrayList();
-        int fi = 0; // feature index
-
         for (int i = 0; i < ex.sims.size(); i++) {
             SimScore cs = (!ex.hasReverse() || random.nextFloat() >= 0.5)
                             ? ex.sims.get(i)
@@ -53,7 +51,7 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
             int rank = cs.hasValue() ? cs.rank : numResults * 2;
             features.add(rankToScore(rank, numResults * 2));
         }
-        assert(fi == getNumFeatures());
+        assert(features.size() == getNumFeatures());
         return features.toArray();
     }
 

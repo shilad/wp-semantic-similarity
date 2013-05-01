@@ -26,7 +26,6 @@ public class SimilarityFeatureGenerator extends FeatureGenerator {
         }
 
         TDoubleArrayList features = new TDoubleArrayList();
-        int fi = 0; // feature index
 
         for (int i = 0; i < ex.sims.size(); i++) {
             SimScore cs1 = ex.sims.get(i);
@@ -51,7 +50,7 @@ public class SimilarityFeatureGenerator extends FeatureGenerator {
             features.add(rankToScore(0.5 * rank1 + 0.5 * rank2, numResults * 2));
             features.add(rankToScore(Math.min(rank1, rank2), numResults * 2));
         }
-        assert(fi == getNumFeatures());
+        assert(features.size() == getNumFeatures());
         return features.toArray();
     }
 
