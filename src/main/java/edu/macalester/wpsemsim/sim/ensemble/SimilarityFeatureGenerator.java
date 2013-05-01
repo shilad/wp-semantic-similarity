@@ -34,6 +34,10 @@ public class SimilarityFeatureGenerator extends FeatureGenerator {
 
             double s1 = getOrImputeSim(cs1);
             double s2 = getOrImputeSim(cs2);
+            if (s1 == s2) { // HACK: add noise to remove colinearity.
+                s1 += (0.5 - Math.random()) * 10E-6;
+                s2 += (0.5 - Math.random()) * 10E-6;
+            }
             assert(!Double.isNaN(s1));   // it should be defined now!
             assert(!Double.isNaN(s2));   // it should be defined now!
 
