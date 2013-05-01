@@ -265,7 +265,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
      * @throws ParseException
      */
     private Example getComponentSimilarities(KnownSim ks, int numResults, TIntSet validIds) throws IOException, ParseException {
-        Example result = (numResults > 0) ? Example.makeEmptyWithReverse() : Example.makeEmpty();
+        Example result = Example.makeEmptyWithReverse();
         for (int i = 0; i < components.size(); i++) {
             SimilarityMetric m = components.get(i);
 
