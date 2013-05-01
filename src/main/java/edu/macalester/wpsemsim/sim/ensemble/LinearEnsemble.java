@@ -1,7 +1,6 @@
 package edu.macalester.wpsemsim.sim.ensemble;
 
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import gnu.trove.map.hash.TIntDoubleHashMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
@@ -24,7 +23,9 @@ public class LinearEnsemble implements Ensemble {
     protected FeatureGenerator mostSimilarGenerator = new MostSimilarFeatureGenerator();
     protected List<SimilarityMetric> components;
     protected int numFeatures = -1;
-    protected double[] coefficients;
+
+    protected double[] mostSimilarCoefficients = new double[0];
+    protected double[] similarityCoefficients = new double[0];;
 
     public LinearEnsemble() throws IOException {
         this(new ArrayList<SimilarityMetric>());
@@ -50,7 +51,21 @@ public class LinearEnsemble implements Ensemble {
 
         double X[][] = new double[examples.size()][];
         double Y[] = new double[examples.size()];
-        throw new UnsupportedOperationException();
+
+        this.numFeatures = -1;
+        int rowNum = 0;
+        for (Example ex : examples) {
+            X[rowNum] = similarityExampleFeatures(ex);
+            Y[rowNum] = ex.label.similarity;
+            rowNum++;
+        }
+        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+        regression.newSampleData(Y, X);
+
+        this.mostSimilarCoefficients = regression.estimateRegressionParameters();
+        double pearson = Math.sqrt(regression.calculateRSquared());
+        LOG.info("equation is " + getSimilarityEquationString());
+        LOG.info("pearson for multiple regression is " + pearson);
     }
 
     @Override
@@ -66,21 +81,30 @@ public class LinearEnsemble implements Ensemble {
         this.numFeatures = -1;
         int rowNum = 0;
         for (Example ex : examples) {
-            X[rowNum] = exampleFeatures(ex);
+            X[rowNum] = mostSimilarExampleFeatures(ex);
             Y[rowNum] = ex.label.similarity;
             rowNum++;
         }
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(Y, X);
 
-        this.coefficients = regression.estimateRegressionParameters();
+        this.mostSimilarCoefficients = regression.estimateRegressionParameters();
         double pearson = Math.sqrt(regression.calculateRSquared());
-        LOG.info("equation is " + getEquationString());
+        LOG.info("equation is " + getMostSimilarEquationString());
         LOG.info("pearson for multiple regression is " + pearson);
     }
 
-    public String getEquationString() {
-        List<String> names = mostSimilarGenerator.getFeatureNames();
+    public String getMostSimilarEquationString() {
+        return getEquationString(mostSimilarGenerator, mostSimilarCoefficients);
+    }
+
+    public String getSimilarityEquationString() {
+        return getEquationString(similarityGenerator, similarityCoefficients);
+    }
+
+    private String getEquationString(FeatureGenerator generator, final double coefficients[]) {
+
+        List<String> names = generator.getFeatureNames();
         List<Integer> indexes = new ArrayList<Integer>();
         for (int i = 0; i < names.size(); i++) {
             indexes.add(i);
@@ -101,7 +125,7 @@ public class LinearEnsemble implements Ensemble {
         return buffer.toString();
     }
 
-    private double[] exampleFeatures(Example ex) {
+    private double[] mostSimilarExampleFeatures(Example ex) {
         double features[] = mostSimilarGenerator.generate(ex);
         if (numFeatures < 0) {
             numFeatures = features.length;
@@ -109,24 +133,44 @@ public class LinearEnsemble implements Ensemble {
         if (features.length != numFeatures) {
             throw new IllegalArgumentException("expected numFeatures to be " + numFeatures + ", but was " + features.length);
         }
+        return features;
+    }
 
-        double result[] = new double[numFeatures];
-        for (int i = 0; i < numFeatures; i++) {
-            result[i] = features[i];
+    private double[] similarityExampleFeatures(Example ex) {
+        double features[] = similarityGenerator.generate(ex);
+        if (numFeatures < 0) {
+            numFeatures = features.length;
         }
-        return result;
+        if (features.length != numFeatures) {
+            throw new IllegalArgumentException("expected numFeatures to be " + numFeatures + ", but was " + features.length);
+        }
+        return features;
     }
 
     @Override
-    public double predict(Example ex, boolean truncate) {
+    public double predictMostSimilar(Example ex, boolean truncate) {
         assert(ex.sims.size() == components.size());
-        double features[] = exampleFeatures(ex);
-        double sum = coefficients[0];
-        if (features.length!= coefficients.length - 1) {
+        double features[] = mostSimilarExampleFeatures(ex);
+        if (features.length!= mostSimilarCoefficients.length - 1) {
             throw new IllegalStateException();
         }
+        double sum = mostSimilarCoefficients[0];
         for (int i = 0; i < features.length; i++) {
-            sum += coefficients[i+1] * features[i];
+            sum += mostSimilarCoefficients[i+1] * features[i];
+        }
+        return sum;
+    }
+
+    @Override
+    public double predictSimilarity(Example ex, boolean truncate) {
+        assert(ex.sims.size() == components.size());
+        double features[] = similarityExampleFeatures(ex);
+        if (features.length!= similarityCoefficients.length - 1) {
+            throw new IllegalStateException();
+        }
+        double sum = similarityCoefficients[0];
+        for (int i = 0; i < features.length; i++) {
+            sum += similarityCoefficients[i+1] * features[i];
         }
         return sum;
     }
@@ -136,17 +180,17 @@ public class LinearEnsemble implements Ensemble {
         if (!directory.isDirectory()) {
             directory.mkdirs();
         }
+        FileUtils.write(new File(directory, "mostSimilarEquation.txt"), getMostSimilarEquationString());
+        FileUtils.write(new File(directory, "similarityEquation.txt"), getSimilarityEquationString());
 
         ObjectOutputStream out = new ObjectOutputStream(
-                new FileOutputStream(new File(directory, "coefficients")));
-        out.writeObject(coefficients);
-        out.close();
-
-        FileUtils.write(new File(directory, "equation.txt"), getEquationString());
-
-        out = new ObjectOutputStream(
                 new FileOutputStream(new File(directory, "mostSimilarGenerator")));
         out.writeObject(mostSimilarGenerator);
+        out.close();
+
+        out = new ObjectOutputStream(
+                new FileOutputStream(new File(directory, "similarityGenerator")));
+        out.writeObject(similarityGenerator);
         out.close();
 
         String names = StringUtils.join(getComponentNames(), ", ");
@@ -172,42 +216,62 @@ public class LinearEnsemble implements Ensemble {
 
         try {
             ObjectInputStream in = new ObjectInputStream(
-                    new FileInputStream(new File(directory, "coefficients")));
-            coefficients = (double[]) in.readObject();
-            in.close();
-
-            in = new ObjectInputStream(
                     new FileInputStream(new File(directory, "mostSimilarGenerator")));
             mostSimilarGenerator = FeatureGenerator.read(in, components, true);
             in.close();
-
-            LinkedHashMap<String, Double> eq = readEquation(
-                    FileUtils.readFileToString(new File(directory, "equation.txt")));
-
-            int maxIndex = -1;
-            TIntDoubleHashMap indexCoeffs = new TIntDoubleHashMap();
-            for (String featureName : eq.keySet()) {
-                if (!featureName.equals("C")) {
-                    int i = mostSimilarGenerator.getFeatureIndex(featureName);
-                    if (i < 0) {
-                        throw new IOException("feature generator in " +
-                                new File(directory, "mostSimilarGenerator") +
-                                " does not have have feature named " + featureName);
-                    }
-                    maxIndex = Math.max(i, maxIndex);
-                    indexCoeffs.put(i, eq.get(featureName));
-                }
-            }
-
-
-            coefficients = new double[maxIndex+2];  // don't forget constant
-            coefficients[0] = eq.get("C");
-            for (int i = 0; i <= maxIndex; i++) {
-                coefficients[i+1] = indexCoeffs.get(i);
-            }
+            in = new ObjectInputStream(
+                    new FileInputStream(new File(directory, "similarityGenerator")));
+            similarityGenerator = FeatureGenerator.read(in, components, true);
+            in.close();
         } catch (ClassNotFoundException e) {
             throw new IOException(e);
         }
+
+        similarityCoefficients= readCoefficients(
+                similarityGenerator,
+                new File(directory, "similarityEquation.txt"));
+        mostSimilarCoefficients = readCoefficients(
+                mostSimilarGenerator,
+                new File(directory, "mostSimilarEquation.txt"));
+    }
+
+    /**
+     * Reads and orders coefficients in an equation file to be consistent with the
+     * order of the passed-in feature generator.
+     *
+     * If a feature in the equation file doesn't correspond to a feature in the
+     * generator, an error is thrown.
+     *
+     * If a feature in the generator is not in the equation, it will have a coefficient of 0.
+     *
+     * @param generator
+     * @param eqPath
+     * @return
+     * @throws IOException
+     */
+    private double[] readCoefficients(FeatureGenerator generator, File eqPath) throws IOException {
+        LinkedHashMap<String, Double> eq = readEquation(FileUtils.readFileToString(eqPath));
+
+        double coeffs[] = new double[generator.getNumFeatures() + 1];  // don't forget constant
+
+        for (String featureName : eq.keySet()) {
+            double val = eq.get(featureName);
+            if (featureName.equals("C")) {
+                coeffs[0] = val;
+            } else {
+                int i = generator.getFeatureIndex(featureName);
+                if (i < 0) {
+                    throw new IOException("feature generator " + generator +
+                            " does not have have feature named " + featureName);
+                }
+                if (i >= generator.getNumFeatures()) {
+                    throw new IOException("feature index greater than it should be.");
+                }
+                coeffs[i+1] = val;
+            }
+        }
+
+        return coeffs;
     }
 
     // from http://stackoverflow.com/questions/3681242/java-how-to-parse-double-from-regex

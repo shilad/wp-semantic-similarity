@@ -51,8 +51,13 @@ public class SimilarityFeatureGenerator extends FeatureGenerator {
             features.add(rankToScore(0.5 * rank1 + 0.5 * rank2, numResults * 2));
             features.add(rankToScore(Math.min(rank1, rank2), numResults * 2));
         }
-        assert(fi == components.size() * 4);
+        assert(fi == getNumFeatures());
         return features.toArray();
+    }
+
+    @Override
+    public int getNumFeatures() {
+        return components.size() * 4;
     }
 
     @Override

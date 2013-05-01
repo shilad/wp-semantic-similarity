@@ -53,8 +53,13 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
             int rank = cs.hasValue() ? cs.rank : numResults * 2;
             features.add(rankToScore(rank, numResults * 2));
         }
-        assert(fi == components.size() * 3);
+        assert(fi == getNumFeatures());
         return features.toArray();
+    }
+
+    @Override
+    public int getNumFeatures() {
+        return components.size() * 3;
     }
 
     @Override

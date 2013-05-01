@@ -67,7 +67,14 @@ public class WekaEnsemble implements Ensemble {
     }
 
     @Override
-    public double predict(Example ex, boolean truncate) { throw new NoSuchMethodError(); }
+    public double predictMostSimilar(Example ex, boolean truncate) {
+        throw new NoSuchMethodError();
+    }
+
+    @Override
+    public double predictSimilarity(Example ex, boolean truncate) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void write(File directory) throws IOException {

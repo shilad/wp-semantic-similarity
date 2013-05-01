@@ -59,7 +59,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
         /*
         Example ex = getComponentSimilarities(phrase1, phrase2, -1, null);
         if (ex.getNumNotNan() >= minComponents) {
-            return ensemble.predict(ex, true);
+            return ensemble.predictMostSimilar(ex, true);
         } else {
             return Double.NaN;
         }
@@ -119,7 +119,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
             public boolean execute(int wpId2, Example ex) {
                 if (ex.getNumNotNan() >= minComponents) {
                     ex = ex.makeDense(components.size());
-                    double pred = ensemble.predict(ex, false);
+                    double pred = ensemble.predictMostSimilar(ex, false);
                     if (!Double.isNaN(pred)) {
                         list.set(n[0]++, wpId2, pred);
                     }
@@ -127,7 +127,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
                 return true;  //To change body of implemented methods use File | Settings | File Templates.
             }
         });
-        timer.recordTime("predict");
+        timer.recordTime("predictMostSimilar");
 
         // Truncate and sort the list.
         list.truncate(n[0]);

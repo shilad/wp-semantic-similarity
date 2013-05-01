@@ -117,10 +117,15 @@ public class SvmEnsemble implements Ensemble {
     }
 
     @Override
-    public double predict(Example ex, boolean truncate) {
+    public double predictMostSimilar(Example ex, boolean truncate) {
         assert(ex.sims.size() == components.size());
         svm_node nodes[] = simsToNodes(ex, truncate);
         return svm.svm_predict(model, nodes);
+    }
+
+    @Override
+    public double predictSimilarity(Example ex, boolean truncate) {
+        throw new UnsupportedOperationException();
     }
 
 

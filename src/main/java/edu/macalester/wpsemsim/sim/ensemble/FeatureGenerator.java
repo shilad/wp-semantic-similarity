@@ -170,6 +170,8 @@ public abstract class FeatureGenerator implements Serializable {
      */
     public abstract String featureNameToMetricName(String featureName);
 
+    public abstract int getNumFeatures();
+
     public boolean hasFeature(String name) {
         return getFeatureNames().contains(name);
     }

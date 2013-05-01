@@ -20,7 +20,9 @@ public interface Ensemble {
 
     void trainSimilarity(List<Example> examples);
 
-    double predict(Example ex, boolean truncate);
+    double predictSimilarity(Example ex, boolean truncate);
+
+    double predictMostSimilar(Example ex, boolean truncate);
 
     void write(File directory) throws IOException;
 

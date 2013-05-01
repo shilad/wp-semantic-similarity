@@ -20,10 +20,10 @@ public class TestLinear {
         assert(coeffs.size() == 2);
         assertEquals(coeffs.get("C"), 34.5, 0.001);
         assertEquals(coeffs.get("foo_bar"), -4, 0.001);
-        coeffs = e.readEquation("-34.5 - 3*bz2 + 7.35 * gar");
+        coeffs = e.readEquation("-34.5 - 3*bz + 7.35 * gar");
         assert(coeffs.size() == 3);
         assertEquals(coeffs.get("C"), -34.5, 0.001);
-        assertEquals(coeffs.get("bz2"), -3, 0.001);;
+        assertEquals(coeffs.get("bz"), -3, 0.001);;
         assertEquals(coeffs.get("gar"), 7.35, 0.001);
     }
 
