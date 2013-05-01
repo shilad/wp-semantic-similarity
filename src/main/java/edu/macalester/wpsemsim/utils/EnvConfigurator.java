@@ -397,17 +397,8 @@ public class EnvConfigurator {
 
         // load underlying metrics
         List<SimilarityMetric> metrics = new ArrayList<SimilarityMetric>();
-        if (params.containsKey("basedOn")) {
-            for (String k : requireListOfStrings(params, "basedOn")) {
-                metrics.add(loadMetric(k, readModel));
-            }
-        } else {
-            // load everything except this ensemble
-            for (String k : (Set<String>)configuration.getMetrics().keySet()) {
-                if (!k.equals(key)) {
-                    metrics.add(loadMetric(k, readModel));
-                }
-            }
+        for (String k : requireListOfStrings(params, "basedOn")) {
+            metrics.add(loadMetric(k, true));
         }
 
         String type = requireString(params, "ensembleType");
