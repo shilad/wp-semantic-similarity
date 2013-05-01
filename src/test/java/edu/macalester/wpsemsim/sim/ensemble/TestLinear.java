@@ -27,7 +27,6 @@ public class TestLinear {
         assertEquals(coeffs.get("gar"), 7.35, 0.001);
     }
 
-
     public class PublicLinearEnsemble extends LinearEnsemble {
         public PublicLinearEnsemble() throws IOException {
             super();

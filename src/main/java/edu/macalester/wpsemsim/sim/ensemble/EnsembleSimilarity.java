@@ -49,26 +49,53 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
 
     @Override
     public void trainSimilarity(List<KnownSim> gold) {
-        throw new UnsupportedOperationException();
+        final List<Example> examples = Collections.synchronizedList(new ArrayList<Example>());
+        ParallelForEach.loop(gold, numThreads, new Procedure<KnownSim>() {
+            @Override
+            public void call(KnownSim ks) throws Exception {
+                Example ex = getComponentSimilarities(ks, -1, null);
+                ex.label = ks;
+                if (ex.getNumNotNan() >= minComponents) {
+                    examples.add(ex);
+                }
+            }
+        });
+        ensemble.trainSimilarity(examples);
+
+        // train the normalizer
+        super.trainSimilarity(gold);
     }
 
     @Override
     public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
-        throw new UnsupportedOperationException();
-
-        /*
-        Example ex = getComponentSimilarities(phrase1, phrase2, -1, null);
+        Example ex = Example.makeEmptyWithReverse();
+        for (int i = 0; i < components.size(); i++) {
+            SimilarityMetric m = components.get(i);
+            SimScore ss1 = new SimScore(i, m.similarity(phrase1, phrase2));
+            SimScore ss2 = new SimScore(i, m.similarity(phrase2, phrase1));
+            ex.add(ss1, ss2);
+        }
         if (ex.getNumNotNan() >= minComponents) {
-            return ensemble.predictMostSimilar(ex, true);
+            return ensemble.predictSimilarity(ex, false);
         } else {
             return Double.NaN;
         }
-        */
     }
 
     @Override
     public double similarity(int wpId1, int wpId2) throws IOException {
-        throw new UnsupportedOperationException();
+        Example ex = Example.makeEmptyWithReverse();
+        for (int i = 0; i < components.size(); i++) {
+            SimilarityMetric m = components.get(i);
+            SimScore ss1 = new SimScore(i, m.similarity(wpId1, wpId2));
+            SimScore ss2 = new SimScore(i, m.similarity(wpId2, wpId1));
+            ex.add(ss1, ss2);
+        }
+        if (ex.getNumNotNan() >= minComponents) {
+            return ensemble.predictSimilarity(ex, false);
+        } else {
+            return Double.NaN;
+        }
     }
 
     private static final TimingAnalysis.Factory timerFactory = new TimingAnalysis.Factory("ensemble-sim");
