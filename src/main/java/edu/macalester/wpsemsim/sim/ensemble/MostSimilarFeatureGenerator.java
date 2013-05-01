@@ -36,7 +36,7 @@ public class MostSimilarFeatureGenerator extends FeatureGenerator {
                             : ex.reverseSims.get(i);
 
             double x = getOrImputeSim(cs);
-            assert(!Double.isNaN(x));   // it should be define dnow!
+            assert(!Double.isNaN(x));   // it should be defined now!
 
             // range normalizer
             BaseNormalizer rn = rangeNormalizers.get(cs.component);

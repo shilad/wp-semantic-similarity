@@ -32,23 +32,24 @@ public class SimilarityFeatureGenerator extends FeatureGenerator {
             SimScore cs2 = ex.reverseSims.get(i);
             assert(cs1.component == cs2.component);
 
+            double s1 = getOrImputeSim(cs1);
+            double s2 = getOrImputeSim(cs2);
+            assert(!Double.isNaN(s1));   // it should be defined now!
+            assert(!Double.isNaN(s2));   // it should be defined now!
+
             // range normalizer
             BaseNormalizer rn = rangeNormalizers.get(cs1.component);
-            double r1 = cs1.hasValue() ? rn.normalize(cs1.sim) : rn.getMin();
-            double r2 = cs2.hasValue() ? rn.normalize(cs2.sim) : rn.getMin();
+            double r1 = rn.normalize(s1);
+            double r2 = rn.normalize(s2);
             features.add(0.5 * r1 + 0.5 * r2);
+            features.add(Math.max(r1, r2));
 
             // percent normalizer
             BaseNormalizer pn = percentNormalizers.get(cs1.component);
-            double p1 = cs1.hasValue() ? pn.normalize(cs1.sim) : pn.getMin();
-            double p2 = cs2.hasValue() ? pn.normalize(cs2.sim) : pn.getMin();
+            double p1 = pn.normalize(s1);
+            double p2 = pn.normalize(s2);
             features.add(percentileToScore(0.5 * p1 + 0.5 * p2));
-
-            // log rank (mean and min)
-            int rank1 = cs1.hasValue() ? cs1.rank : numResults * 2;
-            int rank2 = cs2.hasValue() ? cs2.rank : numResults * 2;
-            features.add(rankToScore(0.5 * rank1 + 0.5 * rank2, numResults * 2));
-            features.add(rankToScore(Math.min(rank1, rank2), numResults * 2));
+            features.add(percentileToScore(Math.max(p1, p2)));
         }
         assert(features.size() == getNumFeatures());
         return features.toArray();
@@ -64,10 +65,10 @@ public class SimilarityFeatureGenerator extends FeatureGenerator {
         List<String> names = new ArrayList<String>();
         for (SimilarityMetric m : components) {
             String metricName = m.getName().toLowerCase().replaceAll("[^a-zA-Z]+", "");
-            names.add(metricName + "-range");
-            names.add(metricName + "-percent");
-            names.add(metricName + "-rankmean");
-            names.add(metricName + "-rankmin");
+            names.add(metricName + "-rangemean");
+            names.add(metricName + "-rangemax");
+            names.add(metricName + "-percentmean");
+            names.add(metricName + "-percentmax");
         }
         return names;
     }
