@@ -1,7 +1,10 @@
 package edu.macalester.wpsemsim.utils;
 
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.hash.TIntHashSet;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
@@ -9,6 +12,7 @@ import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 import org.apache.commons.math3.util.MathArrays;
 
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 import java.util.Arrays;
 
 public class MathUtils {
@@ -147,5 +151,71 @@ public class MathUtils {
                 new TDoubleArrayList(pruned[0]),
                 new TDoubleArrayList(pruned[1])
         };
+    }
+
+    /**
+     * Find colinear columns in a matrix.
+     *
+     * @param X A rectangular matrix in row-major format.
+     * @param epsilon the singularity threshold delta
+     *
+     * @return A 2-D array from columns to a list of all colinear
+     * columns. Each column will appear at most once in the second
+     * level of the array. So if columns 1, 4, 6, and 7 are colinear.
+     * The entry for column 1 will contain [4, 6, 7] and the entries
+     * for 4, 6, and 7 will be empty.
+     *
+     */
+    public static int[][] findColinearColumns(double X[][], double epsilon) {
+        if (X.length <= 1) {
+            return new int[0][0];
+        }
+        int numCols = X[0].length;
+        if (numCols <= 1) {
+            return new int[0][0];
+        }
+
+        int [][] colinear = new int[numCols][];
+        TIntHashSet alreadyColinear = new TIntHashSet();
+
+        // skip last column, it can't be colinear with anybody!
+        for (int col1 = 0; col1 < numCols-1; col1++) {
+            if (alreadyColinear.contains(col1)) {
+                colinear[col1] = new int[0];
+                continue;
+            }
+            TIntList matches = new TIntArrayList();
+            for (int col2 = col1+1; col2 < numCols; col2++) {
+                boolean isColinear = true;
+                double k = X[0][col1] / X[0][col2];
+                for (double row[] : X) {
+                    if (row.length != numCols) { throw new IllegalArgumentException(); }
+                    if (Math.abs(row[col1] - k * row[col2]) > epsilon) {
+                        isColinear = false;
+                        break;
+                    }
+                }
+                if (isColinear) {
+                    matches.add(col2);
+                    alreadyColinear.add(col2);
+                }
+            }
+            colinear[col1] = matches.toArray();
+        }
+        colinear[colinear.length - 1] = new int[0];
+        return colinear;
+    }
+    public static int[][] findColinearColumns(double X[][]) {
+        return findColinearColumns(X, 0.000001);
+    }
+
+    public static String toString(int X[][]) {
+        StringBuffer res = new StringBuffer("{");
+        for (int row[] : X) {
+            if (row != X[0]) { res.append(", "); }
+            res.append(Arrays.toString(row));
+        }
+        res.append("}");
+        return res.toString();
     }
 }

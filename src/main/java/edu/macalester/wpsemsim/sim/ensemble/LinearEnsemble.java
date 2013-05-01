@@ -1,6 +1,14 @@
 package edu.macalester.wpsemsim.sim.ensemble;
 
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
+import edu.macalester.wpsemsim.utils.MathUtils;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.stack.TDoubleStack;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
@@ -69,10 +77,36 @@ public class LinearEnsemble implements Ensemble {
             }
             rowNum++;
         }
-        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-        regression.newSampleData(Y, X);
 
-        this.similarityCoefficients = regression.estimateRegressionParameters();
+        // find colinear columns
+        int colinearCols[][] = MathUtils.findColinearColumns(X);
+        TIntList isColinear = new TIntArrayList();
+        for (int colIds[] : colinearCols) {
+            isColinear.addAll(colIds);
+        }
+        isColinear.sort();
+
+        // create a pruned matrix without colinear columns
+        double prunedX[][] = new double[X.length][];
+        for (int i = 0; i < X.length; i++) {
+            TDoubleList prunedRow = new TDoubleArrayList();
+            for (int j = 0; j < X[i].length; j++) {
+                if (!isColinear.contains(j)) {
+                    prunedRow.add(X[i][j]);
+                }
+            }
+            prunedX[i] = prunedRow.toArray();
+        }
+
+        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+        regression.newSampleData(Y, prunedX);
+
+        // reconstruct unpruned coefficients by inserting (in order) 0 for colinear columns
+        TDoubleList coeffs = new TDoubleArrayList(regression.estimateRegressionParameters());
+        for (int colId : isColinear.toArray()) {
+            coeffs.insert(colId + 1, 0.0);  // +1 is for constant coef at index 0
+        }
+        this.similarityCoefficients = coeffs.toArray();
         double pearson = Math.sqrt(regression.calculateRSquared());
         LOG.info("equation is " + getSimilarityEquationString());
         LOG.info("pearson for multiple regression is " + pearson);
