@@ -65,6 +65,10 @@ public abstract class FeatureGenerator implements Serializable {
      *              If false, require that all the metrics exist.
      */
     protected void setAndReorderMetrics(List<SimilarityMetric> keepers, boolean prune) {
+        if (!trained) {
+            setComponents(keepers);
+            return;
+        }
         List<SimilarityMetric> pruned = new ArrayList<SimilarityMetric>();
         for (int i = 0; i < names.size();) {
             String name = names.get(i);
