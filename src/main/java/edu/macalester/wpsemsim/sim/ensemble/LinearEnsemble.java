@@ -38,8 +38,9 @@ public class LinearEnsemble implements Ensemble {
     // the first value in the array is the constant term.
     // the length of each array should equal the number of features returned
     // by the generator + 1 because of the constant term.
-    protected double[] mostSimilarCoefficients = new double[0];
-    protected double[] similarityCoefficients = new double[0];;
+    // initialize coefficients to the constant 0.
+    protected double[] mostSimilarCoefficients = null;
+    protected double[] similarityCoefficients = null;
 
     public LinearEnsemble() throws IOException {
         this(new ArrayList<SimilarityMetric>());
@@ -75,6 +76,7 @@ public class LinearEnsemble implements Ensemble {
                 throw new IllegalStateException(
                         "num features returned by similarity generator is inconsistent");
             }
+            //System.out.println("row is y=" + Y[rowNum] + ", x=" + Arrays.toString(X[rowNum]));
             rowNum++;
         }
 
@@ -151,12 +153,18 @@ public class LinearEnsemble implements Ensemble {
     }
 
     private String getEquationString(FeatureGenerator generator, final double coefficients[]) {
+        if (coefficients == null || coefficients.length == 0) {
+            // if we don't have an equation, use one with all 0's
+            return getEquationString(generator, new double [generator.getNumFeatures() + 1]);
+        }
+        
 
         List<String> names = generator.getFeatureNames();
         List<Integer> indexes = new ArrayList<Integer>();
         for (int i = 0; i < names.size(); i++) {
             indexes.add(i);
         }
+
         Collections.sort(indexes, new Comparator<Integer>() {
             public int compare(Integer i1, Integer i2) {
                 return new Double(coefficients[i1+1]).compareTo(coefficients[i2 + 1]);
