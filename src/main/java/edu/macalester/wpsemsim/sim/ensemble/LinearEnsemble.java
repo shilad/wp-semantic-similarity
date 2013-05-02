@@ -6,9 +6,6 @@ import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import gnu.trove.stack.TDoubleStack;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
@@ -76,7 +73,6 @@ public class LinearEnsemble implements Ensemble {
                 throw new IllegalStateException(
                         "num features returned by similarity generator is inconsistent");
             }
-            //System.out.println("row is y=" + Y[rowNum] + ", x=" + Arrays.toString(X[rowNum]));
             rowNum++;
         }
 
@@ -158,13 +154,11 @@ public class LinearEnsemble implements Ensemble {
             return getEquationString(generator, new double [generator.getNumFeatures() + 1]);
         }
         
-
         List<String> names = generator.getFeatureNames();
         List<Integer> indexes = new ArrayList<Integer>();
         for (int i = 0; i < names.size(); i++) {
             indexes.add(i);
         }
-
         Collections.sort(indexes, new Comparator<Integer>() {
             public int compare(Integer i1, Integer i2) {
                 return new Double(coefficients[i1+1]).compareTo(coefficients[i2 + 1]);

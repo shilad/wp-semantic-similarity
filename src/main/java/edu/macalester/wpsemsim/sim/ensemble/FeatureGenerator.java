@@ -117,6 +117,8 @@ public abstract class FeatureGenerator implements Serializable {
      */
     public void train(List<Example> examples) {
         if (components == null) throw new NullPointerException("components not set");
+        rangeNormalizers.clear();
+        percentNormalizers.clear();
         for (int i = 0; i < components.size(); i++) {
             rangeNormalizers.add(new RangeNormalizer(-1, +1, false));
             percentNormalizers.add(new PercentileNormalizer());
