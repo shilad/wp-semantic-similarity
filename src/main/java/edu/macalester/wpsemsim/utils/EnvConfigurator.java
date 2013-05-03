@@ -441,8 +441,8 @@ public class EnvConfigurator {
 
     private SimilarityMetric createSplitSimilarity(String name, boolean loadModels) throws IOException, ConfigurationException {
         JSONObject params = configuration.getMetric(name);
-        SimilarityMetric mostSimilar = loadMetric(requireString(params, "mostSimilarDelegate"));
-        SimilarityMetric similarity = loadMetric(requireString(params, "similarityDelegate"));
+        SimilarityMetric mostSimilar = loadMetric(requireString(params, "mostSimilarDelegate"), loadModels);
+        SimilarityMetric similarity = loadMetric(requireString(params, "similarityDelegate"), loadModels);
         return new SplitSimilarityMetric(similarity, mostSimilar);
     }
 
