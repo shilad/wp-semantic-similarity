@@ -102,10 +102,6 @@ public class EnvConfigurator {
                 .withDescription("Maximum number of similar wikipedia pages.")
                 .create('r'),
             new DefaultOptionBuilder()
-                .withLongOpt("skipcats")
-                .withDescription("Do not load the category graph.")
-                .create('p'),
-            new DefaultOptionBuilder()
                 .hasArg()
                 .withLongOpt("validIds")
                 .withDescription("Ids that can be included in results list.")
@@ -510,10 +506,16 @@ public class EnvConfigurator {
         JSONObject params = configuration.getMetric(name);
         SimilarityMetric metric;
         IndexHelper helper = loadIndex(requireString(params, "lucene"));
+        File cachedGraph = new File(getModelDirectory(name), "graph.bin");
         CategoryGraph graph = null;
-        if (cmd == null || !cmd.hasOption("p")) {
+        if (cachedGraph.exists() && cachedGraph.isFile() && cachedGraph.lastModified() > helper.getLastModified()) {
+            LOG.info("reading cached category graph.");
+            graph = (CategoryGraph) Utils.readObject(cachedGraph);
+            graph.setHelper(helper);
+        } else {
             graph = new CategoryGraph(helper);
             graph.init();
+            Utils.writeObject(cachedGraph, graph);
         }
         metric = new CategorySimilarity(loadMainMapper(), graph, helper);
         return metric;

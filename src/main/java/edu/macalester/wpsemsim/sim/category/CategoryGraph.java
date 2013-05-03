@@ -12,6 +12,7 @@ import org.apache.lucene.util.Bits;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,11 +20,12 @@ import java.util.logging.Logger;
 /**
  * Builds and stores a directed graph among categories and pages.
  */
-public class CategoryGraph {
+public class CategoryGraph implements Serializable {
 
     private static final Logger LOG = Logger.getLogger(CategoryGraph.class.getName());
 
-    protected DirectoryReader reader;
+    protected transient IndexHelper helper;
+    protected transient DirectoryReader reader;
 
     protected Map<String,Integer> catIndexes;
     protected Set<Integer> topLevelCategories;
@@ -34,7 +36,6 @@ public class CategoryGraph {
     protected int[][] catChildren;
     protected String[] cats;
     protected double minCost = -1;
-    protected IndexHelper helper;
 
     /**
      * Create a category graph from a lucene index. The index
@@ -45,6 +46,10 @@ public class CategoryGraph {
         if (!helper.hasField(Page.FIELD_CATS)) {
             throw new IllegalArgumentException("lucene index must have field " + Page.FIELD_CATS);
         }
+        setHelper(helper);
+    }
+
+    public void setHelper(IndexHelper helper) {
         this.helper = helper;
         this.reader = helper.getReader();
     }

@@ -7,10 +7,7 @@ import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.normalize.IdentityNormalizer;
 import edu.macalester.wpsemsim.normalize.Normalizer;
-import edu.macalester.wpsemsim.utils.DocScoreList;
-import edu.macalester.wpsemsim.utils.Procedure;
-import edu.macalester.wpsemsim.utils.KnownSim;
-import edu.macalester.wpsemsim.utils.ParallelForEach;
+import edu.macalester.wpsemsim.utils.*;
 import gnu.trove.set.TIntSet;
 import org.apache.lucene.queryparser.surround.parser.ParseException;
 
@@ -251,14 +248,12 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
      */
     @Override
     public void write(File directory) throws IOException {
-        ObjectOutputStream out = new ObjectOutputStream(
-                new FileOutputStream(new File(directory, "mostSimilarNormalizer")));
-        out.writeObject(mostSimilarNormalizer);
-        out.close();
-        out = new ObjectOutputStream(
-                new FileOutputStream(new File(directory, "similarityNormalizer")));
-        out.writeObject(similarityNormalizer);
-        out.close();
+        Utils.writeObject(
+                new File(directory, "mostSimilarNormalizer"),
+                mostSimilarNormalizer);
+        Utils.writeObject(
+                new File(directory, "similarityNormalizer"),
+                similarityNormalizer);
     }
     /**
      * Reads the metric from a directory.
@@ -267,22 +262,10 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
      */
     @Override
     public void read(File directory) throws IOException {
-        ObjectInputStream in = new ObjectInputStream(
-                new FileInputStream(new File(directory, "mostSimilarNormalizer")));
-        try {
-            this.mostSimilarNormalizer = (Normalizer) in.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new IOException(e);
-        }
-        in.close();
-        in = new ObjectInputStream(
-                new FileInputStream(new File(directory, "similarityNormalizer")));
-        try {
-            this.similarityNormalizer = (Normalizer) in.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new IOException(e);
-        }
-        in.close();
+        this.mostSimilarNormalizer = (Normalizer)Utils.readObject(
+                    new File(directory, "mostSimilarNormalizer"));
+        this.similarityNormalizer = (Normalizer)Utils.readObject(
+                    new File(directory, "similarityNormalizer"));
     }
 
     /**

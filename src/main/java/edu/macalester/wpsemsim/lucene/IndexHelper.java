@@ -353,4 +353,12 @@ public class IndexHelper {
     public void setAnalyzer(Analyzer analyzer) {
         this.analyzer = analyzer;
     }
+
+    public long getLastModified() {
+        long last = indexDir.lastModified();
+        for (File f : indexDir.listFiles()) {
+            last = Math.max(last,  f.lastModified());
+        }
+        return last;
+    }
 }
