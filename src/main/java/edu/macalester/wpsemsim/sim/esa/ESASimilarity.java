@@ -196,6 +196,10 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         int doc1 = esaHelper.wpIdToLuceneId(wpId1);
         int doc2 = esaHelper.wpIdToLuceneId(wpId2);
 
+        if (doc1 <  0 || doc2 < 0) {
+            return normalize(0.0);
+        }
+
         MoreLikeThis mlt = getMoreLikeThis();
         TopDocs similarDocs = searcher.search(mlt.like(doc1), null, 1);
         if (similarDocs.scoreDocs.length == 0) {

@@ -77,11 +77,11 @@ public class SplitSimilarityMetric implements SimilarityMetric {
 
     @Override
     public void write(File directory) throws IOException {
-        throw new UnsupportedOperationException();
+        // do nothing
     }
 
     @Override
     public void read(File directory) throws IOException {
-        throw new UnsupportedOperationException();
+        // do nothing
     }
 }

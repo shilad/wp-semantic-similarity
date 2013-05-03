@@ -74,6 +74,14 @@ public class CategorySimilarity extends BaseSimilarityMetric {
 
         int id1 = helper.wpIdToLuceneId(wpId1);
         int id2 = helper.wpIdToLuceneId(wpId2);
+        if (id1 < 0) {
+            LOG.info("unknown wpId: " + wpId1);
+            return normalize(0.0);
+        }
+        if (id2 < 0) {
+            LOG.info("unknown wpId: " + wpId2);
+            return normalize(0.0);
+        }
         Document d1 = graph.reader.document(id1);
         Document d2 = graph.reader.document(id2);
 

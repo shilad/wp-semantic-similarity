@@ -147,6 +147,11 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (m == null) {
             return Double.NaN;
         } else {
+            /*System.err.println(
+                "metric " + getName() + 
+                " mapped " + phrase1 + ", " + phrase2 +
+                " to " + m.phraseWpName + ", " + m.hintWpName);*/
+                
             return similarity(m.phraseWpId, m.hintWpId);
         }
     }

@@ -26,6 +26,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 /**
@@ -120,9 +121,12 @@ public class PhraseAnalyzer {
         LOG.info("building most similar");
         ParallelForEach.loop(phrases, env.getNumThreads(), new Procedure<PhraseInfo>() {
             public void call(PhraseInfo pi) throws Exception {
-                pi.mostSimilar = metric.mostSimilar(pi.wpId, env.getNumMostSimilarResults(), wpIdPhrases.keySet());
-                if (pi.mostSimilar == null) pi.mostSimilar = new DocScoreList(0);
-                pi.pairwiseSims = new float[phrases.size()];
+                try {
+                    pi.mostSimilar = metric.mostSimilar(
+                        pi.wpId, env.getNumMostSimilarResults(), wpIdPhrases.keySet());
+                } finally {
+                    if (pi.mostSimilar == null) pi.mostSimilar = new DocScoreList(0);
+                }
             }
         });
         LOG.info("finished building most similar");
@@ -135,13 +139,20 @@ public class PhraseAnalyzer {
      */
     private void buildSimilarity(final SimilarityMetric metric) throws IOException {
         LOG.info("building similarity");
+        for (PhraseInfo pi : phrases) {
+            pi.pairwiseSims = new float[phrases.size()];
+        }
         ParallelForEach.range(0, phrases.size(), env.getNumThreads(), new Procedure<Integer>() {
             @Override
             public void call(Integer i) throws Exception {
                 PhraseInfo pi = phrases.get(i);
                 for (int j = 0; j < phrases.size(); j++) {
-                    pi.pairwiseSims[j] = (float) metric.similarity(pi.wpId, phrases.get(j).wpId);
+                    try {
+                        pi.pairwiseSims[j] = (float) metric.similarity(pi.wpId, phrases.get(j).wpId);
 //                    pi.pairwiseSims[j] = (float) cosine(pi.mostSimilar, phrases.get(j).mostSimilar);
+                    } catch (Exception e) {
+                        LOG.log(Level.SEVERE, "similarity failed:", e);
+                    }
                 }
             }
         });
