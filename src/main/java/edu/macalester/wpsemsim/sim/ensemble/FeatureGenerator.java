@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Base class for MostSimilar and Similarity feature generators.
@@ -20,6 +21,7 @@ import java.util.List;
 public abstract class FeatureGenerator implements Serializable {
 
     public static final long serialVersionUID = 6748803838389411768l;
+    public static final Logger LOG = Logger.getLogger(FeatureGenerator.class.getName());
 
     // don't serialize the components they must be set manually.
     protected transient List<SimilarityMetric> components = null;
@@ -134,8 +136,11 @@ public abstract class FeatureGenerator implements Serializable {
             List<SimScore> allSims = new ArrayList<SimScore>(ex.sims);
             if (ex.hasReverse()) allSims.addAll(ex.reverseSims);
             for (SimScore s : allSims) {
+                // update missing sims
                 if (!Double.isNaN(s.missingSim)) {
                     missing[s.component].add(s.missingSim);
+                } else if (!s.hasValue() && !Double.isNaN(ex.label.similarity)) {
+                    missing[s.component].add(ex.label.similarity);
                 }
                 if (s.hasValue() || !Double.isNaN(s.missingSim)) {
                     numResults = Math.max(numResults, s.length);
@@ -147,7 +152,16 @@ public abstract class FeatureGenerator implements Serializable {
         }
 
         for (int i = 0; i < components.size(); i++) {
-            missingValues.add(1.0 * missing[i].sum() / missing[i].size());
+            String n = components.get(i).getName();
+            double v = 0.0;
+            if (missing[i].size() == 0) {
+                LOG.warning("no missing values observed for metric " +  n +
+                            "; defaulting to " + v);
+            } else {
+                v = 1.0 * missing[i].sum() / missing[i].size();
+            }
+            missingValues.add(v);
+            System.err.println("missing value for " + n + " is " + v);
         }
         for (BaseNormalizer n : rangeNormalizers) { n.observationsFinished(); }
         for (BaseNormalizer n : percentNormalizers) { n.observationsFinished(); }

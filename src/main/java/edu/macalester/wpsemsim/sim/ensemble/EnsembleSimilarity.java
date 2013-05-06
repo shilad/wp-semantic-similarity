@@ -89,10 +89,13 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
             SimilarityMetric m = components.get(i);
             SimScore ss1 = new SimScore(i, m.similarity(wpId1, wpId2));
             SimScore ss2 = new SimScore(i, m.similarity(wpId2, wpId1));
+            System.out.println("sim scores for " + m.getName() + " are: " + ss1.sim + ", " + ss2.sim);
             ex.add(ss1, ss2);
         }
         if (ex.getNumNotNan() >= minComponents) {
-            return ensemble.predictSimilarity(ex, false);
+            double score = normalize(ensemble.predictSimilarity(ex, false));
+            System.out.println("final score is " + score);
+            return score;
         } else {
             return Double.NaN;
         }

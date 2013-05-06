@@ -142,10 +142,9 @@ public class PhraseAnalyzer {
         for (PhraseInfo pi : phrases) {
             pi.pairwiseSims = new float[phrases.size()];
         }
-        ParallelForEach.range(0, phrases.size(), env.getNumThreads(), new Procedure<Integer>() {
+        ParallelForEach.loop(phrases, env.getNumThreads(), new Procedure<PhraseInfo>() {
             @Override
-            public void call(Integer i) throws Exception {
-                PhraseInfo pi = phrases.get(i);
+            public void call(PhraseInfo pi) throws Exception {
                 for (int j = 0; j < phrases.size(); j++) {
                     try {
                         pi.pairwiseSims[j] = (float) metric.similarity(pi.wpId, phrases.get(j).wpId);
