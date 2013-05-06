@@ -509,12 +509,13 @@ public class EnvConfigurator {
         File cachedGraph = new File(getModelDirectory(name), "graph.bin");
         CategoryGraph graph = null;
         if (cachedGraph.exists() && cachedGraph.isFile() && cachedGraph.lastModified() > helper.getLastModified()) {
-            LOG.info("reading cached category graph.");
+            LOG.info("reading cached category graph from " + cachedGraph);
             graph = (CategoryGraph) Utils.readObject(cachedGraph);
             graph.setHelper(helper);
         } else {
             graph = new CategoryGraph(helper);
             graph.init();
+            LOG.info("writing category graph cache to " + cachedGraph);
             Utils.writeObject(cachedGraph, graph);
         }
         metric = new CategorySimilarity(loadMainMapper(), graph, helper);
