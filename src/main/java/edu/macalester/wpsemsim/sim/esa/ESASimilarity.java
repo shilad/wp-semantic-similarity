@@ -201,7 +201,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
         }
 
         MoreLikeThis mlt = getMoreLikeThis();
-        TopDocs similarDocs = searcher.search(mlt.like(doc1), null, 1);
+        TopDocs similarDocs = searcher.search(mlt.like(doc1), new FieldCacheTermsFilter("id", "" + wpId2), 1);
         if (similarDocs.scoreDocs.length == 0) {
             return normalize(0);
         } else {

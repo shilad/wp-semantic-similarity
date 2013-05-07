@@ -93,7 +93,9 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
             ex.add(ss1, ss2);
         }
         if (ex.getNumNotNan() >= minComponents) {
-            double score = normalize(ensemble.predictSimilarity(ex, false));
+            double score = ensemble.predictSimilarity(ex, false);
+            //System.out.println("unnormalized score is " + score);
+            score = normalize(score);
             //System.out.println("final score is " + score);
             return score;
         } else {

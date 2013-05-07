@@ -70,8 +70,8 @@ public class PhraseAnalyzer {
      */
     public void build(SimilarityMetric metric) throws IOException {
         mapPhrases(pathPhrases);
-        buildMostSimilar(metric);
         buildSimilarity(metric);
+        buildMostSimilar(metric);
     }
     /**
      * Map all the phrases in a file to Wikipedia pages.
@@ -139,16 +139,14 @@ public class PhraseAnalyzer {
      */
     private void buildSimilarity(final SimilarityMetric metric) throws IOException {
         LOG.info("building similarity");
-        for (PhraseInfo pi : phrases) {
-            pi.pairwiseSims = new float[phrases.size()];
-        }
         ParallelForEach.loop(phrases, env.getNumThreads(), new Procedure<PhraseInfo>() {
             @Override
             public void call(PhraseInfo pi) throws Exception {
+                pi.pairwiseSims = new float[phrases.size()];
                 for (int j = 0; j < phrases.size(); j++) {
                     try {
                         pi.pairwiseSims[j] = (float) metric.similarity(pi.wpId, phrases.get(j).wpId);
-//                    pi.pairwiseSims[j] = (float) cosine(pi.mostSimilar, phrases.get(j).mostSimilar);
+                        //pi.pairwiseSims[j] = (float) cosine(pi.mostSimilar, phrases.get(j).mostSimilar);
                     } catch (Exception e) {
                         LOG.log(Level.SEVERE, "similarity failed:", e);
                     }
