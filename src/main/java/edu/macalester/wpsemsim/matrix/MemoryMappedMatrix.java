@@ -62,7 +62,7 @@ public class MemoryMappedMatrix {
 
     private void addBuffer(long startPos, long endPos) throws IOException {
         long length = endPos - startPos;
-        info("adding page at " + startPos + " of length " + length);
+        debug("adding page at " + startPos + " of length " + length);
         buffers.add(new MappedBufferWrapper(channel, startPos, endPos));
     }
 
@@ -136,6 +136,9 @@ public class MemoryMappedMatrix {
 
     private void info(String message) {
         LOG.log(Level.INFO, "sparse matrix " + path + ": " + message);
+    }
+    private void debug(String message) {
+        LOG.log(Level.FINEST, "sparse matrix " + path + ": " + message);
     }
 
     static class LruQueue<T> {
