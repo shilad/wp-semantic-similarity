@@ -146,7 +146,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
         if (hasCachedMostSimilar(wpId)) {
-            return getCachedMostSimilar(wpId);
+            return getCachedMostSimilar(wpId, maxResults, validIds);
         }
         MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = esaHelper.wpIdToLuceneId(wpId);

@@ -3,15 +3,11 @@ package edu.macalester.wpsemsim.sim.category;
 import edu.macalester.wpsemsim.concepts.ConceptMapper;
 import edu.macalester.wpsemsim.lucene.IndexHelper;
 import edu.macalester.wpsemsim.sim.BaseSimilarityMetric;
-import edu.macalester.wpsemsim.sim.pairwise.PairwiseSimilarityWriter;
-import edu.macalester.wpsemsim.sim.TextSimilarity;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import gnu.trove.set.TIntSet;
-import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -47,7 +43,7 @@ public class CategorySimilarity extends BaseSimilarityMetric {
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet possibleWpIds) throws IOException {
         if (hasCachedMostSimilar(wpId)) {
-            return getCachedMostSimilar(wpId);
+            return getCachedMostSimilar(wpId, maxResults, possibleWpIds);
         }
         int luceneId = helper.wpIdToLuceneId(wpId);
         if (luceneId < 0) {

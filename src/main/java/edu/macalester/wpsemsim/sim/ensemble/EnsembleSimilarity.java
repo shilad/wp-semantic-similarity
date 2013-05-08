@@ -108,7 +108,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
         if (hasCachedMostSimilar(wpId)) {
-            return getCachedMostSimilar(wpId);
+            return getCachedMostSimilar(wpId, maxResults, validIds);
         }
         // These steps are staged to make timing analysis easier.
         TimingAnalysis timer = timerFactory.get();

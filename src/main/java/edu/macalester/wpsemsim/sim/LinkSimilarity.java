@@ -222,7 +222,7 @@ public class LinkSimilarity extends BaseSimilarityMetric{
     @Override
     public DocScoreList mostSimilar(int wpId, int maxResults, TIntSet validIds) throws IOException {
         if (hasCachedMostSimilar(wpId)) {
-            return getCachedMostSimilar(wpId);
+            return getCachedMostSimilar(wpId, maxResults, validIds);
         }
         MoreLikeThis mlt = getMoreLikeThis();
         int luceneId = linkHelper.wpIdToLuceneId(wpId);

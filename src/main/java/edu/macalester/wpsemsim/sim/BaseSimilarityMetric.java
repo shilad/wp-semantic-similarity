@@ -55,7 +55,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         return mostSimilarMatrix != null && mostSimilarMatrix.getRow(wpId) != null;
     }
 
-    public DocScoreList getCachedMostSimilar(int wpId) throws IOException {
+    public DocScoreList getCachedMostSimilar(int wpId, int numResults, TIntSet validIds) throws IOException {
         if (mostSimilarMatrix == null) {
             return null;
         }
@@ -63,10 +63,15 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
         if (row == null) {
             return null;
         }
+        int n = 0;
         DocScoreList dsl = new DocScoreList(row.getNumCols());
-        for (int i = 0; i < row.getNumCols(); i++) {
-            dsl.set(i, row.getColIndex(i), row.getColValue(i));
+        for (int i = 0;i < row.getNumCols() &&  n < numResults; i++) {
+            int wpId2 = row.getColIndex(i);
+            if (validIds == null || validIds.contains(wpId2)) {
+                dsl.set(n++, row.getColIndex(i), row.getColValue(i));
+            }
         }
+        dsl.truncate(n);
         return dsl;
     }
 
