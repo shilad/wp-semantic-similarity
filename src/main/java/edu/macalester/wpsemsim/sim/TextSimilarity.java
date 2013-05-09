@@ -63,7 +63,7 @@ public class TextSimilarity extends BaseSimilarityMetric implements SimilarityMe
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException {
         if (!useInternalMapper) {
             return super.similarity(phrase1, phrase2);
         }

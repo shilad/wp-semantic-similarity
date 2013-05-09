@@ -67,7 +67,7 @@ public class EnsembleSimilarity extends BaseSimilarityMetric implements Similari
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException {
         Example ex = Example.makeEmptyWithReverse();
         for (int i = 0; i < components.size(); i++) {
             SimilarityMetric m = components.get(i);

@@ -1,6 +1,7 @@
 package edu.macalester.wpsemsim.sim.utils;
 
 import edu.macalester.wpsemsim.matrix.DenseMatrix;
+import edu.macalester.wpsemsim.matrix.DenseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.normalize.Normalizer;
@@ -9,9 +10,10 @@ import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.set.TIntSet;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.lucene.queryparser.surround.parser.ParseException;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,11 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+/**
+ * A similarity metric that directly uses the output of PhraseAnalyzer.
+ * The similarity metric operates on client ids, not Strings or Wikipedia ids.
+ */
 public class KnownPhraseSimilarity implements SimilarityMetric {
     private static final Logger LOG = Logger.getLogger(KnownPhraseSimilarity.class.getName());
 
-    private Map<String, Integer> phraseToId = new HashMap<String, Integer>();
-    private List<String> idToPhrase = new ArrayList<String>();
     private SparseMatrix mostSimilarMatrix;
     private DenseMatrix similarityMatrix;
     private File directory;
@@ -48,41 +52,13 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
-        if (!phraseToId.containsKey(phrase1)) {
-            LOG.warning("unknown phrase: " + StringEscapeUtils.escapeJava(phrase1));
-            return 0.0;
-        }
-        if (!phraseToId.containsKey(phrase2)) {
-            LOG.warning("unknown phrase: " + StringEscapeUtils.escapeJava(phrase2));
-            return 0.0;
-        }
-        int id1 = phraseToId.get(phrase1);
-        int id2 = phraseToId.get(phrase2);
-        return similarityMatrix.getRow(id1).getColValue(id2);
+    public double similarity(String phrase1, String phrase2) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public DocScoreList mostSimilar(String phrase, int maxResults) throws IOException {
-        if (!phraseToId.containsKey(phrase)) {
-            LOG.warning("unknown phrase: " + StringEscapeUtils.escapeJava(phrase));
-            return new DocScoreList(0);
-        }
-        int id = phraseToId.get(phrase);
-        SparseMatrixRow row = mostSimilarMatrix.getRow(id);
-        DocScoreList top = new DocScoreList(row.getNumCols());
-        for (int i = 0; i < row.getNumCols(); i++) {
-            top.set(i, row.getColIndex(i), row.getColValue(i));
-        }
-        return top;
-    }
-
-    public List<PhraseScore> mostSimilarPhrases(String phrase, int maxResults) throws IOException {
-        DocScoreList dsl = mostSimilar(phrase, maxResults);
-        List<PhraseScore> phrases = new ArrayList<PhraseScore>();
-        for (DocScore ds : dsl) {
-        }
-        return phrases;
+        throw new UnsupportedOperationException();
     }
 
     public static String normalize(String phrase) {
@@ -92,29 +68,6 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
     @Override
     public void read(File dir) throws IOException {
         this.directory = dir;
-
-        // read phrase mapping
-        phraseToId.clear();
-        idToPhrase.clear();
-        for (String line : FileUtils.readLines(new File(dir, "phrases.tsv"))) {
-            String tokens[] = line.split("\t");
-            if (tokens.length == 4) {
-                int id = Integer.valueOf(tokens[0]);
-                int wpId = Integer.valueOf(tokens[1]);
-                String phrase = tokens[2].trim();
-                String article = tokens[3].trim();
-                phraseToId.put(phrase, id);
-                while (idToPhrase.size() < id) idToPhrase.add("unknown");
-                idToPhrase.add(phrase);
-                assert(idToPhrase.size() == id+1);
-            } else {
-                LOG.warning(
-                        "invalid line in '" + dir + "/phrases.tsv': '" +
-                        StringEscapeUtils.escapeJava(line)
-                );
-            }
-        }
-
         mostSimilarMatrix = new SparseMatrix(new File(dir, "mostSimilar.matrix"), numOpenPages, maxPageSize);
         similarityMatrix = new DenseMatrix(new File(dir, "similarity.matrix"), numOpenPages, maxPageSize);
     }
@@ -126,16 +79,81 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
     }
 
     @Override
-    public double similarity(int wpId1, int wpId2) throws IOException {
-        throw new UnsupportedOperationException();
+    public double similarity(int clientId1, int clientId2) throws IOException {
+        DenseMatrixRow row1 = similarityMatrix.getRow(clientId1);
+        DenseMatrixRow row2 = similarityMatrix.getRow(clientId2);
+        if (row1 == null) {
+            throw new IllegalArgumentException("unknown client id: " + clientId1);
+        }
+        if (row2 == null) {
+            throw new IllegalArgumentException("unknown client id: " + clientId2);
+        }
+        float sim1 = row1.getValueForId(clientId2);
+        float sim2 = row2.getValueForId(clientId1);
+        if (Float.isNaN(sim1) || Float.isNaN(sim2)) {
+            throw new IllegalArgumentException();
+        }
+        return 0.5 * sim1 + 0.5 * sim2;
     }
-    @Override
-    public DocScoreList mostSimilar(int wpId1, int maxResults) throws IOException {
-        throw new UnsupportedOperationException();
+
+    public float[][] cosimilarity(int clientIds[]) throws IOException {
+        int colIndexes[] = new int[clientIds.length];
+        for (int i = 0; i < clientIds.length; i++) {
+            colIndexes[i] = ArrayUtils.indexOf(
+                    similarityMatrix.getColIds(), clientIds[i]);
+        }
+
+        float cosimilarity[][] = new float[clientIds.length][clientIds.length];
+
+        for (int i = 0; i < clientIds.length; i++) {
+            DenseMatrixRow row = similarityMatrix.getRow(clientIds[i]);
+            if (row == null) continue;
+            for (int j = 0; j < clientIds.length; j++) {
+                int col = colIndexes[j];
+                if (col >= 0) {
+                    assert(row.getColIndex(col) == clientIds[j]);
+                    float sim = row.getColValue(col);
+
+                    // Add half of sim to each symmetric entry in the matrix .
+                    // The other half comes from the transpose entry.
+                    cosimilarity[i][j] += sim * 0.5;
+                    cosimilarity[j][i] += sim * 0.5;
+                }
+            }
+        }
+
+        return cosimilarity;
     }
+
     @Override
-    public DocScoreList mostSimilar(int wpId1, int maxResults, TIntSet possibleWpIds) throws IOException {
-        throw new UnsupportedOperationException();
+    public DocScoreList mostSimilar(int clientId, int maxResults) throws IOException {
+        return mostSimilar(clientId, maxResults, null);
+    }
+
+    /**
+     * All input and output ids are client ids.
+     * @param clientId The client id to find most similar items for.
+     * @param maxResults The maximum number of neighbors.
+     * @param validIds The Wikipedia ids that should be considered in result sets. Null means all ids.
+     * @return
+     * @throws IOException
+     */
+    @Override
+    public DocScoreList mostSimilar(int clientId, int maxResults, TIntSet validIds) throws IOException {
+        SparseMatrixRow row = mostSimilarMatrix.getRow(clientId);
+        if (row == null) {
+            return new DocScoreList(0);
+        }
+        int n = 0;
+        DocScoreList top = new DocScoreList(Math.min(maxResults, row.getNumCols()));
+        for (int i = 0; i < row.getNumCols() && n < maxResults; i++) {
+            int id = row.getColIndex(i);
+            if (validIds == null || validIds.contains(id)) {
+                top.set(n++, id, row.getColValue(i));
+            }
+        }
+        top.truncate(n);
+        return top;
     }
     @Override
     public void trainSimilarity(List<KnownSim> labeled) {
@@ -147,15 +165,10 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
     }
     @Override
     public DocScoreList mostSimilar(String phrase, int maxResults, TIntSet possibleWpIds) throws IOException {
-        throw new UnsupportedOperationException("possibleWpIds not supported");
+        throw new UnsupportedOperationException("validIds not supported");
     }
     @Override
     public void write(File directory) throws IOException {
         throw new UnsupportedOperationException();
-    }
-
-    public static class PhraseScore {
-        public String phrase;
-        public double score;
     }
 }

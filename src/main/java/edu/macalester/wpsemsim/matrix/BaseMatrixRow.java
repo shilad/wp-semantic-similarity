@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 
 /**
  * A base class for matrix rows.
+ * TODO: rename index to id. Indices are dense, ids are sparse.
  */
 public abstract class BaseMatrixRow implements MatrixRow {
     @Override
@@ -45,5 +46,25 @@ public abstract class BaseMatrixRow implements MatrixRow {
             length += getColValue(i) * getColValue(i);
         }
         return Math.sqrt(length);
+    }
+
+    @Override
+    public int getIndexForId(int id) {
+        for (int i = 0; i < getNumCols(); i++) {
+            if (getColIndex(i) == id) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public float getValueForId(int id) {
+        for (int i = 0; i < getNumCols(); i++) {
+            if (getColIndex(i) == id) {
+                return getColValue(i);
+            }
+        }
+        return Float.NaN;
     }
 }

@@ -51,7 +51,7 @@ public class SplitSimilarityMetric implements SimilarityMetric {
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException {
         return similarityDelegate.similarity(phrase1, phrase2);
     }
 

@@ -140,7 +140,7 @@ public abstract class BaseSimilarityMetric implements SimilarityMetric {
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException {
         ensureSimilarityTrained();
         if (mapper == null) {
             throw new UnsupportedOperationException("Mapper must be non-null to resolve phrases");

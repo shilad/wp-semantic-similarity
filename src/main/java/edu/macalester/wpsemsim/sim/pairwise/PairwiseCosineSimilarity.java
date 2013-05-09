@@ -75,7 +75,7 @@ public class PairwiseCosineSimilarity extends BaseSimilarityMetric implements Si
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException {
         if (!buildPhraseVectors) {
             return super.similarity(phrase1, phrase2);
         }

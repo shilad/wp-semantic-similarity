@@ -25,4 +25,8 @@ public interface MatrixRow {
     TIntFloatHashMap asTroveMap();
 
     double getNorm();
+
+    int getIndexForId(int id);
+
+    float getValueForId(int id);
 }

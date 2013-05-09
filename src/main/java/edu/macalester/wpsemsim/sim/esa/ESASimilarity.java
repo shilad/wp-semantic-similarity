@@ -76,7 +76,7 @@ public class ESASimilarity extends BaseSimilarityMetric implements SimilarityMet
     }
 
     @Override
-    public double similarity(String phrase1, String phrase2) throws IOException, ParseException {
+    public double similarity(String phrase1, String phrase2) throws IOException {
         TIntDoubleHashMap scores1 = getConceptVector(phrase1, null);
         TIntDoubleHashMap scores2 = getConceptVector(phrase2, null);
         double sim = SimUtils.cosineSimilarity(scores1, scores2);
