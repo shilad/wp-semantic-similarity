@@ -4,23 +4,16 @@ import edu.macalester.wpsemsim.matrix.DenseMatrix;
 import edu.macalester.wpsemsim.matrix.DenseMatrixRow;
 import edu.macalester.wpsemsim.matrix.SparseMatrix;
 import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
-import edu.macalester.wpsemsim.normalize.Normalizer;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
-import edu.macalester.wpsemsim.utils.DocScore;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.KnownSim;
 import gnu.trove.set.TIntSet;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -96,33 +89,49 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
         return 0.5 * sim1 + 0.5 * sim2;
     }
 
-    public float[][] cosimilarity(int clientIds[]) throws IOException {
-        int colIndexes[] = new int[clientIds.length];
-        for (int i = 0; i < clientIds.length; i++) {
-            colIndexes[i] = ArrayUtils.indexOf(
-                    similarityMatrix.getColIds(), clientIds[i]);
+    public float[][] cosimilarity(int clientRowIds[], int clientColIds[]) throws IOException {
+        float cosimilarity[][] = new float[clientRowIds.length][clientColIds.length];
+
+        addCosims(clientRowIds, clientColIds, cosimilarity, false);
+        addCosims(clientColIds, clientRowIds, cosimilarity, true);
+
+        return cosimilarity;
+    }
+
+    /**
+     * Adds cosimilarities to the matrix for a set of row ids and col ids.
+     * @param rowIds
+     * @param colIds
+     * @param cosims
+     * @param transpose If true, the cosims matrix is transposed.
+     * @throws IOException
+     */
+    private void addCosims(int rowIds[], int colIds[], float cosims[][], boolean transpose) throws IOException {
+        // Compute dense indexes for sparse column ids
+        int colIndexes[] = new int[colIds.length];
+        for (int i = 0; i < colIds.length; i++) {
+            colIndexes[i] = ArrayUtils.indexOf(similarityMatrix.getColIds(), colIds[i]);
         }
 
-        float cosimilarity[][] = new float[clientIds.length][clientIds.length];
-
-        for (int i = 0; i < clientIds.length; i++) {
-            DenseMatrixRow row = similarityMatrix.getRow(clientIds[i]);
+        for (int i = 0; i < rowIds.length; i++) {
+            DenseMatrixRow row = similarityMatrix.getRow(rowIds[i]);
             if (row == null) continue;
-            for (int j = 0; j < clientIds.length; j++) {
+            for (int j = 0; j < colIds.length; j++) {
                 int col = colIndexes[j];
                 if (col >= 0) {
-                    assert(row.getColIndex(col) == clientIds[j]);
+                    assert(row.getColIndex(col) == colIds[j]);
                     float sim = row.getColValue(col);
 
                     // Add half of sim to each symmetric entry in the matrix .
                     // The other half comes from the transpose entry.
-                    cosimilarity[i][j] += sim * 0.5;
-                    cosimilarity[j][i] += sim * 0.5;
+                    if (transpose) {
+                        cosims[j][i] += sim * 0.5;
+                    } else {
+                        cosims[i][j] += sim * 0.5;
+                    }
                 }
             }
         }
-
-        return cosimilarity;
     }
 
     @Override

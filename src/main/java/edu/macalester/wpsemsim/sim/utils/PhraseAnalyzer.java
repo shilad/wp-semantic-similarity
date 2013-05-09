@@ -237,8 +237,8 @@ public class PhraseAnalyzer {
         for (int i = 0; i < colIds.length; i++) { colIds[i] = phrases.get(i).clientId; }
         ValueConf vconf = new ValueConf((float)min, (float)max);
         DenseMatrixWriter writer = new DenseMatrixWriter(path, vconf);
-        for (int i = 0; i < phrases.size(); i++) {
-            writer.writeRow(new DenseMatrixRow(vconf, i, colIds, phrases.get(i).pairwiseSims));
+        for (PhraseInfo pi : phrases) {
+            writer.writeRow(new DenseMatrixRow(vconf, pi.clientId, colIds, pi.pairwiseSims));
         }
         writer.finish();
         LOG.info("finished writing similarity matrix to " + path);
