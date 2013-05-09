@@ -213,7 +213,7 @@ public class PhraseAnalyzer {
                     }
                 }
             }
-            mostSimilarWriter.writeRow(new SparseMatrixRow(vconf, i, ids.toArray(), vals.toArray()));
+            mostSimilarWriter.writeRow(new SparseMatrixRow(vconf, pi.clientId, ids.toArray(), vals.toArray()));
         }
         mostSimilarWriter.finish();
         LOG.info("finished writing mostSimilar matrix to " + path);
