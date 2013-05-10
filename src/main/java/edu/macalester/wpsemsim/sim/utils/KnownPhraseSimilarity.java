@@ -7,6 +7,7 @@ import edu.macalester.wpsemsim.matrix.SparseMatrixRow;
 import edu.macalester.wpsemsim.sim.SimilarityMetric;
 import edu.macalester.wpsemsim.utils.DocScoreList;
 import edu.macalester.wpsemsim.utils.KnownSim;
+import edu.macalester.wpsemsim.utils.Leaderboard;
 import gnu.trove.set.TIntSet;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -149,7 +150,23 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
      */
     @Override
     public DocScoreList mostSimilar(int clientId, int maxResults, TIntSet validIds) throws IOException {
-        SparseMatrixRow row = mostSimilarMatrix.getRow(clientId);
+        Leaderboard board = new Leaderboard(maxResults);
+        DenseMatrixRow row = similarityMatrix.getRow(clientId);
+        if (row == null) {
+            return new DocScoreList(0);
+        }
+        int colIds[] = similarityMatrix.getColIds();
+        if (colIds.length != row.getNumCols()) {
+            throw new IllegalStateException();
+        }
+        for (int i = 0; i < colIds.length; i++) {
+            if (validIds == null || validIds.contains(colIds[i])) {
+                board.tallyScore(colIds[i], row.getColValue(i));
+            }
+        }
+        return board.getTop();
+
+        /*SparseMatrixRow row = mostSimilarMatrix.getRow(clientId);
         if (row == null) {
             return new DocScoreList(0);
         }
@@ -162,7 +179,7 @@ public class KnownPhraseSimilarity implements SimilarityMetric {
             }
         }
         top.truncate(n);
-        return top;
+        return top;*/
     }
     @Override
     public void trainSimilarity(List<KnownSim> labeled) {
