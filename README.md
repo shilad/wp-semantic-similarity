@@ -37,7 +37,7 @@ Instructions for building the semantic similarity network:
 
 * Create the concept mapper index, which is used to map phrases to Wikipedia articles. Download dictionary.bz2 from http://www-nlp.stanford.edu/pubs/crosswikis-data.tar.bz2/dictionary.bz2, then run:
 
-  `./bin/make-concept-index.sh path/to/dictionary.bz2 path/to/index/output-directory jvm_MBs`
+  `./bin/make-concept-index.sh path/to/dictionary.bz2 dat/dictionary.pruned/ jvm_MBs`
   
 * Generate the gold standard dataset:
 
@@ -48,11 +48,11 @@ Instructions for building the semantic similarity network:
 * Train the underlying similarity metrics on the article similarity dataset:
 
 ```bash
-  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/combined.articles.txt  -n inlinks -t dat/dictionary.pruned/ 
-  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/combined.articles.txt  -n outlinks -t dat/dictionary.pruned/ 
-  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/combined.articles.txt  -n article-text -t dat/dictionary.pruned/ 
-  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/combined.articles.txt  -n esa -t dat/dictionary.pruned/ 
-  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/combined.articles.txt  -n article-cats -t dat/dictionary.pruned/   
+  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/gold.titles.similarity.txt  -n inlinks -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/gold.titles.similarity.txt   -n outlinks -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/gold.titles.similarity.txt   -n article-text -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/gold.titles.similarity.txt   -n esa -t dat/dictionary.pruned/ 
+  ./bin/train.sh 10000 -c conf/example-configuration.json -g dat/gold/gold.titles.similarity.txt   -n article-cats -t dat/dictionary.pruned/   
 ```
   
 * Compute the list of ids that may appear as column ids in the similarity matrix (these are the 250K most linked-to ids):
