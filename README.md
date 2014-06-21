@@ -1,5 +1,9 @@
 wp-semantic-similarity
 ======================
+
+**!!!!!!!!!! THIS PROJECT HAS BEEN REPLACED BY [WIKIBRAIN](https://github.com/shilad/wikibrain) !!!!!!**
+
+
 A Java library for semantic similarity measures derived from Wikipedia. In particular:
 * Given a Wikipedia article, it lists the most similar Wikipedia articles along with their similarity scores.
 * Given a phrase, it lists the most similar Wikipedia articles along with their similarity scores.
